@@ -1,0 +1,57 @@
+import { React } from 'react'
+
+import './styles/App.css'
+
+import MapSelectIcon from './assets/toolbar/map_select.svg?react';
+import MapZoomInIcon from './assets/toolbar/map_zoom_in.svg?react';
+import MapZoomOutIcon from './assets/toolbar/map_zoom_out.svg?react';
+import MapMoveIcon from './assets/toolbar/map_move.svg?react';
+import MapFitIcon from './assets/toolbar/map_fit.svg?react';
+import FrameDistributionsIcon from './assets/toolbar/frame_distributions.svg?react';
+import FrameAnalogsIcon from './assets/toolbar/frame_analogs.svg?react';
+import PreferencesIcon from './assets/toolbar/preferences.svg?react';
+
+
+function Toolbar() {
+    return (
+        <aside className="toolbar">
+            <div className="toolbar-section">Section 1</div>
+            <div className="toolbar-section">Section 2</div>
+            <div className="toolbar-section">Section 3</div>
+        </aside>
+    );
+}
+
+function TopBar() {
+    return (
+        <header className="topbar">
+            <button className="icon-btn"><MapSelectIcon /></button>
+            <button className="icon-btn"><MapZoomInIcon /></button>
+            <button className="icon-btn"><MapZoomOutIcon /></button>
+            <button className="icon-btn"><MapMoveIcon /></button>
+            <button className="icon-btn"><MapFitIcon /></button>
+            <button className="icon-btn"><FrameDistributionsIcon /></button>
+            <button className="icon-btn"><FrameAnalogsIcon /></button>
+            <button className="icon-btn"><PreferencesIcon /></button>
+        </header>
+    );
+}
+
+function MapArea() {
+    return (
+        <main className="map-area">
+        </main>
+    );
+}
+
+export default function App() {
+    return (
+        <div className="app-layout">
+            <Toolbar />
+            <div className="main-content">
+                <TopBar />
+                <MapArea />
+            </div>
+        </div>
+    );
+}
