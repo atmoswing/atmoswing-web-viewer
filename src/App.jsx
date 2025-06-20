@@ -25,14 +25,14 @@ function Toolbar() {
 function TopBar() {
     return (
         <header className="topbar">
-            <button className="icon-btn"><MapSelectIcon /></button>
-            <button className="icon-btn"><MapZoomInIcon /></button>
-            <button className="icon-btn"><MapZoomOutIcon /></button>
-            <button className="icon-btn"><MapMoveIcon /></button>
-            <button className="icon-btn"><MapFitIcon /></button>
-            <button className="icon-btn"><FrameDistributionsIcon /></button>
-            <button className="icon-btn"><FrameAnalogsIcon /></button>
-            <button className="icon-btn"><PreferencesIcon /></button>
+            <button className="toolbar-icon-btn"><MapSelectIcon /></button>
+            <button className="toolbar-icon-btn"><MapZoomInIcon /></button>
+            <button className="toolbar-icon-btn"><MapZoomOutIcon /></button>
+            <button className="toolbar-icon-btn"><MapMoveIcon /></button>
+            <button className="toolbar-icon-btn"><MapFitIcon /></button>
+            <button className="toolbar-icon-btn"><FrameDistributionsIcon /></button>
+            <button className="toolbar-icon-btn"><FrameAnalogsIcon /></button>
+            <button className="toolbar-icon-btn"><PreferencesIcon /></button>
         </header>
     );
 }
