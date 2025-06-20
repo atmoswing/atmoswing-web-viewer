@@ -32,12 +32,21 @@
   gap: 1em;
 }
 
-.sidebar-section {
+.panel-header {
   background: #333;
-  padding: 1em;
+  padding: 0.5em;
   border-radius: 6px;
   margin: 0 0.5em;
   text-align: center;
+}
+
+.panel-content {
+  background: #2a2a2a;
+  padding: 0em;
+  border-radius: 6px;
+  margin: 0 0.5em;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .main-content {

@@ -11,13 +11,13 @@ import FrameDistributionsIcon from './assets/toolbar/frame_distributions.svg?rea
 import FrameAnalogsIcon from './assets/toolbar/frame_analogs.svg?react';
 import PreferencesIcon from './assets/toolbar/preferences.svg?react';
 
+import PanelForecasts from "./components/PanelForecasts.jsx";
+
 
 function SideBar() {
     return (
         <aside className="sidebar">
-            <div className="sidebar-section">Section 1</div>
-            <div className="sidebar-section">Section 2</div>
-            <div className="sidebar-section">Section 3</div>
+            <PanelForecasts />
         </aside>
     );
 }
