@@ -12,19 +12,19 @@ import FrameAnalogsIcon from './assets/toolbar/frame_analogs.svg?react';
 import PreferencesIcon from './assets/toolbar/preferences.svg?react';
 
 
-function Toolbar() {
+function SideBar() {
     return (
-        <aside className="toolbar">
-            <div className="toolbar-section">Section 1</div>
-            <div className="toolbar-section">Section 2</div>
-            <div className="toolbar-section">Section 3</div>
+        <aside className="sidebar">
+            <div className="sidebar-section">Section 1</div>
+            <div className="sidebar-section">Section 2</div>
+            <div className="sidebar-section">Section 3</div>
         </aside>
     );
 }
 
-function TopBar() {
+function ToolBar() {
     return (
-        <header className="topbar">
+        <header className="toolbar">
             <button className="toolbar-icon-btn"><MapSelectIcon /></button>
             <button className="toolbar-icon-btn"><MapZoomInIcon /></button>
             <button className="toolbar-icon-btn"><MapZoomOutIcon /></button>
@@ -47,9 +47,9 @@ function MapArea() {
 export default function App() {
     return (
         <div className="app-layout">
-            <Toolbar />
+            <SideBar />
             <div className="main-content">
-                <TopBar />
+                <ToolBar />
                 <MapArea />
             </div>
         </div>

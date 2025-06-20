@@ -1,8 +1,55 @@
-.toolbar-icon-btn {
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.toolbar {
+  height: 56px;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  padding: 0 1em;
+  gap: 1em;
+  border-bottom: 1px solid #333;
+}
+
+.toolbar-icon-btn, .icon-btn {
   background: none;
   border: none;
-  color: #888888;
+  color: #ddd;
   font-size: 1.5em;
   cursor: pointer;
 }
 
+.sidebar {
+  width: 300px;
+  background: #222;
+  color: #ddd;
+  display: flex;
+  flex-direction: column;
+  padding: 1em 0;
+  gap: 1em;
+}
+
+.sidebar-section {
+  background: #333;
+  padding: 1em;
+  border-radius: 6px;
+  margin: 0 0.5em;
+  text-align: center;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-area {
+  flex: 1;
+  background: #242424;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
