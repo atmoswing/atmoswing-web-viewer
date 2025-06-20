@@ -12,12 +12,24 @@ import FrameAnalogsIcon from './assets/toolbar/frame_analogs.svg?react';
 import PreferencesIcon from './assets/toolbar/preferences.svg?react';
 
 import PanelForecasts from "./components/PanelForecasts.jsx";
-
+import PanelGisLayers from "./components/PanelGisLayers.jsx";
+import PanelAlarms from "./components/PanelAlarms.jsx";
+import PanelCaption from "./components/PanelCaption.jsx";
+import PanelStations from "./components/PanelStations.jsx";
+import PanelAnalogDates from "./components/PanelAnalogDates.jsx";
 
 function SideBar() {
     return (
         <aside className="sidebar">
-            <PanelForecasts />
+            <div className="sidebar-logo">
+                <img src="./logo.svg" alt="Logo"/>
+            </div>
+            <PanelForecasts defaultOpen={true}/>
+            <PanelGisLayers defaultOpen={false}/>
+            <PanelAlarms defaultOpen={true}/>
+            <PanelStations defaultOpen={false}/>
+            <PanelAnalogDates defaultOpen={false}/>
+            <PanelCaption defaultOpen={true}/>
         </aside>
     );
 }

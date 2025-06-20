@@ -1,7 +1,7 @@
 import {useState} from 'react';
 
-export default function Panel({title, children}) {
-    const [open, setOpen] = useState(true);
+export default function Panel({title, children, defaultOpen = false}) {
+    const [open, setOpen] = useState(defaultOpen);
 
     return (
         <div className={`panel ${open ? 'open' : 'closed'}`}>

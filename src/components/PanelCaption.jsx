@@ -1,8 +1,8 @@
 import Panel from './Panel';
 
-export default function PanelForecasts(props) {
+export default function PanelCaption(props) {
     return (
-        <Panel title="Forecasts" defaultOpen={props.defaultOpen}>
+        <Panel title="Caption" defaultOpen={props.defaultOpen}>
             <div className="panel-content">
                 <p>....</p>
             </div>
