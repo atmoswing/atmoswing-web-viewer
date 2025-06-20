@@ -170,4 +170,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# Custom
 .idea/
+node_modules/
