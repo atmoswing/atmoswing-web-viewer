@@ -35,10 +35,18 @@
 .sidebar-logo img {
   height: 40px;
   width: auto;
-  margin: 0.5em;
   display: block;
-  margin-left: 3em;
-  margin-right: auto;
+  margin: 0.5em auto 0.5em 3em;
+}
+
+.sidebar-dropdown-input {
+  width: calc(100% - 1em);
+  background: #333;
+  border-radius: 6px;
+  padding: 0.5em;
+  margin: 0 0.5em;
+  color: #ddd;
+  border: 0;
 }
 
 .panel-header {
@@ -52,7 +60,7 @@
 
 .panel-content {
   background: #2a2a2a;
-  padding: 0em;
+  padding: 0;
   border-radius: 6px;
   margin: 0 0.5em;
   flex: 1;
