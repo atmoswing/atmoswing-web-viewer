@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 
 import './styles/App.css'
 
+import MapViewer from "./components/MapViewer.jsx";
+
 import MapSelectIcon from './assets/toolbar/map_select.svg?react';
 import MapZoomInIcon from './assets/toolbar/map_zoom_in.svg?react';
 import MapZoomOutIcon from './assets/toolbar/map_zoom_out.svg?react';
@@ -65,6 +67,7 @@ function ToolBar() {
 function MapArea() {
     return (
         <main className="map-area">
+            <MapViewer />
         </main>
     );
 }
