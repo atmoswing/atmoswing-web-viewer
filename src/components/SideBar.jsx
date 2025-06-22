@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 
 import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
 import PanelForecasts from "./PanelForecasts.jsx";
+import PanelDisplay from "./PanelDisplay.jsx";
 import PanelGisLayers from "./PanelGisLayers.jsx";
 import PanelAlarms from "./PanelAlarms.jsx";
 import PanelCaption from "./PanelCaption.jsx";
@@ -28,6 +29,7 @@ export default function SideBar() {
                 onChange={workspaceSetSelected}
             />
             <PanelForecasts defaultOpen={true}/>
+            <PanelDisplay defaultOpen={false}/>
             <PanelGisLayers defaultOpen={false}/>
             <PanelAlarms defaultOpen={true}/>
             <PanelStations defaultOpen={false}/>
