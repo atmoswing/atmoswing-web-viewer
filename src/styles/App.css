@@ -45,6 +45,27 @@
   line-height: 1.1;
 }
 
+.toolbar-center-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.toolbar-center-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.toolbar-center-btn:hover {
+  background: #333;
+}
+
 .toolbar-right {
   display: flex;
   gap: 1em;
