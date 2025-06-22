@@ -3,10 +3,7 @@ import React, { useState } from 'react';
 import './styles/App.css'
 
 import MapViewer from "./components/MapViewer.jsx";
-
-import FrameDistributionsIcon from './assets/toolbar/frame_distributions.svg?react';
-import FrameAnalogsIcon from './assets/toolbar/frame_analogs.svg?react';
-import PreferencesIcon from './assets/toolbar/preferences.svg?react';
+import ToolBar from "./components/ToolBar.jsx";
 
 import {SidebarWorkspaceDropdown} from './components/SidebarWorkspaceDropdown.jsx';
 import PanelForecasts from "./components/PanelForecasts.jsx";
@@ -41,16 +38,6 @@ function SideBar() {
             <PanelAnalogDates defaultOpen={false}/>
             <PanelCaption defaultOpen={true}/>
         </aside>
-    );
-}
-
-function ToolBar() {
-    return (
-        <header className="toolbar">
-            <button className="toolbar-icon-btn"><FrameDistributionsIcon /></button>
-            <button className="toolbar-icon-btn"><FrameAnalogsIcon /></button>
-            <button className="toolbar-icon-btn"><PreferencesIcon /></button>
-        </header>
     );
 }
 
