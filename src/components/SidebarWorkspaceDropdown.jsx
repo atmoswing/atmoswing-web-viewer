@@ -1,19 +1,30 @@
-import React from 'react';
+import * as React from 'react';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 
 export function SidebarWorkspaceDropdown({options = [], value, onChange, label}) {
+    const [wksp, setWorkspace] = React.useState('');
+    const handleChange = (event) => {
+        setWorkspace(event.target.value);
+    };
+
     return (
-        <div>
-            <select
+        <FormControl variant="standard" sx={{ m: 0 }}>
+            <Select
                 className="sidebar-dropdown-input"
-                value={value}
-                onChange={e => onChange(e.target.value)}
+                id="select-workspace"
+                value={wksp}
+                onChange={handleChange}
+                label="Workspace"
             >
                 {options.map(opt => (
-                    <option key={opt.value} value={opt.value}>
+                    <MenuItem key={opt.value} value={opt.value}>
                         {opt.label}
-                    </option>
+                    </MenuItem>
                 ))}
-            </select>
-        </div>
+            </Select>
+        </FormControl>
     );
 }
