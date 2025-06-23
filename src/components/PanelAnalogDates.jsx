@@ -37,7 +37,7 @@ const paginationModel = { page: 0, pageSize: 10 };
 export default function PanelAnalogDates(props) {
     return (
         <Panel title="Analog dates" defaultOpen={props.defaultOpen}>
-            <Paper sx={{ height: 300, width: '100%' }}>
+            <Paper sx={{ height: 410, width: '100%' }}>
                 <DataGrid
                     rows={rows}
                     columns={columns}

@@ -2,7 +2,7 @@ import Panel from './Panel';
 import React from 'react';
 
 export default function PanelAlarms(props) {
-    const squares = [
+    const values = [
         {color: '#FFD700', date: '15.06'},
         {color: '#FFC300', date: '16.06'},
         {color: '#FFB000', date: '17.06'},
@@ -19,8 +19,8 @@ export default function PanelAlarms(props) {
             <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
                 <tr>
-                    <th style={{ padding: '2px', border: '0' }}></th>
-                    {squares.map((sq, i) => (
+                    <th style={{ border: '0' }}></th>
+                    {values.map((sq, i) => (
                         <th key={i} style={{ padding: '2px', border: '0', fontWeight: "normal" }}>
                             {sq.date}
                         </th>
@@ -33,7 +33,7 @@ export default function PanelAlarms(props) {
                         <td style={{ padding: '2px', border: '0', fontWeight: 'normal'}}>
                             {rowNum}
                         </td>
-                        {squares.map((sq, colIdx) => (
+                        {values.map((val, colIdx) => (
                             <td
                                 key={colIdx}
                                 style={{
@@ -41,7 +41,7 @@ export default function PanelAlarms(props) {
                                     height: 24,
                                     padding: 0,
                                     border: '1px solid #ccc',
-                                    background: sq.color,
+                                    background: val.color,
                                 }}
                             />
                         ))}
