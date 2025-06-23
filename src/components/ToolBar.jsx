@@ -2,7 +2,6 @@ import React from 'react';
 
 import FrameDistributionsIcon from '../assets/toolbar/frame_distributions.svg?react';
 import FrameAnalogsIcon from '../assets/toolbar/frame_analogs.svg?react';
-import PreferencesIcon from '../assets/toolbar/preferences.svg?react';
 
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
@@ -59,7 +58,6 @@ export default function ToolBar() {
             <div className="toolbar-right">
                 <button className="toolbar-icon-btn"><FrameDistributionsIcon/></button>
                 <button className="toolbar-icon-btn"><FrameAnalogsIcon/></button>
-                <button className="toolbar-icon-btn"><PreferencesIcon/></button>
             </div>
         </header>
     );
