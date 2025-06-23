@@ -13,7 +13,6 @@ import Snackbar from '@mui/material/Snackbar';
 
 
 export default function SideBar() {
-    const [workspaceSelected, workspaceSetSelected] = useState('zap');
     const config = useConfig();
     const workspaceOptions = config?.workspaces?.map(ws => ({
         key: ws.key,
@@ -35,8 +34,6 @@ export default function SideBar() {
             )}
             <SidebarWorkspaceDropdown
                 options={workspaceOptions}
-                value={workspaceSelected}
-                onChange={workspaceSetSelected}
             />
             <PanelForecasts defaultOpen={true}/>
             <PanelDisplay defaultOpen={false}/>

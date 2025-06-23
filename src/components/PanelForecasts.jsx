@@ -1,21 +1,32 @@
 import * as React from 'react';
 import Panel from './Panel';
+import {useWorkspace} from '../WorkspaceContext';
 import {SimpleTreeView} from '@mui/x-tree-view/SimpleTreeView';
 import {TreeItem} from '@mui/x-tree-view/TreeItem';
 
 
 export default function PanelForecasts(props) {
+    const {getMethodConfigTree} = useWorkspace();
+    const methodConfigTree = getMethodConfigTree();
+
+    if (!methodConfigTree || methodConfigTree.length === 0) {
+        return <Panel title="Forecasts" defaultOpen={props.defaultOpen}>No forecasts available</Panel>;
+    }
+
     return (
         <Panel title="Forecasts" defaultOpen={props.defaultOpen}>
             <SimpleTreeView>
-                <TreeItem itemId="1" label="Analogie circulation (4Zo) ARPEGE">
-                    <TreeItem itemId="2" label="Alpes du Nord" />
-                    <TreeItem itemId="3" label="Alpes du Sud" />
-                </TreeItem>
-                <TreeItem itemId="4" label="Analogie circulation (4Zo) CEP">
-                    <TreeItem itemId="5" label="Alpes du Nord" />
-                    <TreeItem itemId="6" label="Alpes du Sud" />
-                </TreeItem>
+                {methodConfigTree.map(method => (
+                    <TreeItem key={method.id} itemId={method.id} label={method.name}>
+                        {method.children.map(cfg => (
+                            <TreeItem
+                                key={`${method.id}-${cfg.id}`}
+                                itemId={`${method.id}-${cfg.id}`}
+                                label={cfg.name}
+                            />
+                        ))}
+                    </TreeItem>
+                ))}
             </SimpleTreeView>
         </Panel>
     );

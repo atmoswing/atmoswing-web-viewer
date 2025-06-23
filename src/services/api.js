@@ -47,3 +47,10 @@ export const getSynthesisPerMethod = (region, date, perc) =>
     request(`/aggregations/${region}/${date}/series-synthesis-per-method/${perc}`);
 export const getSynthesisTotal = (region, date, perc) =>
     request(`/aggregations/${region}/${date}/series-synthesis-total/${perc}`);
+
+// --- Workspace Initialization ---
+export async function getWorkspaceInitData(region) {
+    const date = await getLastForecastDate(region);
+    const methodsAndConfigs = await getMethodsAndConfigs(region, date.last_forecast_date);
+    return {date, methodsAndConfigs};
+}

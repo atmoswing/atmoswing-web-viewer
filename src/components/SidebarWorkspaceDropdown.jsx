@@ -1,18 +1,18 @@
 import * as React from 'react';
+import { useWorkspace } from '../WorkspaceContext';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 
-export function SidebarWorkspaceDropdown({options = [], value, onChange, label}) {
-    const [workspace, setWorkspace] = React.useState(options[0]?.key || '');
+export function SidebarWorkspaceDropdown({options = []}) {
+    const { workspace, setWorkspace } = useWorkspace();
 
     React.useEffect(() => {
         if (options.length > 0) {
             setWorkspace(options[0].key);
-            if (onChange) onChange(options[0].key);
         }
-    }, [options, onChange]);
+    }, [options, setWorkspace]);
 
     const handleChange = (event) => {
         setWorkspace(event.target.value);
