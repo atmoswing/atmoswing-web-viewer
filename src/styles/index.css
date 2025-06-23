@@ -56,32 +56,3 @@ select {
   }
 }
 
-.MuiTreeItem-label {
-  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
-  font-size: 0.9em !important;
-}
-
-.MuiTreeItemContent-label {
-  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
-  font-size: 0.9em !important;
-}
-
-.MuiSelect-select {
-  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
-  font-size: 0.9em !important;
-  color: #ddd !important;
-  padding: 0.7em 1em 0.7em 1em !important;
-}
-
-.MuiMenuItem-root {
-  font-size: 0.9em !important;
-  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
-}
-
-.MuiSelect-icon {
-  fill: #ddd !important;
-}
-
-.MuiFormLabel-colorPrimary {
-  color: #ddd !important;
-}

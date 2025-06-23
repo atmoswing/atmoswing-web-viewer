@@ -105,6 +105,49 @@
   border: 0;
 }
 
+.sidebar .MuiTreeItem-label {
+  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
+  font-size: 0.9em !important;
+}
+
+.sidebar .MuiTreeItemContent-label {
+  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
+  font-size: 0.9em !important;
+}
+
+.sidebar .MuiSelect-select {
+  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
+  font-size: 0.9em !important;
+  color: #ddd !important;
+  padding: 0.7em 1em 0.7em 1em !important;
+}
+
+.sidebar .MuiMenuItem-root {
+  font-size: 0.9em !important;
+  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
+}
+
+.sidebar .MuiSelect-icon {
+  fill: #ddd !important;
+}
+
+.sidebar .MuiFormLabel-colorPrimary {
+  color: #ddd !important;
+  font-size: 0.9em !important;
+}
+
+.sidebar .MuiTablePagination-selectLabel {
+  display: none !important;
+}
+
+.sidebar .MuiTablePagination-select {
+  display: none !important;
+}
+
+.sidebar .MuiDataGrid-selectedRowCount {
+  display: none !important;
+}
+
 .panel-header {
   font-size: 1em;
   background: #333;
@@ -116,7 +159,6 @@
 }
 
 .panel-content {
-  font-size: 1em;
   background: #2a2a2a;
   padding: 0;
   border-radius: 6px;
