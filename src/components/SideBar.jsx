@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 
+import {useConfig} from '../ConfigContext';
 import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
 import PanelForecasts from "./PanelForecasts.jsx";
 import PanelDisplay from "./PanelDisplay.jsx";
@@ -8,21 +9,30 @@ import PanelAlarms from "./PanelAlarms.jsx";
 import PanelCaption from "./PanelCaption.jsx";
 import PanelStations from "./PanelStations.jsx";
 import PanelAnalogDates from "./PanelAnalogDates.jsx";
+import Snackbar from '@mui/material/Snackbar';
 
 
 export default function SideBar() {
     const [workspaceSelected, workspaceSetSelected] = useState('zap');
-    const workspaceOptions = [
-        { value: 'zap', label: 'ZAP' },
-        { value: 'adn', label: 'Alpes du Nord' },
-        { value: 'laci', label: 'Loire-Allier-Cher-Indre' }
-    ];
+    const config = useConfig();
+    const workspaceOptions = config?.workspaces?.map(ws => ({
+        key: ws.key,
+        name: ws.name
+    })) || [];
 
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
                 <img src="./logo.svg" alt="Logo"/>
             </div>
+            {workspaceOptions.length === 0 && (
+                <Snackbar
+                    anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+                    open={true}
+                    message="No workspaces available. Please check your configuration."
+                    autoHideDuration={6000}
+                />
+            )}
             <SidebarWorkspaceDropdown
                 options={workspaceOptions}
                 value={workspaceSelected}

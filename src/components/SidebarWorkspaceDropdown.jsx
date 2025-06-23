@@ -5,7 +5,15 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 
 export function SidebarWorkspaceDropdown({options = [], value, onChange, label}) {
-    const [wksp, setWorkspace] = React.useState('');
+    const [workspace, setWorkspace] = React.useState(options[0]?.key || '');
+
+    React.useEffect(() => {
+        if (options.length > 0) {
+            setWorkspace(options[0].key);
+            if (onChange) onChange(options[0].key);
+        }
+    }, [options, onChange]);
+
     const handleChange = (event) => {
         setWorkspace(event.target.value);
     };
@@ -15,13 +23,13 @@ export function SidebarWorkspaceDropdown({options = [], value, onChange, label})
             <Select
                 className="sidebar-dropdown-input"
                 id="select-workspace"
-                value={wksp}
+                value={workspace}
                 onChange={handleChange}
                 label="Workspace"
             >
                 {options.map(opt => (
-                    <MenuItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                    <MenuItem key={opt.key} value={opt.key}>
+                        {opt.name}
                     </MenuItem>
                 ))}
             </Select>
