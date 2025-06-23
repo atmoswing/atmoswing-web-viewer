@@ -100,9 +100,8 @@
   width: calc(100% - 1em);
   background: #333;
   border-radius: 6px;
-  padding: 0.5em;
   margin: 0 0.5em;
-  color: #ddd;
+  padding: 0em;
   border: 0;
 }
 
@@ -138,14 +137,4 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.MuiTreeItem-label {
-  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
-  font-size: 0.9em !important;
-}
-
-.MuiTreeItemContent-label {
-  font-family: DM Sans, Segoe UI, Arial, sans-serif !important;
-  font-size: 0.9em !important;
 }
