@@ -92,22 +92,13 @@ export default function MapViewer() {
                 fold: 'open',
                 layers: [
                     new TileLayer({
-                        title: 'Plan IGN',
-                        type: 'base',
-                        visible: true,
-                        source: new WMTS(wmtsOptionsCache['GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'])
-                    }),
-                    new TileLayer({
-                        title: 'Orthophotos (IGN)',
+                        title: 'Esri World Imagery',
                         type: 'base',
                         visible: false,
-                        source: new WMTS(wmtsOptionsCache['ORTHOIMAGERY.ORTHOPHOTOS'])
-                    }),
-                    new TileLayer({
-                        title: 'Ombrage (IGN)',
-                        type: 'base',
-                        visible: false,
-                        source: new WMTS(wmtsOptionsCache['ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'])
+                        source: new XYZ({
+                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                            attributions: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+                        })
                     }),
                     new TileLayer({
                         title: 'Plan OpenStreetMap',
@@ -116,14 +107,23 @@ export default function MapViewer() {
                         source: new OSM()
                     }),
                     new TileLayer({
-                        title: 'Esri World Imagery',
+                        title: 'Ombrage (IGN)',
                         type: 'base',
                         visible: false,
-                        source: new XYZ({
-                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                            attributions: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-                        })
-                    })
+                        source: new WMTS(wmtsOptionsCache['ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'])
+                    }),
+                    new TileLayer({
+                        title: 'Orthophotos (IGN)',
+                        type: 'base',
+                        visible: false,
+                        source: new WMTS(wmtsOptionsCache['ORTHOIMAGERY.ORTHOPHOTOS'])
+                    }),
+                    new TileLayer({
+                        title: 'Plan IGN',
+                        type: 'base',
+                        visible: true,
+                        source: new WMTS(wmtsOptionsCache['GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'])
+                    }),
                 ]
             });
 
@@ -132,9 +132,9 @@ export default function MapViewer() {
                 fold: 'open',
                 layers: [
                     new TileLayer({
-                        title: 'Hydrographie (IGN)',
-                        visible: true,
-                        source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.HYDROGRAPHY'])
+                        title: 'Admin (IGN)',
+                        visible: false,
+                        source: new WMTS(wmtsOptionsCache['ADMINEXPRESS-COG.LATEST'])
                     }),
                     new TileLayer({
                         title: 'Cours d\'eau BCAE (IGN)',
@@ -142,16 +142,16 @@ export default function MapViewer() {
                         source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.BCAE.LATEST'])
                     }),
                     new TileLayer({
-                        title: 'Admin (IGN)',
+                        title: 'Hydrographie (IGN)',
                         visible: false,
-                        source: new WMTS(wmtsOptionsCache['ADMINEXPRESS-COG.LATEST'])
+                        source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.HYDROGRAPHY'])
                     })
                 ]
             });
 
             mapInstanceRef.current = new Map({
                 target: containerRef.current,
-                layers: [overlayLayers, baseLayers],
+                layers: [baseLayers, overlayLayers],
                 view: new View({
                     center: [0, 0],
                     zoom: 2,
@@ -164,7 +164,7 @@ export default function MapViewer() {
                 new LayerSwitcher({
                     tipLabel: 'Layers',
                     groupSelectStyle: 'children',
-                    reverse: false
+                    reverse: true
                 })
             );
         })();
