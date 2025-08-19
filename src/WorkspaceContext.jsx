@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { getWorkspaceInitData } from './services/api';
 import {useConfig} from "./ConfigContext.jsx";
 
@@ -29,21 +29,16 @@ export function WorkspaceProvider({ children }) {
         }
     }, [workspace]);
 
-    // Returns a flat array of all configs with their method name
-    const getMethodConfigTree = () => {
-        if (!workspaceData?.methodsAndConfigs?.methods) return [];
-        return workspaceData.methodsAndConfigs.methods.map(method => ({
-            id: method.id,
-            name: method.name,
-            children: (method.configurations || []).map(cfg => ({
-                id: cfg.id,
-                name: cfg.name
-            }))
-        }));
-    };
+    const value = useMemo(() => ({
+        workspace,
+        setWorkspace,
+        workspaceData,
+        loading,
+        error
+    }), [workspace, workspaceData, loading, error]);
 
     return (
-        <WorkspaceContext.Provider value={{ workspace, setWorkspace, workspaceData, getMethodConfigTree }}>
+        <WorkspaceContext.Provider value={value}>
             {children}
         </WorkspaceContext.Provider>
     );
