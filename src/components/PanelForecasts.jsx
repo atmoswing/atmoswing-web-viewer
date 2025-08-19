@@ -15,13 +15,13 @@ export default function PanelForecasts(props) {
 
     return (
         <Panel title="Forecasts" defaultOpen={props.defaultOpen}>
-            <SimpleTreeView>
+            <SimpleTreeView onItemSelectionToggle={handleItemSelectionToggle} expansionTrigger="iconContainer">
                 {methodConfigTree.map(method => (
                     <TreeItem key={method.id} itemId={method.id} label={method.name}>
                         {method.children.map(cfg => (
                             <TreeItem
-                                key={`${method.id}-${cfg.id}`}
-                                itemId={`${method.id}-${cfg.id}`}
+                                key={`${method.id}:${cfg.id}`}
+                                itemId={`${method.id}:${cfg.id}`}
                                 label={cfg.name}
                             />
                         ))}
