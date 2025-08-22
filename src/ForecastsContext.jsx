@@ -25,6 +25,9 @@ export function ForecastsProvider({children}) {
     // Reset selection when workspace changes
     useEffect(() => {
         setSelectedMethodConfig(null);
+        // Clear entities immediately to avoid stale fit in map
+        setEntities([]);
+        entitiesWorkspaceRef.current = workspace; // tag cleared state to new workspace
     }, [workspace]);
 
     // Auto-select first method when data arrives or tree changes (only for current workspace)
@@ -37,6 +40,7 @@ export function ForecastsProvider({children}) {
 
     // Entities for current selection (need them also when only a method is selected -> use first config just to fetch entities)
     const [entities, setEntities] = useState([]);
+    const entitiesWorkspaceRef = useRef(null); // workspace key for which entities are valid
     const [entitiesLoading, setEntitiesLoading] = useState(false);
     const [entitiesError, setEntitiesError] = useState(null);
     const [entitiesVersion, setEntitiesVersion] = useState(0); // manual refresh counter
@@ -94,18 +98,21 @@ export function ForecastsProvider({children}) {
                 const cached = entitiesCacheRef.current.get(cacheKey);
                 if (cached) {
                     setEntities(cached);
+                    entitiesWorkspaceRef.current = workspace;
                     setEntitiesLoading(false);
                     return;
                 }
                 const list = await getEntities(workspace, date, methodId, configId);
                 if (cancelled || currentId !== entitiesRequestIdRef.current) return; // stale
                 setEntities(list.entities || list || []);
+                entitiesWorkspaceRef.current = workspace;
                 entitiesCacheRef.current.set(cacheKey, list.entities || list || []);
             } catch (e) {
                 if (cancelled || currentId !== entitiesRequestIdRef.current) return; // stale
                 console.error('Entities load failed:', e);
                 setEntitiesError(e);
                 setEntities([]);
+                entitiesWorkspaceRef.current = workspace;
                 entitiesCacheRef.current.delete(cacheKey); // don't cache failures
                 entitiesFailedRef.current.add(cacheKey);
             } finally {
@@ -190,6 +197,7 @@ export function ForecastsProvider({children}) {
         selectedMethodConfig,
         setSelectedMethodConfig: (sel) => setSelectedMethodConfig(sel ? { ...sel, workspace } : null),
         entities,
+        entitiesWorkspace: entitiesWorkspaceRef.current,
         entitiesLoading,
         entitiesError,
         refreshEntities,

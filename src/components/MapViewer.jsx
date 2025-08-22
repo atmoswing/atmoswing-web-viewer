@@ -75,7 +75,7 @@ export default function MapViewer() {
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
-    const {entities, forecastValues} = useForecasts();
+    const {entities, forecastValues, entitiesWorkspace} = useForecasts();
     const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
@@ -265,6 +265,8 @@ export default function MapViewer() {
     // Update forecast points when entities or forecast values change
     useEffect(() => {
         if (!mapInstanceRef.current || !forecastLayerRef.current) return;
+        // Skip if entities belong to a different (previous) workspace
+        if (entitiesWorkspace && entitiesWorkspace !== workspace) return;
         const layer = forecastLayerRef.current;
         const source = layer.getSource();
         source.clear();
@@ -324,7 +326,7 @@ export default function MapViewer() {
             view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
             lastFittedWorkspaceRef.current = workspace;
         }
-    }, [entities, forecastValues, workspace]);
+    }, [entities, forecastValues, workspace, entitiesWorkspace]);
 
     // Build CSS gradient string
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
