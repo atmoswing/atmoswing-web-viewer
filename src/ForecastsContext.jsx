@@ -27,13 +27,13 @@ export function ForecastsProvider({children}) {
         setSelectedMethodConfig(null);
     }, [workspace]);
 
-    // Auto-select first method when data arrives or tree changes
+    // Auto-select first method when data arrives or tree changes (only for current workspace)
     useEffect(() => {
         if (!selectedMethodConfig && methodConfigTree.length > 0) {
-            const first = { method: methodConfigTree[0], config: null };
+            const first = { workspace, method: methodConfigTree[0], config: null };
             setSelectedMethodConfig(first);
         }
-    }, [methodConfigTree, selectedMethodConfig]);
+    }, [methodConfigTree, selectedMethodConfig, workspace]);
 
     // Entities for current selection (need them also when only a method is selected -> use first config just to fetch entities)
     const [entities, setEntities] = useState([]);
@@ -55,7 +55,15 @@ export function ForecastsProvider({children}) {
                 setEntitiesError(null);
                 return;
             }
+            // Guard: selection belongs to previous workspace -> wait for reset
+            if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) {
+                return;
+            }
             const methodId = selectedMethodConfig.method.id;
+            // Ensure method still exists in current workspace tree
+            if (!methodConfigTree.find(m => m.id === methodId)) {
+                return;
+            }
             // Use selected config if present, else first one for this method (only to get locations)
             let configId = selectedMethodConfig.config?.id;
             if (!configId) {
@@ -126,7 +134,13 @@ export function ForecastsProvider({children}) {
                 setForecastError(null);
                 return;
             }
+            if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) {
+                return; // stale selection
+            }
             const methodId = selectedMethodConfig.method.id;
+            if (!methodConfigTree.find(m => m.id === methodId)) {
+                return; // method not in current workspace anymore
+            }
             const configId = selectedMethodConfig.config?.id; // may be undefined for aggregated
             const date = workspaceData.date?.last_forecast_date;
             if (!date) {
@@ -174,7 +188,7 @@ export function ForecastsProvider({children}) {
     const value = useMemo(() => ({
         methodConfigTree,
         selectedMethodConfig,
-        setSelectedMethodConfig,
+        setSelectedMethodConfig: (sel) => setSelectedMethodConfig(sel ? { ...sel, workspace } : null),
         entities,
         entitiesLoading,
         entitiesError,
@@ -182,7 +196,7 @@ export function ForecastsProvider({children}) {
         forecastValues,
         forecastLoading,
         forecastError
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastLoading, forecastError]);
+    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastLoading, forecastError, workspace]);
 
     return (
         <ForecastsContext.Provider value={value}>

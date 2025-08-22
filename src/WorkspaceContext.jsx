@@ -31,12 +31,15 @@ export function WorkspaceProvider({ children }) {
         async function load() {
             if (!workspace) { setWorkspaceData(null); return; }
             const currentId = ++requestIdRef.current;
+            // Immediately clear old data to avoid consumers using stale method/config
+            setWorkspaceData(null);
             setLoading(true);
             setError(null);
             try {
                 const data = await getWorkspaceInitData(workspace);
                 if (cancelled || currentId !== requestIdRef.current) return; // stale
-                setWorkspaceData(data);
+                // Tag the data with the workspace it belongs to
+                setWorkspaceData({...data, __workspace: workspace});
             } catch (e) {
                 if (cancelled || currentId !== requestIdRef.current) return; // stale
                 setError(e);
