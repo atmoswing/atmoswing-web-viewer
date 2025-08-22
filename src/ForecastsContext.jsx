@@ -65,7 +65,6 @@ export function ForecastsProvider({children}) {
             setEntitiesError(null);
             const currentId = ++requestIdRef.current;
             try {
-                console.log('Loading entities for', workspace, date, methodId, configId, 'version', entitiesVersion);
                 const list = await getEntities(workspace, date, methodId, configId);
                 if (cancelled || currentId !== requestIdRef.current) return; // stale
                 setEntities(list.entities || list || []);
