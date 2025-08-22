@@ -5,7 +5,6 @@ import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
 import PanelForecasts from "./PanelForecasts.jsx";
 import PanelDisplay from "./PanelDisplay.jsx";
 import PanelAlarms from "./PanelAlarms.jsx";
-import PanelCaption from "./PanelCaption.jsx";
 import PanelStations from "./PanelStations.jsx";
 import PanelAnalogDates from "./PanelAnalogDates.jsx";
 import Snackbar from '@mui/material/Snackbar';
@@ -39,7 +38,6 @@ export default function SideBar() {
             <PanelAlarms defaultOpen={true}/>
             <PanelStations defaultOpen={false}/>
             <PanelAnalogDates defaultOpen={false}/>
-            <PanelCaption defaultOpen={true}/>
         </aside>
     );
 }
