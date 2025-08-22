@@ -18,6 +18,7 @@
     "@mui/x-tree-view": "^8.5.3",
     "ol": "^10.6.1",
     "ol-layerswitcher": "^4.1.2",
+    "proj4": "^2.11.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
