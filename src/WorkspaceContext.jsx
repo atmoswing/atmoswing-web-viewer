@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { getWorkspaceInitData } from './services/api';
 import {useConfig} from "./ConfigContext.jsx";
 
@@ -15,18 +15,39 @@ export function WorkspaceProvider({ children }) {
     const [workspaceData, setWorkspaceData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const requestIdRef = useRef(0); // guard against stale async responses
+
+    // If runtime config updates and current workspace is no longer valid, pick first available
+    useEffect(() => {
+        if (!workspace && workspaces.length > 0) {
+            setWorkspace(workspaces[0].key);
+        } else if (workspace && workspaces.length > 0 && !workspaces.find(w => w.key === workspace)) {
+            setWorkspace(workspaces[0].key);
+        }
+    }, [workspaces, workspace]);
 
     useEffect(() => {
-        if (workspace) {
+        let cancelled = false;
+        async function load() {
+            if (!workspace) { setWorkspaceData(null); return; }
+            const currentId = ++requestIdRef.current;
             setLoading(true);
             setError(null);
-            getWorkspaceInitData(workspace)
-                .then(setWorkspaceData)
-                .catch(setError)
-                .finally(() => setLoading(false));
-        } else {
-            setWorkspaceData(null);
+            try {
+                const data = await getWorkspaceInitData(workspace);
+                if (cancelled || currentId !== requestIdRef.current) return; // stale
+                setWorkspaceData(data);
+            } catch (e) {
+                if (cancelled || currentId !== requestIdRef.current) return; // stale
+                setError(e);
+                setWorkspaceData(null);
+            } finally {
+                if (cancelled || currentId !== requestIdRef.current) return; // stale
+                setLoading(false);
+            }
         }
+        load();
+        return () => { cancelled = true; };
     }, [workspace]);
 
     const value = useMemo(() => ({
