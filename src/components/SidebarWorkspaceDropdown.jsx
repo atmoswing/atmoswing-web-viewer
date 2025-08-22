@@ -9,10 +9,11 @@ export function SidebarWorkspaceDropdown({options = []}) {
     const { workspace, setWorkspace } = useWorkspace();
 
     React.useEffect(() => {
-        if (options.length > 0) {
+        // Only auto-select the first workspace if none selected yet
+        if (!workspace && options.length > 0) {
             setWorkspace(options[0].key);
         }
-    }, [options, setWorkspace]);
+    }, [options, workspace, setWorkspace]);
 
     const handleChange = (event) => {
         setWorkspace(event.target.value);
