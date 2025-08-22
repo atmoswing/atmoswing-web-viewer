@@ -13,6 +13,13 @@ import WMTS, { optionsFromCapabilities } from 'ol/source/WMTS';
 import WMTSCapabilities from 'ol/format/WMTSCapabilities';
 import WMTSTileGrid from 'ol/tilegrid/WMTS';
 import LayerSwitcher from 'ol-layerswitcher';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
+import {useForecasts} from '../ForecastsContext.jsx';
+import config from '../config.js';
 
 // Add projection imports
 import proj4 from 'proj4';
@@ -41,9 +48,36 @@ const MANUAL_PM = (() => {
     });
 })();
 
+// Color mapping derived from AtmoSwing Viewer
+function valueToColor(value, maxValue) {
+    if (value == null || isNaN(value)) return [150, 150, 150];
+    if (value === 0) return [255, 255, 255];
+    const m = maxValue > 0 ? maxValue : 1;
+    if (value / m <= 0.5) {
+        const baseVal = 200;
+        const ratio = value / (0.5 * m); // 0..1
+        let valColour = Math.round(ratio * baseVal);
+        let valColourCompl = Math.round(ratio * (255 - baseVal));
+        if (valColour > baseVal) valColour = baseVal;
+        if (valColourCompl + baseVal > 255) valColourCompl = 255 - baseVal;
+        return [baseVal + valColourCompl, 255, baseVal - valColour];
+    } else {
+        let valColour = Math.round(((value - 0.5 * m) / (0.5 * m)) * 255);
+        if (valColour > 255) valColour = 255;
+        return [255, 255 - valColour, 0];
+    }
+}
+
 export default function MapViewer() {
     const containerRef = useRef(null);
     const mapInstanceRef = useRef(null); // guard
+    const forecastLayerRef = useRef(null);
+
+    const {entities, forecastValues} = useForecasts();
+
+    const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
+    const [legendMax, setLegendMax] = useState(1);
+    const [tooltip, setTooltip] = useState(null); // {x, y, name, value}
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -161,9 +195,16 @@ export default function MapViewer() {
                 ]
             });
 
+            // Forecast vector layer
+            forecastLayerRef.current = new VectorLayer({
+                displayInLayerSwitcher: false,
+                source: new VectorSource(),
+                style: feature => feature.get('style') // style stored per feature
+            });
+
             mapInstanceRef.current = new Map({
                 target: containerRef.current,
-                layers: [baseLayers, overlayLayers],
+                layers: [baseLayers, overlayLayers, forecastLayerRef.current],
                 view: new View({
                     center: [0, 0],
                     zoom: 2,
@@ -189,5 +230,115 @@ export default function MapViewer() {
         };
     }, []);
 
-    return <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#fff' }} />;
+    // Add pointer move & out for tooltip after map created
+    useEffect(() => {
+        // Add pointer move & out for tooltip after map created
+        if (!mapInstanceRef.current) return;
+        const map = mapInstanceRef.current;
+        function handleMove(evt) {
+            if (!forecastLayerRef.current) return;
+            const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, {layerFilter: l => l === forecastLayerRef.current});
+            if (feature) {
+                const coord = evt.pixel; // screen pixel
+                setTooltip({
+                    x: coord[0],
+                    y: coord[1],
+                    name: feature.get('name'),
+                    value: feature.get('value')
+                });
+            } else {
+                setTooltip(null);
+            }
+        }
+        function handleOut() { setTooltip(null); }
+        map.on('pointermove', handleMove);
+        map.getViewport().addEventListener('mouseout', handleOut);
+        return () => {
+            map.un('pointermove', handleMove);
+            map.getViewport().removeEventListener('mouseout', handleOut);
+        };
+    }, [mapInstanceRef.current]);
+
+    // Update forecast points when entities or forecast values change
+    useEffect(() => {
+        if (!mapInstanceRef.current || !forecastLayerRef.current) return;
+        const layer = forecastLayerRef.current;
+        const source = layer.getSource();
+        source.clear();
+        if (!entities || entities.length === 0) {
+            setLegendStops([]);
+            return;
+        }
+        // Determine max value for scaling (exclude NaN)
+        const maxVal = 1;
+        setLegendMax(maxVal);
+        // Build legend gradient stops (samples)
+        const samples = 40;
+        const stops = [];
+        for (let i = 0; i <= samples; i++) {
+            const v = (i / samples) * maxVal;
+            const [r,g,b] = valueToColor(v, maxVal);
+            const pct = (i / samples) * 100;
+            stops.push({color: `rgb(${r},${g},${b})`, pct});
+        }
+        setLegendStops(stops);
+
+        entities.forEach(ent => {
+            const val = forecastValues[ent.id];
+            const [r,g,b] = valueToColor(val, maxVal);
+            const style = new Style({
+                image: new CircleStyle({
+                    radius: 8,
+                    stroke: new Stroke({color: 'rgba(0,0,0,0.6)', width: 2}),
+                    fill: new Fill({color: `rgba(${r},${g},${b},0.9)`})
+                })
+            });
+            // Transform coordinates if needed
+            let coord = [ent.x, ent.y];
+            try {
+                coord = transform(coord, SOURCE_EPSG, 'EPSG:3857');
+            } catch (_) {}
+            const feat = new Feature({
+                geometry: new Point(coord),
+                id: ent.id,
+                value: val,
+                name: ent.name,
+                style
+            });
+            feat.setStyle(style);
+            source.addFeature(feat);
+        });
+    }, [entities, forecastValues]);
+
+    // Build CSS gradient string
+    const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
+
+    return (
+        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#fff' }}>
+            <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+            {/* Legend */}
+            {legendStops.length > 0 && (
+                <div style={{position:'absolute', bottom:10, left:10, background:'rgba(255,255,255,0.9)', padding:'8px 10px', borderRadius:4, fontSize:12, boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}>
+                    <div style={{fontWeight:600, marginBottom:4}}>Forecast values</div>
+                    <div style={{display:'flex', alignItems:'center', gap:8}}>
+                        <div title="NaN" style={{width:14,height:14,background:'rgb(150,150,150)',border:'1px solid #333'}} />
+                        <div title="0" style={{width:14,height:14,background:'#fff',border:'1px solid #333'}} />
+                        <div style={{flex:1, height:14, background: gradientCSS, border:'1px solid #333'}} />
+                    </div>
+                    <div style={{display:'flex', justifyContent:'space-between', marginTop:4}}>
+                        <span>0</span>
+                        <span>{(legendMax*0.5).toFixed(2)}</span>
+                        <span>{legendMax.toFixed(2)}</span>
+                    </div>
+                </div>
+            )}
+            {/* Tooltip */}
+            {tooltip && (
+                <div style={{position:'absolute', top: tooltip.y + 12, left: tooltip.x + 12, background:'rgba(0,0,0,0.75)', color:'#fff', padding:'4px 6px', borderRadius:4, fontSize:12, pointerEvents:'none', whiteSpace:'nowrap'}}>
+                    <div>{tooltip.name}</div>
+                    <div>Value: {tooltip.value == null || isNaN(tooltip.value) ? 'NaN' : tooltip.value.toFixed(3)}</div>
+                </div>
+            )}
+        </div>
+    );
 }
