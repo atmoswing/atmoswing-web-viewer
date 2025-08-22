@@ -319,16 +319,14 @@ export default function MapViewer() {
             {/* Legend */}
             {legendStops.length > 0 && (
                 <div style={{position:'absolute', bottom:10, left:10, background:'rgba(255,255,255,0.9)', padding:'8px 10px', borderRadius:4, fontSize:12, boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}>
-                    <div style={{fontWeight:600, marginBottom:4}}>Forecast values</div>
+                    <div style={{fontSize:14, marginBottom:2}}>Forecast values</div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
-                        <div title="NaN" style={{width:14,height:14,background:'rgb(150,150,150)',border:'1px solid #333'}} />
-                        <div title="0" style={{width:14,height:14,background:'#fff',border:'1px solid #333'}} />
                         <div style={{flex:1, height:14, background: gradientCSS, border:'1px solid #333'}} />
                     </div>
-                    <div style={{display:'flex', justifyContent:'space-between', marginTop:4}}>
+                    <div style={{display:'flex', justifyContent:'space-between', marginTop:2}}>
                         <span>0</span>
-                        <span>{(legendMax*0.5).toFixed(2)}</span>
-                        <span>{legendMax.toFixed(2)}</span>
+                        <span>{(legendMax*0.5).toFixed(1)}</span>
+                        <span>{legendMax.toFixed(1)}</span>
                     </div>
                 </div>
             )}
