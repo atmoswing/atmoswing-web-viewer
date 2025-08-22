@@ -20,6 +20,7 @@ import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
 import {useForecasts} from '../ForecastsContext.jsx';
 import config from '../config.js';
+import {useWorkspace} from '../WorkspaceContext.jsx';
 
 // Add projection imports
 import proj4 from 'proj4';
@@ -72,8 +73,10 @@ export default function MapViewer() {
     const containerRef = useRef(null);
     const mapInstanceRef = useRef(null); // guard
     const forecastLayerRef = useRef(null);
+    const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
     const {entities, forecastValues} = useForecasts();
+    const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);
@@ -283,6 +286,7 @@ export default function MapViewer() {
         }
         setLegendStops(stops);
 
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         entities.forEach(ent => {
             const val = forecastValues[ent.id];
             const [r,g,b] = valueToColor(val, maxVal);
@@ -293,11 +297,15 @@ export default function MapViewer() {
                     fill: new Fill({color: `rgba(${r},${g},${b},0.9)`})
                 })
             });
-            // Transform coordinates if needed
+            // Transform from source projection to map projection
             let coord = [ent.x, ent.y];
             try {
                 coord = transform(coord, SOURCE_EPSG, 'EPSG:3857');
             } catch (_) {}
+            if (coord[0] < minX) minX = coord[0];
+            if (coord[0] > maxX) maxX = coord[0];
+            if (coord[1] < minY) minY = coord[1];
+            if (coord[1] > maxY) maxY = coord[1];
             const feat = new Feature({
                 geometry: new Point(coord),
                 id: ent.id,
@@ -308,7 +316,15 @@ export default function MapViewer() {
             feat.setStyle(style);
             source.addFeature(feat);
         });
-    }, [entities, forecastValues]);
+
+        // Fit view once per workspace after entities load
+        if (workspace && lastFittedWorkspaceRef.current !== workspace && isFinite(minX) && isFinite(minY) && isFinite(maxX) && isFinite(maxY) && minX < maxX && minY < maxY) {
+            const view = mapInstanceRef.current.getView();
+            // Provide padding in pixels and limit zoom-in a bit
+            view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
+            lastFittedWorkspaceRef.current = workspace;
+        }
+    }, [entities, forecastValues, workspace]);
 
     // Build CSS gradient string
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
