@@ -75,7 +75,7 @@ export default function MapViewer() {
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
-    const {entities, forecastValues, forecastValuesNorm, entitiesWorkspace, entitiesLoading, forecastLoading} = useForecasts();
+    const {entities, forecastValues, forecastValuesNorm, entitiesWorkspace, entitiesLoading, forecastLoading, relevantEntities} = useForecasts();
     const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
@@ -293,11 +293,15 @@ export default function MapViewer() {
             const normVal = forecastValuesNorm[ent.id];
             const rawVal = forecastValues ? forecastValues[ent.id] : undefined;
             const [r,g,b] = valueToColor(normVal, maxVal);
+            const isRelevant = !relevantEntities || relevantEntities.has(ent.id);
+            const opacity = isRelevant ? 0.9 : 0.7;
+            const radius = isRelevant ? 8 : 6;
+            const strokeColor = isRelevant ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)';
             const style = new Style({
                 image: new CircleStyle({
-                    radius: 8,
-                    stroke: new Stroke({color: 'rgba(0,0,0,0.6)', width: 2}),
-                    fill: new Fill({color: `rgba(${r},${g},${b},0.9)`})
+                    radius,
+                    stroke: new Stroke({color: strokeColor, width: 2}),
+                    fill: new Fill({color: `rgba(${r},${g},${b},${opacity})`})
                 })
             });
             // Transform from source projection to map projection
@@ -315,6 +319,7 @@ export default function MapViewer() {
                 valueNorm: normVal,
                 valueRaw: rawVal,
                 name: ent.name,
+                relevant: isRelevant,
                 style
             });
             feat.setStyle(style);
@@ -328,7 +333,7 @@ export default function MapViewer() {
             view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
             lastFittedWorkspaceRef.current = workspace;
         }
-    }, [entities, forecastValuesNorm, workspace, entitiesWorkspace]);
+    }, [entities, forecastValuesNorm, workspace, entitiesWorkspace, relevantEntities]);
 
     // Build CSS gradient string
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';

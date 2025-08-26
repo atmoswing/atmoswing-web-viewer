@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useEffect, useMemo, useState, useRef, useCallback} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
-import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile} from './services/api.js';
+import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile, getRelevantEntities} from './services/api.js';
 
 const ForecastsContext = createContext();
 
@@ -207,6 +207,57 @@ export function ForecastsProvider({children}) {
         return () => { cancelled = true; };
     }, [workspace, workspaceData, selectedMethodConfig]);
 
+    // Relevant entities (only when a specific config selected)
+    const [relevantEntities, setRelevantEntities] = useState(null); // null = not applicable (aggregated); Set when available
+    const relevantCacheRef = useRef(new Map());
+    const relevantReqIdRef = useRef(0);
+
+    useEffect(() => {
+        let cancelled = false;
+        async function loadRelevant() {
+            // Only fetch when a config is explicitly selected (not aggregated)
+            if (!workspaceData || !selectedMethodConfig?.method || !selectedMethodConfig.config) {
+                setRelevantEntities(null);
+                return;
+            }
+            if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) return;
+            const methodId = selectedMethodConfig.method.id;
+            const configId = selectedMethodConfig.config.id;
+            const date = workspaceData.date?.last_forecast_date;
+            if (!date) { setRelevantEntities(null); return; }
+            const cacheKey = `${workspace}|${date}|${methodId}|${configId}`;
+            if (relevantCacheRef.current.has(cacheKey)) {
+                setRelevantEntities(relevantCacheRef.current.get(cacheKey));
+                return;
+            }
+            const currentId = ++relevantReqIdRef.current;
+            try {
+                const resp = await getRelevantEntities(workspace, date, methodId, configId);
+                if (cancelled || currentId !== relevantReqIdRef.current) return;
+                let ids = [];
+                if (Array.isArray(resp)) {
+                    // Could be array of ids or objects
+                    if (resp.length && typeof resp[0] === 'object') {
+                        ids = resp.map(r => r.id ?? r.entity_id).filter(v => v != null);
+                    } else {
+                        ids = resp;
+                    }
+                } else if (resp && typeof resp === 'object') {
+                    ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
+                }
+                const set = new Set(ids);
+                relevantCacheRef.current.set(cacheKey, set);
+                setRelevantEntities(set);
+            } catch (e) {
+                if (cancelled || currentId !== relevantReqIdRef.current) return;
+                // On failure treat as not available rather than filtering everything
+                setRelevantEntities(null);
+            }
+        }
+        loadRelevant();
+        return () => { cancelled = true; };
+    }, [workspace, workspaceData, selectedMethodConfig]);
+
     const value = useMemo(() => ({
         methodConfigTree,
         selectedMethodConfig,
@@ -219,8 +270,9 @@ export function ForecastsProvider({children}) {
         forecastValues, // raw
         forecastValuesNorm, // normalized
         forecastLoading,
-        forecastError
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, workspace]);
+        forecastError,
+        relevantEntities
+    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, workspace]);
 
     return (
         <ForecastsContext.Provider value={value}>
