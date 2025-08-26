@@ -89,7 +89,7 @@ function ToolbarSquares() {
 
 function ToolbarCenter() {
     const { workspace, workspaceData } = useWorkspace();
-    const { percentile, normalizationRef } = useForecasts();
+    const { percentile, normalizationRef, selectedMethodConfig } = useForecasts();
     const [forecastDateStr, setForecastDateStr] = React.useState('');
     const reqIdRef = React.useRef(0);
 
@@ -132,7 +132,7 @@ function ToolbarCenter() {
                 <button className="toolbar-center-btn"><KeyboardArrowRightIcon fontSize="small" /></button>
                 <button className="toolbar-center-btn"><KeyboardDoubleArrowRightIcon fontSize="small" /></button>
             </div>
-            <div>Analogie circulation (4Zo) ARPEGE (4Zo-ARPGEPE)</div>
+            <div>{selectedMethodConfig?.method ? `${selectedMethodConfig.method.name} (${selectedMethodConfig.method.id})` : ''}</div>
         </div>
     );
 }
