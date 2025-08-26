@@ -75,7 +75,7 @@ export default function MapViewer() {
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
-    const {entities, forecastValues, entitiesWorkspace} = useForecasts();
+    const {entities, forecastValues, entitiesWorkspace, entitiesLoading, forecastLoading} = useForecasts();
     const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
@@ -334,6 +334,12 @@ export default function MapViewer() {
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%', background: '#fff' }}>
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+            {/* Loading overlay */}
+            {(entitiesLoading || forecastLoading) && (
+                <div className="map-loading-overlay">
+                    <div className="map-loading-spinner" />
+                </div>
+            )}
             {/* Legend */}
             {legendStops.length > 0 && (
                 <div style={{position:'absolute', bottom:10, left:10, background:'rgba(255,255,255,0.9)', padding:'8px 10px', borderRadius:4, fontSize:12, boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}>
