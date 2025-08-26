@@ -88,10 +88,45 @@ function ToolbarSquares() {
 }
 
 function ToolbarCenter() {
+    const { workspace, workspaceData } = useWorkspace();
+    const { percentile, normalizationRef } = useForecasts();
+    const [forecastDateStr, setForecastDateStr] = React.useState('');
+    const reqIdRef = React.useRef(0);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        async function load() {
+            if (!workspace || !workspaceData?.date?.last_forecast_date) { setForecastDateStr(''); return; }
+            const id = ++reqIdRef.current;
+            try {
+                const resp = await getSynthesisTotal(workspace, workspaceData.date.last_forecast_date, percentile, normalizationRef);
+                if (cancelled || id !== reqIdRef.current) return;
+                const fdStr = resp?.parameters?.forecast_date;
+                if (fdStr) {
+                    const fd = new Date(fdStr);
+                    if (!isNaN(fd)) {
+                        const dd = String(fd.getDate()).padStart(2,'0');
+                        const mm = String(fd.getMonth()+1).padStart(2,'0');
+                        const yyyy = fd.getFullYear();
+                        const HH = String(fd.getHours()).padStart(2,'0');
+                        setForecastDateStr(`${dd}.${mm}.${yyyy} ${HH}h`);
+                        return;
+                    }
+                }
+                setForecastDateStr('');
+            } catch {
+                if (cancelled || id !== reqIdRef.current) return;
+                setForecastDateStr('');
+            }
+        }
+        load();
+        return () => { cancelled = true; };
+    }, [workspace, workspaceData, percentile, normalizationRef]);
+
     return (
         <div className="toolbar-center">
             <div className="toolbar-center-row">
-                <span>Prévision du 15.06.2025 00h</span>
+                <span>Prévision du {forecastDateStr || '...'}</span>
                 <button className="toolbar-center-btn"><KeyboardDoubleArrowLeftIcon fontSize="small" /></button>
                 <button className="toolbar-center-btn"><KeyboardArrowLeftIcon fontSize="small" /></button>
                 <button className="toolbar-center-btn"><KeyboardArrowRightIcon fontSize="small" /></button>
