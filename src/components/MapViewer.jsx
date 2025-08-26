@@ -75,7 +75,7 @@ export default function MapViewer() {
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
-    const {entities, forecastValues, entitiesWorkspace, entitiesLoading, forecastLoading} = useForecasts();
+    const {entities, forecastValues, forecastValuesNorm, entitiesWorkspace, entitiesLoading, forecastLoading} = useForecasts();
     const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
@@ -247,7 +247,7 @@ export default function MapViewer() {
                     x: coord[0],
                     y: coord[1],
                     name: feature.get('name'),
-                    value: feature.get('value')
+                    valueRaw: feature.get('valueRaw')
                 });
             } else {
                 setTooltip(null);
@@ -290,8 +290,9 @@ export default function MapViewer() {
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         entities.forEach(ent => {
-            const val = forecastValues[ent.id];
-            const [r,g,b] = valueToColor(val, maxVal);
+            const normVal = forecastValuesNorm[ent.id];
+            const rawVal = forecastValues ? forecastValues[ent.id] : undefined;
+            const [r,g,b] = valueToColor(normVal, maxVal);
             const style = new Style({
                 image: new CircleStyle({
                     radius: 8,
@@ -311,7 +312,8 @@ export default function MapViewer() {
             const feat = new Feature({
                 geometry: new Point(coord),
                 id: ent.id,
-                value: val,
+                valueNorm: normVal,
+                valueRaw: rawVal,
                 name: ent.name,
                 style
             });
@@ -326,7 +328,7 @@ export default function MapViewer() {
             view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
             lastFittedWorkspaceRef.current = workspace;
         }
-    }, [entities, forecastValues, workspace, entitiesWorkspace]);
+    }, [entities, forecastValuesNorm, workspace, entitiesWorkspace]);
 
     // Build CSS gradient string
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
@@ -358,7 +360,7 @@ export default function MapViewer() {
             {tooltip && (
                 <div style={{position:'absolute', top: tooltip.y + 12, left: tooltip.x + 12, background:'rgba(0,0,0,0.75)', color:'#fff', padding:'4px 6px', borderRadius:4, fontSize:12, pointerEvents:'none', whiteSpace:'nowrap'}}>
                     <div>{tooltip.name}</div>
-                    <div>Value: {tooltip.value == null || isNaN(tooltip.value) ? 'NaN' : tooltip.value.toFixed(3)}</div>
+                    <div>Value: {tooltip.valueRaw == null || isNaN(tooltip.valueRaw) ? 'NaN' : tooltip.valueRaw.toFixed(1)} mm</div>
                 </div>
             )}
         </div>

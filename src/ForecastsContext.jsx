@@ -125,7 +125,8 @@ export function ForecastsProvider({children}) {
     }, [workspace, workspaceData, selectedMethodConfig, entitiesVersion, methodConfigTree]);
 
     // Forecast values (aggregated if method only, else per config)
-    const [forecastValues, setForecastValues] = useState({}); // id -> normalized value
+    const [forecastValuesNorm, setForecastValuesNorm] = useState({}); // id -> normalized value
+    const [forecastValues, setForecastValues] = useState({}); // id -> raw (non-normalized) value
     const [forecastLoading, setForecastLoading] = useState(false);
     const [forecastError, setForecastError] = useState(null);
     const forecastRequestIdRef = useRef(0);
@@ -165,6 +166,12 @@ export function ForecastsProvider({children}) {
                 if (forecastFailedRef.current.has(cacheKey)) {
                     return; // skip repeated failing attempts
                 }
+                const cached = forecastCacheRef.current.get(cacheKey);
+                if (cached) {
+                    setForecastValues(cached);
+                    setForecastLoading(false);
+                    return;
+                }
                 let resp;
                 if (configId) {
                     resp = await getEntitiesValuesPercentile(workspace, date, methodId, configId, lead, perc);
@@ -173,15 +180,23 @@ export function ForecastsProvider({children}) {
                 }
                 if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
                 const ids = resp.entity_ids || [];
-                const values = resp.values_normalized || [];
-                const map = {};
-                ids.forEach((id, idx) => { map[id] = values[idx]; });
-                setForecastValues(map);
-                forecastCacheRef.current.set(cacheKey, map);
+                let valuesNorm = resp.values_normalized || [];
+                let valuesRaw = resp.values || [];
+                if (!Array.isArray(valuesNorm)) valuesNorm = [];
+                if (!Array.isArray(valuesRaw)) valuesRaw = [];
+                const normMap = {};
+                const rawMap = {};
+                ids.forEach((id, idx) => {
+                    normMap[id] = valuesNorm[idx];
+                    rawMap[id] = valuesRaw[idx];
+                });
+                setForecastValuesNorm(normMap);
+                setForecastValues(rawMap);
+                forecastCacheRef.current.set(cacheKey, normMap);
             } catch (e) {
                 if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
                 console.error('Forecast values load failed:', e);
-                setForecastError(e); setForecastValues({}); forecastCacheRef.current.delete(cacheKey);
+                setForecastError(e); setForecastValuesNorm({}); setForecastValues({}); forecastCacheRef.current.delete(cacheKey);
                 forecastFailedRef.current.add(cacheKey);
             } finally {
                 if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
@@ -201,10 +216,11 @@ export function ForecastsProvider({children}) {
         entitiesLoading,
         entitiesError,
         refreshEntities,
-        forecastValues,
+        forecastValues, // raw
+        forecastValuesNorm, // normalized
         forecastLoading,
         forecastError
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastLoading, forecastError, workspace]);
+    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, workspace]);
 
     return (
         <ForecastsContext.Provider value={value}>
