@@ -92,7 +92,10 @@ export const getAggregatedEntitiesValues = (region, date, methodId, lead, perc, 
     return request(`/aggregations/${region}/${date}/${methodId}/${lead}/entities-values-percentile/${perc}${qs}`);
 };
 export const getSynthesisPerMethod = (region, date, perc) => request(`/aggregations/${region}/${date}/series-synthesis-per-method/${perc}`);
-export const getSynthesisTotal = (region, date, perc) => request(`/aggregations/${region}/${date}/series-synthesis-total/${perc}`);
+export const getSynthesisTotal = (region, date, perc, normalize) => {
+    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
+    return request(`/aggregations/${region}/${date}/series-synthesis-total/${perc}${qs}`);
+};
 
 // --- Workspace Initialization ---
 export async function getWorkspaceInitData(region) {
