@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useEffect, useMemo, useState, useRef, useCallback} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
-import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile, getRelevantEntities} from './services/api.js';
+import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile, getRelevantEntities, getSynthesisTotal} from './services/api.js';
 
 const ForecastsContext = createContext();
 
@@ -130,7 +130,16 @@ export function ForecastsProvider({children}) {
     const [forecastLoading, setForecastLoading] = useState(false);
     const [forecastError, setForecastError] = useState(null);
     const [percentile, setPercentile] = useState(90); // selected percentile (e.g. 90)
-    const [normalizationRef, setNormalizationRef] = useState(10);
+    const [normalizationRef, setNormalizationRef] = useState(10); // e.g. 2, 5, 10
+    const [forecastUnavailable, setForecastUnavailable] = useState(false); // lead time not available flag
+    // Lead time & synthesis series
+    const [selectedLead, setSelectedLead] = useState(0); // index in active resolution series
+    const [selectedTargetDate, setSelectedTargetDate] = useState(null); // Date object of selected lead target
+    const [leadResolution, setLeadResolution] = useState('daily'); // 'daily' | 'sub'
+    const [dailyLeads, setDailyLeads] = useState([]); // [{index,date,valueNorm?}]
+    const [subDailyLeads, setSubDailyLeads] = useState([]); // similar
+    const [forecastBaseDate, setForecastBaseDate] = useState(null); // Date object for forecast base (parameters.forecast_date)
+    const synthesisReqIdRef = useRef(0);
     const forecastRequestIdRef = useRef(0);
     const forecastCacheRef = useRef(new Map());
     const forecastFailedRef = useRef(new Set());
@@ -140,8 +149,10 @@ export function ForecastsProvider({children}) {
         async function loadForecastValues() {
             if (!workspaceData || !selectedMethodConfig?.method) {
                 setForecastValues({});
+                setForecastValuesNorm({});
                 setForecastLoading(false);
                 setForecastError(null);
+                setForecastUnavailable(false);
                 return;
             }
             if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) {
@@ -149,24 +160,43 @@ export function ForecastsProvider({children}) {
             }
             const methodId = selectedMethodConfig.method.id;
             if (!methodConfigTree.find(m => m.id === methodId)) {
+                setForecastValues({}); setForecastValuesNorm({}); setForecastUnavailable(false);
                 return; // method not in current workspace anymore
             }
             const configId = selectedMethodConfig.config?.id; // may be undefined for aggregated
             const date = workspaceData.date?.last_forecast_date;
             if (!date) {
-                setForecastValues({});
+                setForecastValues({}); setForecastValuesNorm({});
                 setForecastLoading(false);
+                setForecastUnavailable(false);
                 return;
             }
+            setForecastUnavailable(false);
+            // Clear previous values immediately to avoid stale display while new fetch pending
+            setForecastValues({}); setForecastValuesNorm({});
             setForecastLoading(true);
             setForecastError(null);
             const currentId = ++forecastRequestIdRef.current;
-            const lead = 0;
-            const perc = percentile; // use selected percentile
-            const norm = normalizationRef; // optional normalization reference
-            const cacheKey = `${workspace}|${date}|${methodId}|${configId}|${lead}|${perc}|${norm||'raw'}`;
+            // Compute lead in hours based on selected target date vs forecast base if available
+            let leadHours = 0;
+            if (forecastBaseDate && selectedTargetDate) {
+                leadHours = Math.round((selectedTargetDate.getTime() - forecastBaseDate.getTime()) / 3600000);
+                if (leadHours < 0) leadHours = 0; // guard
+            } else {
+                if (leadResolution === 'sub') {
+                    const step = subDailyLeads[selectedLead]?.time_step || (subDailyLeads.length ? subDailyLeads[0].time_step : 0);
+                    leadHours = step * selectedLead;
+                } else {
+                    const step = dailyLeads[selectedLead]?.time_step || (dailyLeads.length ? dailyLeads[0].time_step : 24);
+                    leadHours = step * selectedLead;
+                }
+            }
+            const perc = percentile; // percentile
+            const norm = normalizationRef; // normalization reference
+            const cacheKey = `${workspace}|${date}|${methodId}|${configId}|${leadHours}|${perc}|${norm||'raw'}`;
             try {
                 if (forecastFailedRef.current.has(cacheKey)) {
+                    setForecastLoading(false);
                     return; // skip repeated failing attempts
                 }
                 const cached = forecastCacheRef.current.get(cacheKey);
@@ -175,18 +205,18 @@ export function ForecastsProvider({children}) {
                         setForecastValuesNorm(cached.norm);
                         setForecastValues(cached.raw);
                     } else {
-                        // Legacy cache entry containing only normalized values
                         setForecastValuesNorm(cached);
                         setForecastValues({});
                     }
+                    setForecastUnavailable(false);
                     setForecastLoading(false);
                     return;
                 }
                 let resp;
                 if (configId) {
-                    resp = await getEntitiesValuesPercentile(workspace, date, methodId, configId, lead, perc, norm);
+                    resp = await getEntitiesValuesPercentile(workspace, date, methodId, configId, leadHours, perc, norm);
                 } else {
-                    resp = await getAggregatedEntitiesValues(workspace, date, methodId, lead, perc, norm);
+                    resp = await getAggregatedEntitiesValues(workspace, date, methodId, leadHours, perc, norm);
                 }
                 if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
                 const ids = resp.entity_ids || [];
@@ -194,14 +224,21 @@ export function ForecastsProvider({children}) {
                 let valuesRaw = resp.values || [];
                 if (!Array.isArray(valuesNorm)) valuesNorm = [];
                 if (!Array.isArray(valuesRaw)) valuesRaw = [];
-                const normMap = {};
-                const rawMap = {};
-                ids.forEach((id, idx) => {
-                    normMap[id] = valuesNorm[idx];
-                    rawMap[id] = valuesRaw[idx];
-                });
+                // Detect unavailable lead: ids present but no values
+                const allEmpty = ids.length > 0 && valuesNorm.length === 0 && valuesRaw.length === 0;
+                const lengthMismatch = ids.length > 0 && (valuesNorm.length > 0 && valuesNorm.length !== ids.length) && (valuesRaw.length > 0 && valuesRaw.length !== ids.length);
+                if (allEmpty || lengthMismatch) {
+                    setForecastValuesNorm({});
+                    setForecastValues({});
+                    setForecastUnavailable(true);
+                    setForecastLoading(false);
+                    return;
+                }
+                const normMap = {}; const rawMap = {};
+                ids.forEach((id, idx) => { normMap[id] = valuesNorm[idx]; rawMap[id] = valuesRaw[idx]; });
                 setForecastValuesNorm(normMap);
                 setForecastValues(rawMap);
+                setForecastUnavailable(false);
                 forecastCacheRef.current.set(cacheKey, { norm: normMap, raw: rawMap });
             } catch (e) {
                 if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
@@ -215,7 +252,7 @@ export function ForecastsProvider({children}) {
         }
         loadForecastValues();
         return () => { cancelled = true; };
-    }, [workspace, workspaceData, selectedMethodConfig, percentile, normalizationRef]);
+    }, [workspace, workspaceData, selectedMethodConfig, percentile, normalizationRef, selectedLead, leadResolution, dailyLeads, subDailyLeads, forecastBaseDate, selectedTargetDate, methodConfigTree]);
 
     // Relevant entities (only when a specific config selected)
     const [relevantEntities, setRelevantEntities] = useState(null); // null = not applicable (aggregated); Set when available
@@ -268,6 +305,102 @@ export function ForecastsProvider({children}) {
         return () => { cancelled = true; };
     }, [workspace, workspaceData, selectedMethodConfig]);
 
+    // Fetch synthesis total to derive lead target dates (for selecting lead time)
+    useEffect(() => {
+        let cancelled = false;
+        async function loadSynthesis() {
+            if (!workspaceData?.date?.last_forecast_date) { setDailyLeads([]); setSubDailyLeads([]); setSelectedLead(0); setSelectedTargetDate(null); return; }
+            const currentId = ++synthesisReqIdRef.current;
+            try {
+                const resp = await getSynthesisTotal(workspace, workspaceData.date.last_forecast_date, percentile, normalizationRef);
+                if (cancelled || currentId !== synthesisReqIdRef.current) return;
+                const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+                // Store forecast base date
+                const baseStr = resp?.parameters?.forecast_date;
+                setForecastBaseDate(baseStr ? new Date(baseStr) : null);
+                let daily = [];
+                let sub = [];
+                arr.forEach(sp => {
+                    const dates = Array.isArray(sp.target_dates) ? sp.target_dates : [];
+                    const valsNorm = Array.isArray(sp.values_normalized) ? sp.values_normalized : [];
+                    dates.forEach((dStr, idx) => {
+                        const dt = dStr ? new Date(dStr) : null;
+                        if (!dt) return;
+                        const rec = { index: idx, date: dt, time_step: sp.time_step, valueNorm: valsNorm[idx] };
+                        if (sp.time_step === 24) daily.push(rec); else sub.push({...rec, subIndex: idx});
+                    });
+                });
+                daily = daily.sort((a,b)=>a.date-b.date);
+                sub = sub.sort((a,b)=>a.date-b.date);
+                setDailyLeads(daily);
+                setSubDailyLeads(sub);
+                // Reset selection to first daily
+                if (daily.length > 0) {
+                    setSelectedLead(0);
+                    setLeadResolution('daily');
+                    setSelectedTargetDate(daily[0].date);
+                } else if (sub.length > 0) {
+                    setSelectedLead(0);
+                    setLeadResolution('sub');
+                    setSelectedTargetDate(sub[0].date);
+                } else {
+                    setSelectedLead(0);
+                    setSelectedTargetDate(null);
+                    setLeadResolution('daily');
+                }
+            } catch (e) {
+                if (cancelled || currentId !== synthesisReqIdRef.current) return;
+                setDailyLeads([]); setSubDailyLeads([]); setSelectedLead(0); setSelectedTargetDate(null); setForecastBaseDate(null);
+            }
+        }
+        loadSynthesis();
+        return () => { cancelled = true; };
+    }, [workspace, workspaceData, percentile, normalizationRef]);
+
+    const selectTargetDate = useCallback((date, preferSub) => {
+        if (!date) return;
+        // Try sub-daily if preferred and available
+        if (preferSub && subDailyLeads.length) {
+            const idx = subDailyLeads.findIndex(l => l.date.getTime() === date.getTime());
+            if (idx >= 0) {
+                setSelectedLead(idx);
+                setLeadResolution('sub');
+                setSelectedTargetDate(subDailyLeads[idx].date);
+                return;
+            }
+        }
+        // Fallback to daily (match by Y/M/D)
+        if (dailyLeads.length) {
+            const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
+            const idx = dailyLeads.findIndex(l => l.date.getFullYear()===y && l.date.getMonth()===m && l.date.getDate()===d);
+            if (idx >= 0) {
+                setSelectedLead(idx);
+                setLeadResolution('daily');
+                setSelectedTargetDate(dailyLeads[idx].date);
+            }
+        }
+    }, [dailyLeads, subDailyLeads]);
+
+    // Derive availability independently so UI updates immediately on selection change
+    useEffect(() => {
+        if (!selectedMethodConfig?.method || !workspaceData?.date?.last_forecast_date) {
+            setForecastUnavailable(false); // missing context
+            return;
+        }
+        if (!selectedTargetDate) {
+            // No selection yet -> don't show unavailable message
+            setForecastUnavailable(false);
+            return;
+        }
+        if (leadResolution === 'sub') {
+            const match = subDailyLeads.find(l => selectedTargetDate && l.date.getTime() === selectedTargetDate.getTime());
+            setForecastUnavailable(!match);
+        } else { // daily
+            const match = dailyLeads.find(l => selectedTargetDate && l.date.getFullYear()===selectedTargetDate.getFullYear() && l.date.getMonth()===selectedTargetDate.getMonth() && l.date.getDate()===selectedTargetDate.getDate());
+            setForecastUnavailable(!match);
+        }
+    }, [selectedMethodConfig, workspaceData, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
+
     const value = useMemo(() => ({
         methodConfigTree,
         selectedMethodConfig,
@@ -285,8 +418,16 @@ export function ForecastsProvider({children}) {
         percentile,
         setPercentile,
         normalizationRef,
-        setNormalizationRef
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, workspace]);
+        setNormalizationRef,
+        dailyLeads,
+        subDailyLeads,
+        leadResolution,
+        selectedLead,
+        selectedTargetDate,
+        selectTargetDate,
+        forecastUnavailable,
+        forecastBaseDate
+    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, forecastBaseDate, workspace, selectTargetDate, forecastUnavailable]);
 
     return (
         <ForecastsContext.Provider value={value}>

@@ -56,7 +56,7 @@ export default function MapViewer() {
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
-    const {entities, forecastValues, forecastValuesNorm, entitiesWorkspace, entitiesLoading, forecastLoading, relevantEntities} = useForecasts();
+    const {entities, forecastValues, forecastValuesNorm, entitiesWorkspace, entitiesLoading, forecastLoading, relevantEntities, forecastUnavailable, selectedTargetDate} = useForecasts();
     const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
@@ -246,6 +246,12 @@ export default function MapViewer() {
     // Update forecast points when entities or forecast values change
     useEffect(() => {
         if (!mapInstanceRef.current || !forecastLayerRef.current) return;
+        // If forecast unavailable: clear layer and return
+        if (forecastUnavailable) {
+            forecastLayerRef.current.getSource().clear();
+            setLegendStops([]);
+            return;
+        }
         // Skip if entities belong to a different (previous) workspace
         if (entitiesWorkspace && entitiesWorkspace !== workspace) return;
         const layer = forecastLayerRef.current;
@@ -314,7 +320,7 @@ export default function MapViewer() {
             view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
             lastFittedWorkspaceRef.current = workspace;
         }
-    }, [entities, forecastValuesNorm, workspace, entitiesWorkspace, relevantEntities]);
+    }, [entities, forecastValuesNorm, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable]);
 
     // Build CSS gradient string
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
@@ -326,6 +332,11 @@ export default function MapViewer() {
             {(entitiesLoading || forecastLoading) && (
                 <div className="map-loading-overlay">
                     <div className="map-loading-spinner" />
+                </div>
+            )}
+            {forecastUnavailable && selectedTargetDate && !(entitiesLoading || forecastLoading) && (
+                <div className="map-loading-overlay" style={{backdropFilter:'blur(2px)', fontSize:18, color:'#222'}}>
+                    <div>No forecast available for the selected method and lead time</div>
                 </div>
             )}
             {/* Legend */}
