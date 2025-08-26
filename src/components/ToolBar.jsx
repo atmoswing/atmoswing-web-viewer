@@ -15,7 +15,7 @@ import { valueToColorCSS } from '../utils/colors.js';
 function ToolbarSquares() {
     const { workspace, workspaceData } = useWorkspace();
     const { percentile, normalizationRef } = useForecasts();
-    const [series, setSeries] = React.useState([]); // [{date: Date, valueNorm: number}]
+    const [dailySeries, setDailySeries] = React.useState([]); // [{date, valueNorm, subs:[{date,valueNorm}]}]
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState(null);
     const requestIdRef = React.useRef(0);
@@ -23,15 +23,15 @@ function ToolbarSquares() {
     React.useEffect(() => {
         let cancelled = false;
         async function load() {
-            if (!workspace || !workspaceData?.date?.last_forecast_date) { setSeries([]); return; }
+            if (!workspace || !workspaceData?.date?.last_forecast_date) { setDailySeries([]); return; }
             const currentId = ++requestIdRef.current;
             setLoading(true); setError(null);
             try {
                 const resp = await getSynthesisTotal(workspace, workspaceData.date.last_forecast_date, percentile, normalizationRef);
                 if (cancelled || currentId !== requestIdRef.current) return;
-                const forecastDate = resp?.parameters?.forecast_date ? new Date(resp.parameters.forecast_date) : null;
                 const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
-                const mapped = [];
+                const dailyEntries = [];
+                const subDailyEntries = [];
                 arr.forEach(sp => {
                     const dates = Array.isArray(sp.target_dates) ? sp.target_dates : [];
                     const valsNorm = Array.isArray(sp.values_normalized) ? sp.values_normalized : [];
@@ -40,26 +40,25 @@ function ToolbarSquares() {
                         const dt = dStr ? new Date(dStr) : null;
                         if (!dt) return;
                         const vNorm = (valsNorm[idx] !== undefined ? valsNorm[idx] : valsRaw[idx]);
-                        let leadHours = null;
-                        if (forecastDate && !isNaN(forecastDate)) {
-                            leadHours = Math.round((dt - forecastDate) / 3600000);
-                        }
-                        mapped.push({
-                            time_step: sp.time_step,
-                            index: idx,
-                            date: dt,
-                            valueNorm: vNorm,
-                            leadHours
-                        });
+                        const item = { time_step: sp.time_step, date: dt, valueNorm: vNorm };
+                        if (sp.time_step === 24) dailyEntries.push(item); else subDailyEntries.push(item);
                     });
                 });
-                // Sort by date/time then by index
-                mapped.sort((a,b) => a.date - b.date || a.index - b.index);
-                setSeries(mapped);
+                // Group daily by day key (YYYY-MM-DD) and associate sub-daily segments sharing same day
+                const subMap = subDailyEntries.reduce((acc, it) => {
+                    const key = `${it.date.getFullYear()}-${it.date.getMonth()}-${it.date.getDate()}`;
+                    (acc[key] ||= []).push(it);
+                    return acc;
+                }, {});
+                const daily = dailyEntries.sort((a,b)=>a.date-b.date).map(d => {
+                    const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
+                    const subs = (subMap[key]||[]).sort((a,b)=>a.time_step-b.time_step);
+                    return { ...d, subs };
+                });
+                setDailySeries(daily);
             } catch (e) {
                 if (cancelled || currentId !== requestIdRef.current) return;
-                setError(e);
-                setSeries([]);
+                setError(e); setDailySeries([]);
             } finally {
                 if (cancelled || currentId !== requestIdRef.current) return;
                 setLoading(false);
@@ -74,12 +73,20 @@ function ToolbarSquares() {
         <div className="toolbar-left" style={{display:'flex', gap:4}}>
             {loading && <div style={{padding:'4px 8px', fontSize:12}}>Loading…</div>}
             {!loading && error && <div style={{padding:'4px 8px', fontSize:12, color:'#b00'}}>Err</div>}
-            {!loading && !error && series.map((s, i) => {
-                const color = valueToColorCSS(s.valueNorm, maxVal);
-                const label = s.date ? `${String(s.date.getDate()).padStart(2,'0')}.${String(s.date.getMonth()+1).padStart(2,'0')}` : '';
+            {!loading && !error && dailySeries.map((d, i) => {
+                const color = valueToColorCSS(d.valueNorm, maxVal);
+                const label = d.date ? `${String(d.date.getDate()).padStart(2,'0')}.${String(d.date.getMonth()+1).padStart(2,'0')}` : '';
                 return (
-                    <div key={i} className="toolbar-square" style={{background: color}} title={`Lead ${s.leadHours!=null?s.leadHours+'h':s.time_step} Value ${(s.valueNorm??NaN).toFixed ? s.valueNorm.toFixed(3): s.valueNorm}`}>
+                    <div key={i} className="toolbar-square" style={{background: color}} title={`Daily Value ${(d.valueNorm??NaN).toFixed ? d.valueNorm.toFixed(3): d.valueNorm}`}>
                         <span>{label}</span>
+                        {d.subs.length > 0 && (
+                            <div className="square-subdaily">
+                                {d.subs.map((s, j) => {
+                                    const subColor = valueToColorCSS(s.valueNorm, maxVal);
+                                    return <div key={j} className="square-subdaily-seg" style={{background: subColor}} title={`t${s.time_step} ${(s.valueNorm??NaN).toFixed ? s.valueNorm.toFixed(3): s.valueNorm}`} />;
+                                })}
+                            </div>
+                        )}
                     </div>
                 );
             })}
