@@ -4,16 +4,18 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
+import { useForecasts } from '../ForecastsContext.jsx';
 
 export default function PanelDisplay(props) {
     const [display, setDisplay] = React.useState(10);
-    const [percentile, setPercentile] = React.useState(90);
+    const { percentile, setPercentile } = useForecasts();
 
     const handleChangeDisplay = (event) => {
         setDisplay(event.target.value);
     };
     const handleChangePercentile = (event) => {
-        setPercentile(event.target.value);
+        const val = Number(event.target.value);
+        if (!Number.isNaN(val)) setPercentile(val);
     }
 
     return (

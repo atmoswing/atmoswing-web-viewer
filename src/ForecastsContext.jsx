@@ -129,6 +129,7 @@ export function ForecastsProvider({children}) {
     const [forecastValues, setForecastValues] = useState({}); // id -> raw (non-normalized) value
     const [forecastLoading, setForecastLoading] = useState(false);
     const [forecastError, setForecastError] = useState(null);
+    const [percentile, setPercentile] = useState(90); // selected percentile (e.g. 90)
     const forecastRequestIdRef = useRef(0);
     const forecastCacheRef = useRef(new Map());
     const forecastFailedRef = useRef(new Set());
@@ -160,7 +161,7 @@ export function ForecastsProvider({children}) {
             setForecastError(null);
             const currentId = ++forecastRequestIdRef.current;
             const lead = 0;
-            const perc = 90; // percentile 0.9
+            const perc = percentile; // use selected percentile
             const cacheKey = `${workspace}|${date}|${methodId}|${configId}|${lead}|${perc}`;
             try {
                 if (forecastFailedRef.current.has(cacheKey)) {
@@ -205,7 +206,7 @@ export function ForecastsProvider({children}) {
         }
         loadForecastValues();
         return () => { cancelled = true; };
-    }, [workspace, workspaceData, selectedMethodConfig]);
+    }, [workspace, workspaceData, selectedMethodConfig, percentile]);
 
     // Relevant entities (only when a specific config selected)
     const [relevantEntities, setRelevantEntities] = useState(null); // null = not applicable (aggregated); Set when available
@@ -271,8 +272,10 @@ export function ForecastsProvider({children}) {
         forecastValuesNorm, // normalized
         forecastLoading,
         forecastError,
-        relevantEntities
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, workspace]);
+        relevantEntities,
+        percentile,
+        setPercentile
+    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, workspace]);
 
     return (
         <ForecastsContext.Provider value={value}>
