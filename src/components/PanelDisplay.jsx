@@ -7,11 +7,11 @@ import Select from '@mui/material/Select';
 import { useForecasts } from '../ForecastsContext.jsx';
 
 export default function PanelDisplay(props) {
-    const [display, setDisplay] = React.useState(10);
-    const { percentile, setPercentile } = useForecasts();
+    const { percentile, setPercentile, normalizationRef, setNormalizationRef } = useForecasts();
 
-    const handleChangeDisplay = (event) => {
-        setDisplay(event.target.value);
+    const handleChangeNormalizationRef = (event) => {
+        const val = Number(event.target.value);
+        setNormalizationRef(val);
     };
     const handleChangePercentile = (event) => {
         const val = Number(event.target.value);
@@ -25,11 +25,10 @@ export default function PanelDisplay(props) {
                 <Select
                     labelId="select-display-label"
                     id="select-display"
-                    value={display}
-                    onChange={handleChangeDisplay}
+                    value={normalizationRef}
+                    onChange={handleChangeNormalizationRef}
                     label="Display Options"
                 >
-                    <MenuItem value={-1}>Value</MenuItem>
                     <MenuItem value={2}>P/P2</MenuItem>
                     <MenuItem value={5}>P/P5</MenuItem>
                     <MenuItem value={10}>P/P10</MenuItem>
