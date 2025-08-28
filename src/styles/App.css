@@ -32,6 +32,7 @@
   font-weight: bold;
   flex-direction: column;
   padding: 2px;
+  cursor: pointer;
 }
 
 .toolbar-square.selected {
@@ -53,6 +54,7 @@
 
 .square-subdaily-seg {
   flex: 1;
+  cursor: pointer;
 }
 
 .square-subdaily-seg.selected {

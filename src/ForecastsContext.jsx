@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useEffect, useMemo, useState, useRef, useCallback} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
-import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile, getRelevantEntities, getSynthesisTotal} from './services/api.js';
+import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile, getRelevantEntities, getSynthesisTotal, getSynthesisPerMethod} from './services/api.js';
 
 const ForecastsContext = createContext();
 
@@ -28,6 +28,13 @@ export function ForecastsProvider({children}) {
         // Clear entities immediately to avoid stale fit in map
         setEntities([]);
         entitiesWorkspaceRef.current = workspace; // tag cleared state to new workspace
+        // Reset lead related state so that "forecast unavailable" message is not shown during initial load
+        setDailyLeads([]);
+        setSubDailyLeads([]);
+        setSelectedLead(0);
+        setSelectedTargetDate(null);
+        setForecastUnavailable(false);
+        setForecastBaseDate(null);
     }, [workspace]);
 
     // Auto-select first method when data arrives or tree changes (only for current workspace)
@@ -139,6 +146,10 @@ export function ForecastsProvider({children}) {
     const [dailyLeads, setDailyLeads] = useState([]); // [{index,date,valueNorm?}]
     const [subDailyLeads, setSubDailyLeads] = useState([]); // similar
     const [forecastBaseDate, setForecastBaseDate] = useState(null); // Date object for forecast base (parameters.forecast_date)
+    // Per-method synthesis (alarms panel)
+    const [perMethodSynthesis, setPerMethodSynthesis] = useState([]);
+    const [perMethodSynthesisLoading, setPerMethodSynthesisLoading] = useState(false);
+    const [perMethodSynthesisError, setPerMethodSynthesisError] = useState(null);
     const synthesisReqIdRef = useRef(0);
     const forecastRequestIdRef = useRef(0);
     const forecastCacheRef = useRef(new Map());
@@ -357,6 +368,45 @@ export function ForecastsProvider({children}) {
         return () => { cancelled = true; };
     }, [workspace, workspaceData, percentile, normalizationRef]);
 
+    // New: per-method synthesis (alarms panel)
+    useEffect(() => {
+        let cancelled = false;
+        async function loadPerMethod() {
+            setPerMethodSynthesis([]);
+            setPerMethodSynthesisError(null);
+            if (!workspaceData?.date?.last_forecast_date || !methodConfigTree.length) { return; }
+            setPerMethodSynthesisLoading(true);
+            try {
+                const resp = await getSynthesisPerMethod(workspace, workspaceData.date.last_forecast_date, percentile);
+                if (!cancelled) {
+                    const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+                    setPerMethodSynthesis(arr);
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    setPerMethodSynthesisError(e);
+                    setPerMethodSynthesis([]);
+                }
+            } finally {
+                if (!cancelled) setPerMethodSynthesisLoading(false);
+            }
+        }
+        loadPerMethod();
+        return () => { cancelled = true; };
+    }, [workspace, workspaceData, percentile, methodConfigTree]);
+
+    // Fallback: if we have workspace last_forecast_date but no forecastBaseDate yet (e.g. synthesis not fetched), set it.
+    useEffect(() => {
+        if (workspaceData?.date?.last_forecast_date) {
+            if (!forecastBaseDate) {
+                try { setForecastBaseDate(new Date(workspaceData.date.last_forecast_date)); } catch { /* ignore */ }
+            }
+        } else if (!workspaceData) {
+            // When workspace data cleared, also clear base date
+            if (forecastBaseDate) setForecastBaseDate(null);
+        }
+    }, [workspaceData, forecastBaseDate]);
+
     const selectTargetDate = useCallback((date, preferSub) => {
         if (!date) return;
         // Try sub-daily if preferred and available
@@ -426,8 +476,11 @@ export function ForecastsProvider({children}) {
         selectedTargetDate,
         selectTargetDate,
         forecastUnavailable,
-        forecastBaseDate
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, forecastBaseDate, workspace, selectTargetDate, forecastUnavailable]);
+        forecastBaseDate,
+        perMethodSynthesis,
+        perMethodSynthesisLoading,
+        perMethodSynthesisError
+    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, forecastBaseDate, workspace, selectTargetDate, forecastUnavailable, perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError]);
 
     return (
         <ForecastsContext.Provider value={value}>
