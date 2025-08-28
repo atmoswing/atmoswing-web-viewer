@@ -15,7 +15,10 @@ function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useForecasts();
     const maxVal = 1;
 
-    // Build a map dayKey -> sub segments
+    // Canonical 4 sub-daily hours (00,06,12,18)
+    const subHours = React.useMemo(() => [0,6,12,18], []);
+
+    // Map dayKey -> sub segments (original grouping)
     const subByDay = React.useMemo(() => {
         const m = new Map();
         subDailyLeads.forEach(s => {
@@ -23,7 +26,6 @@ function ToolbarSquares() {
             if (!m.has(k)) m.set(k, []);
             m.get(k).push(s);
         });
-        // sort segments by date ascending
         m.forEach(arr => arr.sort((a,b)=>a.date-b.date));
         return m;
     }, [subDailyLeads]);
@@ -35,19 +37,21 @@ function ToolbarSquares() {
                 const color = valueToColorCSS(d.valueNorm, maxVal);
                 const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
                 const subs = subByDay.get(key) || [];
-                const isSelected = selectedTargetDate && d.date.getFullYear()===selectedTargetDate.getFullYear() && d.date.getMonth()===selectedTargetDate.getMonth() && d.date.getDate()===selectedTargetDate.getDate();
+                const subsByHour = new Map(subs.map(s => [s.date.getHours(), s]));
+                const isSelected = selectedTargetDate && d.date.getFullYear()===selectedTargetDate.getFullYear() && d.date.getMonth()===selectedTargetDate.getMonth() && d.date.getDate()===selectedTargetDate.getDate() && (!selectedTargetDate.getHours() || subs.length===0);
                 return (
                     <div
                         key={i}
                         className={`toolbar-square${isSelected ? ' selected' : ''}`}
                         style={{background: color}}
-                        title={`Daily Value ${(d.valueNorm??NaN).toFixed ? d.valueNorm.toFixed(3): d.valueNorm}`}
                         onClick={() => selectTargetDate(d.date, false)}
                     >
                         <span>{label}</span>
-                        {subs.length > 0 && (
-                            <div className="square-subdaily" onClick={e=>{e.stopPropagation();}}>
-                                {subs.map((s,j)=> {
+                        {subHours.length > 0 && (
+                            <div className={`square-subdaily${subs.length ? ' has-subs' : ''}`} onClick={e=>{e.stopPropagation();}}>
+                                {subHours.map((hr, j) => {
+                                    const s = subsByHour.get(hr);
+                                    if (!s) return <div key={j} className="square-subdaily-seg placeholder"/>;
                                     const subColor = valueToColorCSS(s.valueNorm, maxVal);
                                     const subSelected = selectedTargetDate && s.date.getTime()===selectedTargetDate.getTime();
                                     return (
@@ -55,7 +59,6 @@ function ToolbarSquares() {
                                             key={j}
                                             className={`square-subdaily-seg${subSelected ? ' selected' : ''}`}
                                             style={{background: subColor}}
-                                            title={`t${s.time_step} ${(s.valueNorm??NaN).toFixed ? s.valueNorm.toFixed(3): s.valueNorm}`}
                                             onClick={() => selectTargetDate(s.date, true)}
                                         />
                                     );
