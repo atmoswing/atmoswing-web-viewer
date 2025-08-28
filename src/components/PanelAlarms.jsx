@@ -1,10 +1,10 @@
 import Panel from './Panel';
-import React, {useMemo} from 'react';
+import React, {useMemo, useCallback} from 'react';
 import {useForecasts} from '../ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colors.js';
 
 export default function PanelAlarms(props) {
-    const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError, methodConfigTree } = useForecasts();
+    const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError, methodConfigTree, setSelectedMethodConfig, selectTargetDate, selectedMethodConfig, selectedTargetDate, dailyLeads } = useForecasts();
 
     // Map method id -> method name (order preserved as methodConfigTree)
     const methodOrder = useMemo(() => methodConfigTree.map(m => m.id), [methodConfigTree]);
@@ -33,17 +33,34 @@ export default function PanelAlarms(props) {
         return map;
     }, [perMethodSynthesis]);
 
-    // Collect all day keys (union) and sort ascending
+    // Collect all day keys (union) and sort ascending (include fallback dailyLeads so we can show selection before perMethodSynthesis arrives)
     const days = useMemo(() => {
         const set = new Set();
+        // from per-method synthesis
         data.forEach(mMap => mMap.forEach((_, dayKey) => set.add(dayKey)));
+        // fallback daily leads
+        if (dailyLeads && dailyLeads.length) {
+            dailyLeads.forEach(dl => {
+                const k = `${dl.date.getFullYear()}-${dl.date.getMonth()}-${dl.date.getDate()}`;
+                set.add(k);
+            });
+        }
         const arr = Array.from(set).map(k => {
             const [y,m,d] = k.split('-').map(Number);
             return { key: k, date: new Date(y, m, d) };
         });
         arr.sort((a,b)=>a.date-b.date);
         return arr;
-    }, [data]);
+    }, [data, dailyLeads]);
+
+    const handleSelect = useCallback((methodId, date, isSub) => {
+        if (!methodId || !date) return;
+        const method = methodConfigTree.find(m => m.id === methodId);
+        if (!method) return;
+        setSelectedMethodConfig({method, config: null});
+        // preferSub true when sub-daily segment clicked
+        selectTargetDate(date, !!isSub);
+    }, [methodConfigTree, setSelectedMethodConfig, selectTargetDate]);
 
     if (perMethodSynthesisLoading) {
         return <Panel title="Alarms" defaultOpen={props.defaultOpen}>Loading…</Panel>;
@@ -72,17 +89,28 @@ export default function PanelAlarms(props) {
                     <tr key={methodId}>
                         {days.map(d => {
                             const segs = data.get(methodId)?.get(d.key) || [];
+                            const isMethodSelected = selectedMethodConfig?.method?.id === methodId;
+                            const dayMatches = selectedTargetDate && selectedTargetDate.getFullYear()===d.date.getFullYear() && selectedTargetDate.getMonth()===d.date.getMonth() && selectedTargetDate.getDate()===d.date.getDate();
                             if (!segs.length) {
-                                return <td key={d.key} style={{ width:40, height:24, padding:0, border:'1px solid #2a2a2a'}} title={methodName[methodId] || methodId} />;
+                                const selected = isMethodSelected && dayMatches;
+                                return <td key={d.key} style={{ width:40, height:24, padding:0, border:'1px solid #2a2a2a', position:'relative'}} title={methodName[methodId] || methodId} onClick={()=>handleSelect(methodId, d.date, false)}>
+                                    {selected && <div style={{position:'absolute', top:'50%', left:'50%', width:6, height:6, background:'#2a2a2a', borderRadius:'50%', transform:'translate(-50%,-50%)'}} />}
+                                </td>;
                             }
+                            // Daily only (single) vs sub-daily (multiple)
+                            const isDailySingle = segs.length === 1;
                             return (
-                                <td key={d.key} style={{ width:40, height:24, padding:0, border:'1px solid #2a2a2a'}} title={methodName[methodId] || methodId}>
+                                <td key={d.key} style={{ width:40, height:24, padding:0, border:'1px solid #2a2a2a', cursor:'pointer', position:'relative'}} title={methodName[methodId] || methodId} onClick={()=>handleSelect(methodId, segs[0].date, segs.length>1 && segs[0].date.getHours()!==0)}>
                                     <div style={{display:'flex', width:'100%', height:'100%'}}>
                                         {segs.map((s, idx) => {
                                             const color = valueToColorCSS(typeof s.valueNorm === 'number' ? s.valueNorm : 0, 1);
-                                            return <div key={idx} title={`${methodName[methodId] || methodId} | ${s.date.toLocaleString()}`} style={{flex:1, background:color, borderRight: idx < segs.length-1 ? '1px solid #222':'none'}}/>;
+                                            const segSelected = isMethodSelected && selectedTargetDate && s.date.getTime() === selectedTargetDate.getTime();
+                                            return <div key={idx} title={`${methodName[methodId] || methodId} | ${s.date.toLocaleString()}`} style={{flex:1, background:color, borderRight: idx < segs.length-1 ? '1px solid #222':'none', cursor:'pointer', position:'relative'}} onClick={(e)=>{e.stopPropagation(); handleSelect(methodId, s.date, s.date.getHours()!==0);}}>
+                                                {segSelected && <div style={{position:'absolute', top:'50%', left:'50%', width:6, height:6, background:'#2a2a2a', borderRadius:'50%', transform:'translate(-50%,-50%)'}} />}
+                                            </div>;
                                         })}
                                     </div>
+                                    {isDailySingle && isMethodSelected && dayMatches && <div style={{position:'absolute', top:'50%', left:'50%', width:6, height:6, background:'#2a2a2a', borderRadius:'50%', transform:'translate(-50%,-50%)'}} />}
                                 </td>
                             );
                         })}

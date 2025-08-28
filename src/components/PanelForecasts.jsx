@@ -7,22 +7,28 @@ import {TreeItem} from '@mui/x-tree-view/TreeItem';
 
 export default function PanelForecasts(props) {
     const forecasts = useForecasts();
-    const {methodConfigTree} = forecasts;
-    const {setSelectedMethodConfig} = forecasts;
+    const {methodConfigTree, selectedMethodConfig, setSelectedMethodConfig} = forecasts;
 
-    const handleItemSelectionToggle = React.useCallback((event, itemId, isSelected) => {
-        if (!isSelected || !itemId) return;
+    const handleSelectedItemsChange = React.useCallback((event, itemIds) => {
+        if (!itemIds || itemIds.length === 0) return;
+        const itemId = Array.isArray(itemIds) ? itemIds[0] : itemIds; // single select
+        if (!itemId) return;
         const [methodId, configId] = itemId.split(':');
         if (!methodId) return;
         const method = methodConfigTree.find(m => m.id === methodId);
         if (!method) return;
         let config = null;
         if (configId) {
-            config = method.children.find(c => c.id === configId);
-            if (!config) return;
+            config = method.children.find(c => c.id === configId) || null;
         }
         setSelectedMethodConfig({method, config});
     }, [methodConfigTree, setSelectedMethodConfig]);
+
+    const selectedItems = React.useMemo(() => {
+        if (!selectedMethodConfig?.method) return [];
+        if (selectedMethodConfig.config) return [`${selectedMethodConfig.method.id}:${selectedMethodConfig.config.id}`];
+        return [selectedMethodConfig.method.id];
+    }, [selectedMethodConfig]);
 
     if (!methodConfigTree || methodConfigTree.length === 0) {
         return <Panel title="Forecasts" defaultOpen={props.defaultOpen}>No forecasts available</Panel>;
@@ -30,7 +36,12 @@ export default function PanelForecasts(props) {
 
     return (
         <Panel title="Forecasts" defaultOpen={props.defaultOpen}>
-            <SimpleTreeView onItemSelectionToggle={handleItemSelectionToggle} expansionTrigger="iconContainer">
+            <SimpleTreeView
+                expansionTrigger="iconContainer"
+                selectedItems={selectedItems}
+                onSelectedItemsChange={handleSelectedItemsChange}
+                multiSelect={false}
+            >
                 {methodConfigTree.map(method => (
                     <TreeItem key={method.id} itemId={method.id} label={method.name}>
                         {method.children.map(cfg => (
