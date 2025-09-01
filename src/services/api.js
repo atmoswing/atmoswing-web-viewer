@@ -97,10 +97,3 @@ export const getSynthesisTotal = (region, date, perc, normalize) => {
     const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
     return request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-total/${perc}${qs}`);
 };
-
-// --- Workspace Initialization ---
-export async function getWorkspaceInitData(region) {
-    const date = await getLastForecastDate(region);
-    const methodsAndConfigs = await getMethodsAndConfigs(region, date.last_forecast_date);
-    return {date, methodsAndConfigs};
-}

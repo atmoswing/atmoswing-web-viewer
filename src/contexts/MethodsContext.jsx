@@ -1,11 +1,13 @@
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
+import {useWorkspace} from './WorkspaceContext.jsx';
 import {getMethodsAndConfigs} from '../services/api.js';
 
 const MethodsContext = createContext({});
 
 export function MethodsProvider({children}) {
     const {workspace, activeForecastDate} = useForecastSession();
+    const {workspaceData} = useWorkspace();
 
     const [methodsAndConfigs, setMethodsAndConfigs] = useState(null);
     const [methodsLoading, setMethodsLoading] = useState(false);
@@ -15,7 +17,23 @@ export function MethodsProvider({children}) {
     const reqIdRef = useRef(0);
     const keyRef = useRef(null);
 
-    // Fetch methods when workspace/date changes
+    // Adopt preloaded methods from workspaceData if available
+    useEffect(() => {
+        if (!workspaceData || !workspace || !activeForecastDate) return;
+        const preloadDate = workspaceData.date?.last_forecast_date;
+        if (!preloadDate) return;
+        if (activeForecastDate !== preloadDate) return;
+        if (workspaceData.__workspace !== workspace) return;
+        if (!workspaceData.methodsAndConfigs) return;
+        const key = `${workspace}|${activeForecastDate}`;
+        if (keyRef.current === key) return; // already set
+        setMethodsAndConfigs(workspaceData.methodsAndConfigs);
+        keyRef.current = key;
+        setMethodsError(null);
+        setMethodsLoading(false);
+    }, [workspaceData, workspace, activeForecastDate]);
+
+    // Fetch methods when workspace/date changes (skips if already loaded via preload)
     useEffect(() => {
         let cancelled = false;
         const reqId = ++reqIdRef.current;
@@ -26,7 +44,7 @@ export function MethodsProvider({children}) {
                 return;
             }
             const key = `${workspace}|${activeForecastDate}`;
-            if (methodsAndConfigs && keyRef.current === key) return;
+            if (methodsAndConfigs && keyRef.current === key) return; // already loaded or preloaded
             setMethodsLoading(true);
             setMethodsError(null);
             try {
@@ -82,4 +100,3 @@ export function MethodsProvider({children}) {
 }
 
 export const useMethods = () => useContext(MethodsContext);
-

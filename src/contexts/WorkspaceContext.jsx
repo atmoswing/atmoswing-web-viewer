@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
-import { getWorkspaceInitData } from '../services/api.js';
+import { getLastForecastDate, getMethodsAndConfigs } from '../services/api.js';
 import {useConfig} from './ConfigContext.jsx';
 
 const WorkspaceContext = createContext();
@@ -16,6 +16,7 @@ export function WorkspaceProvider({ children }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const requestIdRef = useRef(0);
+    const methodsReqIdRef = useRef(0); // controls second phase
 
     useEffect(() => {
         if (!workspace && workspaces.length > 0) {
@@ -34,9 +35,19 @@ export function WorkspaceProvider({ children }) {
             setLoading(true);
             setError(null);
             try {
-                const data = await getWorkspaceInitData(workspace);
+                // Phase 1: fetch last forecast date
+                const date = await getLastForecastDate(workspace);
                 if (cancelled || currentId !== requestIdRef.current) return;
-                setWorkspaceData({...data, __workspace: workspace});
+                setWorkspaceData({ date, __workspace: workspace });
+                // Phase 2: fetch methods/configs
+                const methodsId = ++methodsReqIdRef.current;
+                try {
+                    const methodsAndConfigs = await getMethodsAndConfigs(workspace, date.last_forecast_date);
+                    if (cancelled || currentId !== requestIdRef.current || methodsId !== methodsReqIdRef.current) return;
+                    setWorkspaceData(prev => (prev && prev.date === date ? { ...prev, methodsAndConfigs } : prev));
+                } catch (e2) {
+                    // Non-fatal; MethodsProvider will attempt its own fetch
+                }
             } catch (e) {
                 if (cancelled || currentId !== requestIdRef.current) return;
                 setError(e);
@@ -63,4 +74,3 @@ export function WorkspaceProvider({ children }) {
 }
 
 export function useWorkspace() { return useContext(WorkspaceContext); }
-

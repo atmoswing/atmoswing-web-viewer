@@ -8,15 +8,16 @@ import {ForecastValuesProvider, useForecastValues as useForecastValuesInternal} 
 export function ForecastsProvider({children}) {
     return (
         <ForecastSessionProvider>
-            <MethodsProvider>
-                <EntitiesProvider>
-                    <SynthesisProvider>
+            {/* Place SynthesisProvider before Methods so its data loads in parallel with Methods fetching */}
+            <SynthesisProvider>
+                <MethodsProvider>
+                    <EntitiesProvider>
                         <ForecastValuesProvider>
                             {children}
                         </ForecastValuesProvider>
-                    </SynthesisProvider>
-                </EntitiesProvider>
-            </MethodsProvider>
+                    </EntitiesProvider>
+                </MethodsProvider>
+            </SynthesisProvider>
         </ForecastSessionProvider>
     );
 }
@@ -30,4 +31,3 @@ export const useForecastParameters = () => {
     return { percentile: s.percentile, setPercentile: s.setPercentile, normalizationRef: s.normalizationRef, setNormalizationRef: s.setNormalizationRef };
 };
 export { useForecastSession } from './ForecastSessionContext.jsx';
-
