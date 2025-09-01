@@ -11,11 +11,11 @@ import {parseForecastDate} from '../utils/forecastDateUtils.js';
 // Local cache to avoid refetching same series repeatedly during session
 const seriesCache = new Map();
 
-export default function ForecastSeriesPopup() {
+export default function ForecastSeriesModal() {
     const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
     const {selectedMethodConfig, methodConfigTree} = useMethods();
     const {workspace, activeForecastDate} = useForecastSession();
-    const {dailyLeads} = useSynthesis(); // not essential but could be used to order / reference
+    const {dailyLeads} = useSynthesis(); // reserved for future ordering logic
     const {entities} = useEntities();
 
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,6 @@ export default function ForecastSeriesPopup() {
 
     const reqIdRef = useRef(0);
 
-    // Determine effective configuration id (fallback to first if none selected)
     const resolvedConfigId = useMemo(() => {
         if (!selectedMethodConfig?.method) return null;
         if (selectedMethodConfig.config) return selectedMethodConfig.config.id;
@@ -37,7 +36,6 @@ export default function ForecastSeriesPopup() {
         return `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
     }, [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
 
-    // Fetch series when popup opens / dependencies change
     useEffect(() => {
         let cancelled = false;
         const reqId = ++reqIdRef.current;
@@ -52,19 +50,14 @@ export default function ForecastSeriesPopup() {
                 const targetDates = (resp?.series_values?.target_dates || []).map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d));
                 const percentilesArr = resp?.series_values?.series_percentiles || [];
                 const pList = {20: [], 60: [], 90: []};
-                percentilesArr.forEach(sp => {
-                    if (pList[sp.percentile] !== undefined) pList[sp.percentile] = sp.series_values || [];
-                });
+                percentilesArr.forEach(sp => { if (pList[sp.percentile] !== undefined) pList[sp.percentile] = sp.series_values || []; });
                 const normLen = targetDates.length;
                 const norm = arr => arr.length === normLen ? arr : targetDates.map((_,i)=> (typeof arr[i] === 'number'? arr[i] : null));
                 const data = {dates: targetDates, p20: norm(pList[20]), p60: norm(pList[60]), p90: norm(pList[90])};
                 seriesCache.set(cacheKey, data);
                 setSeries(data);
             } catch (e) {
-                if (!cancelled && reqId === reqIdRef.current) {
-                    setError(e);
-                    setSeries(null);
-                }
+                if (!cancelled && reqId === reqIdRef.current) { setError(e); setSeries(null); }
             } finally {
                 if (!cancelled && reqId === reqIdRef.current) setLoading(false);
             }
@@ -79,16 +72,14 @@ export default function ForecastSeriesPopup() {
         return match?.name || match?.id || selectedEntityId;
     }, [selectedEntityId, entities]);
 
-    // Build SVG chart
     const chart = useMemo(() => {
         if (!series || !series.dates.length) return null;
         const {dates, p20, p60, p90} = series;
         const allValues = [...p20, ...p60, ...p90].filter(v => typeof v === 'number');
         if (!allValues.length) return null;
-        const min = Math.min(...allValues);
         const max = Math.max(...allValues);
-        const pad = (max - min) * 0.08 || 1;
-        const yMin = min - pad;
+        const pad = max * 0.08 || 1;
+        const yMin = 0;
         const yMax = max + pad;
         const width = 620;
         const height = 260;
@@ -108,20 +99,11 @@ export default function ForecastSeriesPopup() {
         return (
             <svg width={width} height={height} role="img" aria-label="Forecast percentiles time series">
                 <rect x={0} y={0} width={width} height={height} fill="#fff" stroke="#ddd" />
-                {yVals.map(val => {
-                    const yy = y(val);
-                    return <g key={val}>
-                        <line x1={leftPad} x2={width-4} y1={yy} y2={yy} stroke="#eee" />
-                        <text x={leftPad-6} y={yy+4} fontSize={11} textAnchor="end" fill="#555">{val.toFixed(1)}</text>
-                    </g>;
-                })}
-                {dates.map((d,i)=> (
-                    <text key={i} x={x(i)} y={height-6} fontSize={11} textAnchor="middle" fill="#555">{fmtDate(d)}</text>
-                ))}
+                {yVals.map(val => { const yy = y(val); return <g key={val}><line x1={leftPad} x2={width-4} y1={yy} y2={yy} stroke="#eee" /><text x={leftPad-6} y={yy+4} fontSize={11} textAnchor="end" fill="#555">{val.toFixed(1)}</text></g>; })}
+                {dates.map((d,i)=> (<text key={i} x={x(i)} y={height-6} fontSize={11} textAnchor="middle" fill="#555">{fmtDate(d)}</text>))}
                 <path d={path20} fill="none" stroke="#1976d2" strokeWidth={2} />
                 <path d={path60} fill="none" stroke="#ef6c00" strokeWidth={2} strokeDasharray="5 4" />
                 <path d={path90} fill="none" stroke="#2e7d32" strokeWidth={2} strokeDasharray="3 3" />
-                {/* Legend */}
                 <g>
                     <rect x={leftPad+4} y={6} width={140} height={46} fill="#fafafa" stroke="#ddd" />
                     <line x1={leftPad+14} x2={leftPad+44} y1={18} y2={18} stroke="#1976d2" strokeWidth={3} />
