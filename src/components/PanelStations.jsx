@@ -3,7 +3,7 @@ import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { useEntities } from '../ForecastsContext.jsx';
+import { useEntities } from '../contexts/ForecastsContext.jsx';
 
 export default function PanelStations(props) {
     const {entities, entitiesLoading, entitiesError} = useEntities();

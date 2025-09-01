@@ -1,6 +1,6 @@
 import Panel from './Panel';
 import React, {useMemo, useCallback} from 'react';
-import {useMethods, useSynthesis} from '../ForecastsContext.jsx';
+import {useMethods, useSynthesis} from '../contexts/ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colors.js';
 
 export default function PanelAlarms(props) {

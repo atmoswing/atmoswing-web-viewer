@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import staticConfig from './config';
+import staticConfig from '../config.js';
 
 const ConfigContext = createContext();
 
@@ -9,7 +9,8 @@ export function ConfigProvider({ children }) {
     useEffect(() => {
         fetch('/config.json')
             .then(res => res.json())
-            .then(runtimeConfig => setConfig({ ...staticConfig, ...runtimeConfig }));
+            .then(runtimeConfig => setConfig({ ...staticConfig, ...runtimeConfig }))
+            .catch(()=>{});
     }, []);
 
     return (
@@ -19,6 +20,5 @@ export function ConfigProvider({ children }) {
     );
 }
 
-export function useConfig() {
-    return useContext(ConfigContext);
-}
+export function useConfig() { return useContext(ConfigContext); }
+

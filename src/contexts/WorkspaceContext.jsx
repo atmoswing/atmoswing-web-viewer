@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
-import { getWorkspaceInitData } from './services/api';
-import {useConfig} from "./ConfigContext.jsx";
+import { getWorkspaceInitData } from '../services/api.js';
+import {useConfig} from './ConfigContext.jsx';
 
 const WorkspaceContext = createContext();
 
@@ -15,9 +15,8 @@ export function WorkspaceProvider({ children }) {
     const [workspaceData, setWorkspaceData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const requestIdRef = useRef(0); // guard against stale async responses
+    const requestIdRef = useRef(0);
 
-    // If runtime config updates and current workspace is no longer valid, pick first available
     useEffect(() => {
         if (!workspace && workspaces.length > 0) {
             setWorkspace(workspaces[0].key);
@@ -31,17 +30,15 @@ export function WorkspaceProvider({ children }) {
         async function load() {
             if (!workspace) { setWorkspaceData(null); return; }
             const currentId = ++requestIdRef.current;
-            // Immediately clear old data to avoid consumers using stale method/config
             setWorkspaceData(null);
             setLoading(true);
             setError(null);
             try {
                 const data = await getWorkspaceInitData(workspace);
-                if (cancelled || currentId !== requestIdRef.current) return; // stale
-                // Tag the data with the workspace it belongs to
+                if (cancelled || currentId !== requestIdRef.current) return;
                 setWorkspaceData({...data, __workspace: workspace});
             } catch (e) {
-                if (cancelled || currentId !== requestIdRef.current) return; // stale
+                if (cancelled || currentId !== requestIdRef.current) return;
                 setError(e);
                 setWorkspaceData(null);
             } finally {
@@ -62,13 +59,8 @@ export function WorkspaceProvider({ children }) {
         error
     }), [workspace, workspaceData, loading, error]);
 
-    return (
-        <WorkspaceContext.Provider value={value}>
-            {children}
-        </WorkspaceContext.Provider>
-    );
+    return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
-export function useWorkspace() {
-    return useContext(WorkspaceContext);
-}
+export function useWorkspace() { return useContext(WorkspaceContext); }
+

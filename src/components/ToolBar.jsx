@@ -7,7 +7,7 @@ import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrow
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
-import { useSynthesis, useMethods, useForecastSession } from '../ForecastsContext.jsx';
+import { useSynthesis, useMethods, useForecastSession } from '../contexts/ForecastsContext.jsx';
 import { valueToColorCSS } from '../utils/colors.js';
 import Tooltip from '@mui/material/Tooltip';
 

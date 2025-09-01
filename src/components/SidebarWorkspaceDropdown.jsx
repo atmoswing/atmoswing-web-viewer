@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useWorkspace } from '../WorkspaceContext';
+import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';

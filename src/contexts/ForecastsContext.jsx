@@ -1,11 +1,10 @@
 import React from 'react';
-import {ForecastSessionProvider, useForecastSession} from './contexts/ForecastSessionContext.jsx';
-import {MethodsProvider, useMethods as useMethodsInternal} from './contexts/MethodsContext.jsx';
-import {EntitiesProvider, useEntities as useEntitiesInternal} from './contexts/EntitiesContext.jsx';
-import {SynthesisProvider, useSynthesis as useSynthesisInternal} from './contexts/SynthesisContext.jsx';
-import {ForecastValuesProvider, useForecastValues as useForecastValuesInternal} from './contexts/ForecastValuesContext.jsx';
+import {ForecastSessionProvider, useForecastSession} from './ForecastSessionContext.jsx';
+import {MethodsProvider, useMethods as useMethodsInternal} from './MethodsContext.jsx';
+import {EntitiesProvider, useEntities as useEntitiesInternal} from './EntitiesContext.jsx';
+import {SynthesisProvider, useSynthesis as useSynthesisInternal} from './SynthesisContext.jsx';
+import {ForecastValuesProvider, useForecastValues as useForecastValuesInternal} from './ForecastValuesContext.jsx';
 
-// Root provider composing modular providers (legacy combined context removed)
 export function ForecastsProvider({children}) {
     return (
         <ForecastSessionProvider>
@@ -22,7 +21,6 @@ export function ForecastsProvider({children}) {
     );
 }
 
-// Granular hooks (re-export wrappers)
 export const useMethods = () => useMethodsInternal();
 export const useEntities = () => useEntitiesInternal();
 export const useSynthesis = () => useSynthesisInternal();
@@ -31,5 +29,5 @@ export const useForecastParameters = () => {
     const s = useForecastSession();
     return { percentile: s.percentile, setPercentile: s.setPercentile, normalizationRef: s.normalizationRef, setNormalizationRef: s.setNormalizationRef };
 };
-// Direct session hook (optional export for consumers needing base date / shift)
-export { useForecastSession } from './contexts/ForecastSessionContext.jsx';
+export { useForecastSession } from './ForecastSessionContext.jsx';
+

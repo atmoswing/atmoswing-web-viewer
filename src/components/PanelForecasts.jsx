@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Panel from './Panel';
-import {useMethods} from '../ForecastsContext.jsx';
+import {useMethods} from '../contexts/ForecastsContext.jsx';
 import {SimpleTreeView} from '@mui/x-tree-view/SimpleTreeView';
 import {TreeItem} from '@mui/x-tree-view/TreeItem';
 

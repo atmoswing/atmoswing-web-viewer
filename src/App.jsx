@@ -5,8 +5,8 @@ import './styles/App.css'
 import SideBar from "./components/SideBar.jsx";
 import ToolBar from "./components/ToolBar.jsx";
 import MapViewer from "./components/MapViewer.jsx";
-import {WorkspaceProvider} from './WorkspaceContext';
-import {ForecastsProvider} from './ForecastsContext.jsx';
+import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
+import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
 
 function MapArea() {
     return (

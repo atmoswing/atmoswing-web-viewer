@@ -18,9 +18,9 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
-import {useEntities, useForecastValues, useSynthesis} from '../ForecastsContext.jsx';
+import {useEntities, useForecastValues, useSynthesis} from '../contexts/ForecastsContext.jsx';
 import config from '../config.js';
-import {useWorkspace} from '../WorkspaceContext.jsx';
+import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
 import { valueToColor } from '../utils/colors.js';
 
 // Add projection imports

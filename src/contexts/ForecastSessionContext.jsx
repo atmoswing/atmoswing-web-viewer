@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useEffect, useRef, useState, useCallback, useMemo} from 'react';
-import {useWorkspace} from '../WorkspaceContext.jsx';
+import {useWorkspace} from './WorkspaceContext.jsx';
 import {parseForecastDate, formatForecastDateForApi} from '../utils/forecastDateUtils.js';
 
 const ForecastSessionContext = createContext({});
@@ -68,4 +68,3 @@ export function ForecastSessionProvider({children}) {
 }
 
 export const useForecastSession = () => useContext(ForecastSessionContext);
-
