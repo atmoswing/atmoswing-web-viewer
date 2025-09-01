@@ -220,6 +220,10 @@
   display: none !important;
 }
 
+.sidebar .Mui-selected {
+    background: rgb(25 118 210 / 20%) !important;
+}
+
 .panel-header {
   font-size: 1em;
   background: #333;
