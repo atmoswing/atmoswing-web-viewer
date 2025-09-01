@@ -5,17 +5,21 @@ import {parseForecastDate} from '../utils/forecastDateUtils.js';
 
 const SynthesisContext = createContext({});
 
-export function SynthesisProvider({children}) {
-    const {workspace, activeForecastDate, percentile, normalizationRef, setForecastBaseDate} = useForecastSession();
+// Baseline synthesis parameters (fixed colors reference)
+const BASELINE_PERCENTILE = 90; // represents 0.9
+const BASELINE_NORMALIZATION_REF = 10;
 
-    // Leads selection
+export function SynthesisProvider({children}) {
+    const {workspace, activeForecastDate, setForecastBaseDate} = useForecastSession();
+
+    // Leads selection (from baseline synthesis)
     const [dailyLeads, setDailyLeads] = useState([]);
     const [subDailyLeads, setSubDailyLeads] = useState([]);
     const [leadResolution, setLeadResolution] = useState('daily');
     const [selectedLead, setSelectedLead] = useState(0);
     const [selectedTargetDate, setSelectedTargetDate] = useState(null);
 
-    // Per-method synthesis
+    // Per-method synthesis (baseline)
     const [perMethodSynthesis, setPerMethodSynthesis] = useState([]);
     const [perMethodSynthesisLoading, setPerMethodSynthesisLoading] = useState(false);
     const [perMethodSynthesisError, setPerMethodSynthesisError] = useState(null);
@@ -23,7 +27,7 @@ export function SynthesisProvider({children}) {
     const totalReqIdRef = useRef(0);
     const perReqIdRef = useRef(0);
 
-    // Fetch total synthesis (leads)
+    // Fetch total synthesis (leads) - only when workspace/date changes
     useEffect(() => {
         let cancelled = false;
         const reqId = ++totalReqIdRef.current;
@@ -36,7 +40,7 @@ export function SynthesisProvider({children}) {
                 return;
             }
             try {
-                const resp = await getSynthesisTotal(workspace, activeForecastDate, percentile, normalizationRef);
+                const resp = await getSynthesisTotal(workspace, activeForecastDate, BASELINE_PERCENTILE, BASELINE_NORMALIZATION_REF);
                 if (cancelled || reqId !== totalReqIdRef.current) return;
                 const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
                 const baseStr = resp?.parameters?.forecast_date || activeForecastDate;
@@ -81,9 +85,9 @@ export function SynthesisProvider({children}) {
         }
         run();
         return () => { cancelled = true; };
-    }, [workspace, activeForecastDate, percentile, normalizationRef, setForecastBaseDate]);
+    }, [workspace, activeForecastDate, setForecastBaseDate]);
 
-    // Fetch per-method synthesis
+    // Fetch per-method synthesis (baseline) - only when workspace/date changes
     useEffect(() => {
         let cancelled = false;
         const reqId = ++perReqIdRef.current;
@@ -93,7 +97,7 @@ export function SynthesisProvider({children}) {
             if (!workspace || !activeForecastDate) return;
             setPerMethodSynthesisLoading(true);
             try {
-                const resp = await getSynthesisPerMethod(workspace, activeForecastDate, percentile);
+                const resp = await getSynthesisPerMethod(workspace, activeForecastDate, BASELINE_PERCENTILE);
                 if (!cancelled && reqId === perReqIdRef.current) setPerMethodSynthesis(Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : []);
             } catch (e) {
                 if (!cancelled && reqId === perReqIdRef.current) {
@@ -106,7 +110,7 @@ export function SynthesisProvider({children}) {
         }
         run();
         return () => { cancelled = true; };
-    }, [workspace, activeForecastDate, percentile]);
+    }, [workspace, activeForecastDate]);
 
     // Public selection helper
     const selectTargetDate = useCallback((date, preferSub) => {
@@ -143,4 +147,3 @@ export function SynthesisProvider({children}) {
 }
 
 export const useSynthesis = () => useContext(SynthesisContext);
-
