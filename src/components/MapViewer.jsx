@@ -254,8 +254,13 @@ export default function MapViewer() {
             setLegendStops([]);
             return;
         }
-        // Skip if entities belong to a different (previous) workspace
-        if (entitiesWorkspace && entitiesWorkspace !== workspace) return;
+        // If data belongs to previous workspace, clear layer and reset legend, wait for new entities
+        if (entitiesWorkspace && entitiesWorkspace !== workspace) {
+            forecastLayerRef.current.getSource().clear();
+            setLegendStops([]);
+            lastFittedWorkspaceRef.current = null;
+            return;
+        }
         const layer = forecastLayerRef.current;
         const source = layer.getSource();
         source.clear();
@@ -318,11 +323,18 @@ export default function MapViewer() {
         // Fit view once per workspace after entities load
         if (workspace && lastFittedWorkspaceRef.current !== workspace && isFinite(minX) && isFinite(minY) && isFinite(maxX) && isFinite(maxY) && minX < maxX && minY < maxY) {
             const view = mapInstanceRef.current.getView();
-            // Provide padding in pixels and limit zoom-in a bit
             view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
             lastFittedWorkspaceRef.current = workspace;
         }
     }, [entities, forecastValuesNorm, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable]);
+
+    // Reset layer and fit flag when workspace changes so new workspace extent is used
+    useEffect(() => {
+        if (forecastLayerRef.current) {
+            forecastLayerRef.current.getSource().clear();
+        }
+        lastFittedWorkspaceRef.current = null;
+    }, [workspace]);
 
     // Build CSS gradient string
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';

@@ -16,6 +16,7 @@ export function MethodsProvider({children}) {
 
     const reqIdRef = useRef(0);
     const keyRef = useRef(null);
+    const prevWorkspaceRef = useRef(workspace);
 
     // Adopt preloaded methods from workspaceData if available
     useEffect(() => {
@@ -32,6 +33,17 @@ export function MethodsProvider({children}) {
         setMethodsError(null);
         setMethodsLoading(false);
     }, [workspaceData, workspace, activeForecastDate]);
+
+    // Clear methods state and selection on workspace change
+    useEffect(() => {
+        if (prevWorkspaceRef.current !== workspace) {
+            // Clear selection and cached key immediately on workspace change
+            setSelectedMethodConfig(null);
+            setMethodsAndConfigs(null);
+            keyRef.current = null;
+            prevWorkspaceRef.current = workspace;
+        }
+    }, [workspace]);
 
     // Fetch methods when workspace/date changes (skips if already loaded via preload)
     useEffect(() => {
@@ -77,16 +89,20 @@ export function MethodsProvider({children}) {
         }));
     }, [methodsAndConfigs]);
 
+    const setSelectedMethodConfigScoped = useCallback(sel => {
+        if (!sel) { setSelectedMethodConfig(null); return; }
+        setSelectedMethodConfig({...sel, _workspace: workspace});
+    }, [workspace]);
+
     // Auto select first method
     useEffect(() => {
         if (!selectedMethodConfig && methodConfigTree.length) {
-            setSelectedMethodConfig({method: methodConfigTree[0], config: null});
-        } else if (selectedMethodConfig && !methodConfigTree.find(m => m.id === selectedMethodConfig.method?.id)) {
+            setSelectedMethodConfigScoped({method: methodConfigTree[0], config: null});
+        } else if (selectedMethodConfig && (!methodConfigTree.find(m => m.id === selectedMethodConfig.method?.id) || selectedMethodConfig._workspace !== workspace)) {
+            // Clear if method missing or workspace changed
             setSelectedMethodConfig(null);
         }
-    }, [methodConfigTree, selectedMethodConfig]);
-
-    const setSelectedMethodConfigScoped = useCallback(sel => setSelectedMethodConfig(sel ? {...sel} : null), []);
+    }, [methodConfigTree, selectedMethodConfig, setSelectedMethodConfigScoped, workspace]);
 
     const value = useMemo(() => ({
         methodConfigTree,

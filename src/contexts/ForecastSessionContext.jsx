@@ -35,6 +35,18 @@ export function ForecastSessionProvider({children}) {
         }
     }, [workspaceData, fullReset]);
 
+    // Reset forecast session state immediately when workspace changes to avoid using previous workspace's activeForecastDate and method selections.
+    const prevWorkspaceRef = useRef(workspace);
+    useEffect(() => {
+        if (prevWorkspaceRef.current !== workspace) {
+            // Workspace changed: clear date & pattern before new one loads to prevent cross-workspace fetches
+            setActiveForecastDate(null);
+            setActiveForecastDatePattern(null);
+            fullReset(null); // increments resetVersion + clears base date
+            prevWorkspaceRef.current = workspace;
+        }
+    }, [workspace, fullReset]);
+
     // Shift base date by hours
     const shiftForecastBaseDate = useCallback((hours) => {
         setActiveForecastDate(prev => {
