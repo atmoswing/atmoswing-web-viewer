@@ -7,12 +7,12 @@ import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrow
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
-import { useForecasts } from '../ForecastsContext.jsx';
+import { useSynthesis, useMethods, useForecastSession } from '../ForecastsContext.jsx';
 import { valueToColorCSS } from '../utils/colors.js';
 import Tooltip from '@mui/material/Tooltip';
 
 function ToolbarSquares() {
-    const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useForecasts();
+    const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useSynthesis();
     const maxVal = 1;
 
     // Canonical 4 sub-daily hours (00,06,12,18)
@@ -73,8 +73,8 @@ function ToolbarSquares() {
 }
 
 function ToolbarCenter() {
-    const { selectedMethodConfig, forecastBaseDate, shiftForecastBaseDate, activeForecastDate } = useForecasts();
-    console.log(forecastBaseDate);
+    const { selectedMethodConfig } = useMethods();
+    const { forecastBaseDate, shiftForecastBaseDate, activeForecastDate } = useForecastSession();
     const forecastDateStr = React.useMemo(() => {
         if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
             const fd = forecastBaseDate;

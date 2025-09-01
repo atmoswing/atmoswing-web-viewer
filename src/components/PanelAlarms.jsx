@@ -1,10 +1,10 @@
 import Panel from './Panel';
 import React, {useMemo, useCallback} from 'react';
-import {usePerMethodSynthesis, useMethods, useSynthesis} from '../ForecastsContext.jsx';
+import {useMethods, useSynthesis} from '../ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colors.js';
 
 export default function PanelAlarms(props) {
-    const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError } = usePerMethodSynthesis();
+    const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError } = useSynthesis();
     const { methodConfigTree, setSelectedMethodConfig, selectedMethodConfig } = useMethods();
     const { selectTargetDate, selectedTargetDate, dailyLeads } = useSynthesis();
 

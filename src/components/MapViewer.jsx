@@ -18,7 +18,7 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
-import {useForecasts} from '../ForecastsContext.jsx';
+import {useEntities, useForecastValues, useSynthesis} from '../ForecastsContext.jsx';
 import config from '../config.js';
 import {useWorkspace} from '../WorkspaceContext.jsx';
 import { valueToColor } from '../utils/colors.js';
@@ -56,7 +56,9 @@ export default function MapViewer() {
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
 
-    const {entities, forecastValues, forecastValuesNorm, entitiesWorkspace, entitiesLoading, forecastLoading, relevantEntities, forecastUnavailable, selectedTargetDate} = useForecasts();
+    const {entities, entitiesWorkspace, entitiesLoading, relevantEntities} = useEntities();
+    const {forecastValues, forecastValuesNorm, forecastLoading, forecastUnavailable} = useForecastValues();
+    const {selectedTargetDate} = useSynthesis();
     const {workspace} = useWorkspace();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
