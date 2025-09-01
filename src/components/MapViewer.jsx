@@ -19,6 +19,7 @@ import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
 import {useEntities, useForecastValues, useSynthesis} from '../contexts/ForecastsContext.jsx';
+import {useSelectedEntity} from '../contexts/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
@@ -61,6 +62,8 @@ export default function MapViewer() {
     const {forecastValues, forecastValuesNorm, forecastLoading, forecastUnavailable} = useForecastValues();
     const {selectedTargetDate} = useSynthesis();
     const {workspace} = useWorkspace();
+
+    const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);

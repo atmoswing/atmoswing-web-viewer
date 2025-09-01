@@ -3,30 +3,31 @@ import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { useEntities } from '../contexts/ForecastsContext.jsx';
+import { useEntities, useSelectedEntity } from '../contexts/ForecastsContext.jsx';
 
 export default function PanelStations(props) {
     const {entities, entitiesLoading, entitiesError} = useEntities();
-    const [station, setStation] = React.useState('');
+    const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
 
-    // Ensure station value is always valid for current entities list (eager reset)
+    // Ensure selection is valid for current entities list
     React.useEffect(() => {
         if (!entities || entities.length === 0) {
-            if (station !== '') setStation('');
+            if (selectedEntityId != null) setSelectedEntityId(null);
             return;
         }
-        if (!entities.some(e => e.id === station)) {
-            setStation('');
+        if (selectedEntityId != null && !entities.some(e => e.id === selectedEntityId)) {
+            setSelectedEntityId(null);
         }
-    }, [entities, station]);
+    }, [entities, selectedEntityId, setSelectedEntityId]);
 
     const validStation = React.useMemo(() => {
         if (!entities || entities.length === 0) return '';
-        return entities.some(e => e.id === station) ? station : '';
-    }, [entities, station]);
+        return selectedEntityId != null && entities.some(e => e.id === selectedEntityId) ? selectedEntityId : '';
+    }, [entities, selectedEntityId]);
 
     const handleChangeStation = (event) => {
-        setStation(event.target.value);
+        const val = event.target.value;
+        setSelectedEntityId(val === '' ? null : val);
     };
 
     const disabled = entitiesLoading || !!entitiesError || !entities || entities.length === 0;
@@ -42,7 +43,7 @@ export default function PanelStations(props) {
                     displayEmpty
                     disabled={disabled}
                     renderValue={(value) => {
-                        if (!value) return entitiesLoading ? 'Loading stations…' : (entitiesError ? 'Error loading stations' : 'Select a station');
+                        if (value === '' || value == null) return entitiesLoading ? 'Loading stations…' : (entitiesError ? 'Error loading stations' : 'Select a station');
                         const match = entities?.find(e => e.id === value);
                         return match?.name || match?.id || value;
                     }}

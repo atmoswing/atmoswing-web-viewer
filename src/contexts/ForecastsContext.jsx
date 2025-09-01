@@ -4,17 +4,19 @@ import {MethodsProvider, useMethods as useMethodsInternal} from './MethodsContex
 import {EntitiesProvider, useEntities as useEntitiesInternal} from './EntitiesContext.jsx';
 import {SynthesisProvider, useSynthesis as useSynthesisInternal} from './SynthesisContext.jsx';
 import {ForecastValuesProvider, useForecastValues as useForecastValuesInternal} from './ForecastValuesContext.jsx';
+import {SelectedEntityProvider, useSelectedEntity as useSelectedEntityInternal} from './SelectedEntityContext.jsx';
 
 export function ForecastsProvider({children}) {
     return (
         <ForecastSessionProvider>
-            {/* Place SynthesisProvider before Methods so its data loads in parallel with Methods fetching */}
             <SynthesisProvider>
                 <MethodsProvider>
                     <EntitiesProvider>
-                        <ForecastValuesProvider>
-                            {children}
-                        </ForecastValuesProvider>
+                        <SelectedEntityProvider>
+                            <ForecastValuesProvider>
+                                {children}
+                            </ForecastValuesProvider>
+                        </SelectedEntityProvider>
                     </EntitiesProvider>
                 </MethodsProvider>
             </SynthesisProvider>
@@ -28,6 +30,12 @@ export const useSynthesis = () => useSynthesisInternal();
 export const useForecastValues = () => useForecastValuesInternal();
 export const useForecastParameters = () => {
     const s = useForecastSession();
-    return { percentile: s.percentile, setPercentile: s.setPercentile, normalizationRef: s.normalizationRef, setNormalizationRef: s.setNormalizationRef };
+    return {
+        percentile: s.percentile,
+        setPercentile: s.setPercentile,
+        normalizationRef: s.normalizationRef,
+        setNormalizationRef: s.setNormalizationRef
+    };
 };
-export { useForecastSession } from './ForecastSessionContext.jsx';
+export {useForecastSession} from './ForecastSessionContext.jsx';
+export const useSelectedEntity = () => useSelectedEntityInternal();

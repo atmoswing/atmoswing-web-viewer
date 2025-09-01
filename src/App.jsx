@@ -7,6 +7,7 @@ import ToolBar from "./components/ToolBar.jsx";
 import MapViewer from "./components/MapViewer.jsx";
 import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
 import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
+import ForecastSeriesPopup from './components/ForecastSeriesPopup.jsx';
 
 function MapArea() {
     return (
@@ -25,6 +26,7 @@ export default function App() {
                     <div className="main-content">
                         <ToolBar />
                         <MapArea />
+                        <ForecastSeriesPopup />
                     </div>
                 </ForecastsProvider>
             </WorkspaceProvider>
