@@ -65,36 +65,36 @@ async function request(endpoint) {
 // --- Metadata ---
 export const getConfig = () => request("/meta/show-config");
 export const getLastForecastDate = region => request(`/meta/${region}/last-forecast-date`);
-export const getAvailableMethods = (region, date) => request(`/meta/${region}/${date}/methods`);
-export const getMethodsAndConfigs = (region, date) => request(`/meta/${region}/${date}/methods-and-configs`);
-export const getEntities = (region, date, methodId, configId) => request(`/meta/${region}/${date}/${methodId}/${configId}/entities`);
-export const getRelevantEntities = (region, date, methodId, configId) => request(`/meta/${region}/${date}/${methodId}/${configId}/relevant-entities`);
+export const getAvailableMethods = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/methods`);
+export const getMethodsAndConfigs = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/methods-and-configs`);
+export const getEntities = (region, date, methodId, configId) => request(`/meta/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/entities`);
+export const getRelevantEntities = (region, date, methodId, configId) => request(`/meta/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/relevant-entities`);
 
 // --- Forecast Data ---
-export const getAnalogDates = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${lead}/analog-dates`);
-export const getAnalogyCriteria = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${lead}/analogy-criteria`);
+export const getAnalogDates = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/analog-dates`);
+export const getAnalogyCriteria = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/analogy-criteria`);
 export const getEntitiesValuesPercentile = (region, date, methodId, configId, lead, perc, normalize) => {
     const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/forecasts/${region}/${date}/${methodId}/${configId}/${lead}/entities-values-percentile/${perc}${qs}`);
+    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/entities-values-percentile/${perc}${qs}`);
 };
-export const getReferenceValues = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/reference-values`);
-export const getSeriesBestAnalogs = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/series-values-best-analogs`);
-export const getSeriesValuesPercentiles = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/series-values-percentiles`);
-export const getSeriesValuesPercentilesHistory = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/series-values-percentiles-history`);
-export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/${lead}/analogs`);
-export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
-export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`);
-export const getAnalogValuesBest = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${date}/${methodId}/${configId}/${entity}/${lead}/analog-values-best`);
+export const getReferenceValues = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/reference-values`);
+export const getSeriesBestAnalogs = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-best-analogs`);
+export const getSeriesValuesPercentiles = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles`);
+export const getSeriesValuesPercentilesHistory = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history`);
+export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analogs`);
+export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
+export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`);
+export const getAnalogValuesBest = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-best`);
 
 // --- Aggregations ---
 export const getAggregatedEntitiesValues = (region, date, methodId, lead, perc, normalize) => {
     const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/aggregations/${region}/${date}/${methodId}/${lead}/entities-values-percentile/${perc}${qs}`);
+    return request(`/aggregations/${region}/${encodeURIComponent(date)}/${methodId}/${lead}/entities-values-percentile/${perc}${qs}`);
 };
-export const getSynthesisPerMethod = (region, date, perc) => request(`/aggregations/${region}/${date}/series-synthesis-per-method/${perc}`);
+export const getSynthesisPerMethod = (region, date, perc) => request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-per-method/${perc}`);
 export const getSynthesisTotal = (region, date, perc, normalize) => {
     const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/aggregations/${region}/${date}/series-synthesis-total/${perc}${qs}`);
+    return request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-total/${perc}${qs}`);
 };
 
 // --- Workspace Initialization ---

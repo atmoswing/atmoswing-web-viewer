@@ -10,6 +10,7 @@ import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArro
 import { useWorkspace } from '../WorkspaceContext.jsx';
 import { useForecasts } from '../ForecastsContext.jsx';
 import { valueToColorCSS } from '../utils/colors.js';
+import Tooltip from '@mui/material/Tooltip';
 
 function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useForecasts();
@@ -74,24 +75,27 @@ function ToolbarSquares() {
 
 function ToolbarCenter() {
     const { workspace } = useWorkspace();
-    const { percentile, normalizationRef, selectedMethodConfig, forecastBaseDate } = useForecasts();
+    const { selectedMethodConfig, forecastBaseDate, shiftForecastBaseDate, activeForecastDate } = useForecasts();
     const forecastDateStr = React.useMemo(() => {
-        if (!forecastBaseDate || isNaN(forecastBaseDate)) return '';
-        const fd = forecastBaseDate;
-        const dd = String(fd.getDate()).padStart(2,'0');
-        const mm = String(fd.getMonth()+1).padStart(2,'0');
-        const yyyy = fd.getFullYear();
-        const HH = String(fd.getHours()).padStart(2,'0');
-        return `${dd}.${mm}.${yyyy} ${HH}h`;
+        if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
+            const fd = forecastBaseDate;
+            const dd = String(fd.getDate()).padStart(2,'0');
+            const mm = String(fd.getMonth()+1).padStart(2,'0');
+            const yyyy = fd.getFullYear();
+            const HH = String(fd.getHours()).padStart(2,'0');
+            return `${dd}.${mm}.${yyyy} ${HH}h`;
+        }
+        return '';
     }, [forecastBaseDate]);
+    const buttonsDisabled = !activeForecastDate; // only disable if we have absolutely no base date
     return (
         <div className="toolbar-center">
             <div className="toolbar-center-row">
-                <span>Prévision du {forecastDateStr || '...'}</span>
-                <button className="toolbar-center-btn"><KeyboardDoubleArrowLeftIcon fontSize="small" /></button>
-                <button className="toolbar-center-btn"><KeyboardArrowLeftIcon fontSize="small" /></button>
-                <button className="toolbar-center-btn"><KeyboardArrowRightIcon fontSize="small" /></button>
-                <button className="toolbar-center-btn"><KeyboardDoubleArrowRightIcon fontSize="small" /></button>
+                <span>{forecastDateStr ? `Prévision du ${forecastDateStr}` : 'Loading...'}</span>
+                <Tooltip title="-24h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-24)}><KeyboardDoubleArrowLeftIcon fontSize="small" /></button></span></Tooltip>
+                <Tooltip title="-6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-6)}><KeyboardArrowLeftIcon fontSize="small" /></button></span></Tooltip>
+                <Tooltip title="+6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(6)}><KeyboardArrowRightIcon fontSize="small" /></button></span></Tooltip>
+                <Tooltip title="+24h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(24)}><KeyboardDoubleArrowRightIcon fontSize="small" /></button></span></Tooltip>
             </div>
             <div>{selectedMethodConfig?.method ? `${selectedMethodConfig.method.name} (${selectedMethodConfig.method.id})` : ''}</div>
         </div>

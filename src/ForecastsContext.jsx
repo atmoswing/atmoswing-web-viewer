@@ -1,356 +1,313 @@
 import React, {createContext, useContext, useEffect, useMemo, useState, useRef, useCallback} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
-import {getEntities, getAggregatedEntitiesValues, getEntitiesValuesPercentile, getRelevantEntities, getSynthesisTotal, getSynthesisPerMethod} from './services/api.js';
+import {
+    getEntities,
+    getAggregatedEntitiesValues,
+    getEntitiesValuesPercentile,
+    getRelevantEntities,
+    getSynthesisTotal,
+    getSynthesisPerMethod,
+    getMethodsAndConfigs
+} from './services/api.js';
 
 const ForecastsContext = createContext();
 
+// ---------------- Helpers ----------------
+function parseForecastDate(str) {
+    if (!str) return null;
+    const mHourOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})$/);
+    if (mHourOnly) {
+        const [, y, mo, d, h] = mHourOnly;
+        const dt = new Date(+y, +mo - 1, +d, +h, 0, 0);
+        if (!isNaN(dt)) return dt;
+    }
+    let dt = new Date(str);
+    if (!isNaN(dt)) return dt;
+    if (/^\d{4}-\d{2}-\d{2}[ _]\d{2}:\d{2}(:\d{2})?$/.test(str)) {
+        dt = new Date(str.replace(/[ _]/, 'T') + (str.length === 16 ? ':00' : '') + 'Z');
+        if (!isNaN(dt)) return dt;
+    }
+    if (/^\d{10}(\d{2})?$/.test(str)) {
+        const year = str.slice(0, 4), mo = str.slice(4, 6), d = str.slice(6, 8), h = str.slice(8, 10),
+            mi = str.length >= 12 ? str.slice(10, 12) : '00';
+        dt = new Date(`${year}-${mo}-${d}T${h}:${mi}:00Z`);
+        if (!isNaN(dt)) return dt;
+    }
+    return null;
+}
+
+function formatForecastDateForApi(dateObj, reference) {
+    if (!dateObj || isNaN(dateObj)) return null;
+    const pad = n => String(n).padStart(2, '0');
+    if (reference && /^\d{4}-\d{2}-\d{2}T\d{2}$/.test(reference)) {
+        return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}`;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(reference || '')) {
+        return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:00`;
+    }
+    if (!reference) return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
+    return dateObj.toISOString();
+}
+
 export function ForecastsProvider({children}) {
-    const { workspace, workspaceData } = useWorkspace();
+    const {workspace, workspaceData} = useWorkspace();
 
-    // Build method/config tree from workspaceData
-    const methodConfigTree = useMemo(() => {
-        if (!workspaceData?.methodsAndConfigs?.methods) return [];
-        return workspaceData.methodsAndConfigs.methods.map(method => ({
-            id: method.id,
-            name: method.name,
-            children: (method.configurations || []).map(cfg => ({
-                id: cfg.id,
-                name: cfg.name
-            }))
-        }));
-    }, [workspaceData]);
+    // Core forecast base date
+    const [activeForecastDate, setActiveForecastDate] = useState(null);
+    const [activeForecastDatePattern, setActiveForecastDatePattern] = useState(null);
+    const activeForecastDateObj = useMemo(() => parseForecastDate(activeForecastDate), [activeForecastDate]);
 
+    // Methods/configs
+    const [methodsAndConfigs, setMethodsAndConfigs] = useState(null);
+    const [methodsLoading, setMethodsLoading] = useState(false);
+    const [methodsError, setMethodsError] = useState(null);
+    const methodsReqIdRef = useRef(0);
+    const methodsKeyRef = useRef(null); // track workspace|date key of loaded methods to avoid duplicate fetch
+
+    // Selection
     const [selectedMethodConfig, setSelectedMethodConfig] = useState(null);
 
-    // Reset selection when workspace changes
-    useEffect(() => {
+    // Entities + caches
+    const [entities, setEntities] = useState([]);
+    const entitiesWorkspaceRef = useRef(null);
+    const [entitiesLoading, setEntitiesLoading] = useState(false);
+    const [entitiesError, setEntitiesError] = useState(null);
+    const [entitiesVersion, setEntitiesVersion] = useState(0);
+    const entitiesReqIdRef = useRef(0);
+    const entitiesCacheRef = useRef(new Map());
+    const refreshEntities = useCallback(() => setEntitiesVersion(v => v + 1), []);
+
+    // Forecast values
+    const [forecastValuesNorm, setForecastValuesNorm] = useState({});
+    const [forecastValues, setForecastValues] = useState({});
+    const [forecastLoading, setForecastLoading] = useState(false);
+    const [forecastError, setForecastError] = useState(null);
+    const forecastReqIdRef = useRef(0);
+    const forecastCacheRef = useRef(new Map());
+
+    // Parameters
+    const [percentile, setPercentile] = useState(90);
+    const [normalizationRef, setNormalizationRef] = useState(10);
+    const [forecastUnavailable, setForecastUnavailable] = useState(false);
+
+    // Leads / synthesis
+    const [selectedLead, setSelectedLead] = useState(0);
+    const [selectedTargetDate, setSelectedTargetDate] = useState(null);
+    const [leadResolution, setLeadResolution] = useState('daily');
+    const [dailyLeads, setDailyLeads] = useState([]);
+    const [subDailyLeads, setSubDailyLeads] = useState([]);
+    const [forecastBaseDate, setForecastBaseDate] = useState(null);
+    const synthesisReqIdRef = useRef(0);
+
+    // Per-method synthesis
+    const [perMethodSynthesis, setPerMethodSynthesis] = useState([]);
+    const [perMethodSynthesisLoading, setPerMethodSynthesisLoading] = useState(false);
+    const [perMethodSynthesisError, setPerMethodSynthesisError] = useState(null);
+    const perMethodReqIdRef = useRef(0);
+
+    // Relevant entities
+    const [relevantEntities, setRelevantEntities] = useState(null);
+    const relevantReqIdRef = useRef(0);
+    const relevantCacheRef = useRef(new Map());
+
+    // Full reset
+    const fullReset = useCallback((optimisticDateObj) => {
         setSelectedMethodConfig(null);
-        // Clear entities immediately to avoid stale fit in map
+        setMethodsAndConfigs(null); // clear old methods
+        methodsKeyRef.current = null; // clear key so next effect can refetch if needed
         setEntities([]);
-        entitiesWorkspaceRef.current = workspace; // tag cleared state to new workspace
-        // Reset lead related state so that "forecast unavailable" message is not shown during initial load
+        entitiesWorkspaceRef.current = workspace;
+        setEntitiesError(null);
+        setEntitiesLoading(false);
+        setForecastValues({});
+        setForecastValuesNorm({});
+        setForecastError(null);
+        setForecastLoading(false);
+        setForecastUnavailable(false);
         setDailyLeads([]);
         setSubDailyLeads([]);
         setSelectedLead(0);
         setSelectedTargetDate(null);
-        setForecastUnavailable(false);
-        setForecastBaseDate(null);
+        setPerMethodSynthesis([]);
+        setPerMethodSynthesisLoading(false);
+        setPerMethodSynthesisError(null);
+        setRelevantEntities(null);
+        relevantCacheRef.current.clear();
+        forecastCacheRef.current.clear();
+        entitiesCacheRef.current.clear();
+        setForecastBaseDate(optimisticDateObj || null);
     }, [workspace]);
 
-    // Auto-select first method when data arrives or tree changes (only for current workspace)
+    // Initialize from workspaceData
     useEffect(() => {
-        if (!selectedMethodConfig && methodConfigTree.length > 0) {
-            const first = { workspace, method: methodConfigTree[0], config: null };
-            setSelectedMethodConfig(first);
+        if (workspaceData?.date?.last_forecast_date) {
+            const raw = workspaceData.date.last_forecast_date;
+            setActiveForecastDate(raw);
+            setActiveForecastDatePattern(p => p || raw);
+            fullReset(parseForecastDate(raw));
+            if (workspaceData.methodsAndConfigs) {
+                setMethodsAndConfigs(workspaceData.methodsAndConfigs);
+                methodsKeyRef.current = `${workspace}|${raw}`;
+            }
+        }
+    }, [workspaceData, fullReset, workspace]);
+
+    // Fetch methods
+    useEffect(() => {
+        let cancelled = false;
+        const reqId = ++methodsReqIdRef.current;
+        async function run() {
+            if (!workspace || !activeForecastDate) {
+                setMethodsAndConfigs(null);
+                methodsKeyRef.current = null;
+                return;
+            }
+            const key = `${workspace}|${activeForecastDate}`;
+            if (methodsAndConfigs && methodsKeyRef.current === key) {
+                return; // already have correct data
+            }
+            setMethodsLoading(true);
+            setMethodsError(null);
+            try {
+                const data = await getMethodsAndConfigs(workspace, activeForecastDate);
+                if (!cancelled && reqId === methodsReqIdRef.current) {
+                    setMethodsAndConfigs(data);
+                    methodsKeyRef.current = key;
+                }
+            } catch (e) {
+                if (!cancelled && reqId === methodsReqIdRef.current) {
+                    setMethodsError(e);
+                    setMethodsAndConfigs(null);
+                    methodsKeyRef.current = null;
+                }
+            } finally {
+                if (!cancelled && reqId === methodsReqIdRef.current) setMethodsLoading(false);
+            }
+        }
+        run();
+        return () => { cancelled = true };
+    }, [workspace, activeForecastDate, methodsAndConfigs]);
+
+    // Build method tree
+    const methodConfigTree = useMemo(() => {
+        if (!methodsAndConfigs?.methods) return [];
+        return methodsAndConfigs.methods.map(m => ({
+            id: m.id,
+            name: m.name,
+            children: (m.configurations || []).map(c => ({id: c.id, name: c.name}))
+        }));
+    }, [methodsAndConfigs]);
+
+    // Auto-select first method
+    useEffect(() => {
+        if (!selectedMethodConfig && methodConfigTree.length) {
+            setSelectedMethodConfig({workspace, method: methodConfigTree[0], config: null});
+        } else if (selectedMethodConfig && !methodConfigTree.find(m => m.id === selectedMethodConfig.method?.id)) {
+            setSelectedMethodConfig(null);
         }
     }, [methodConfigTree, selectedMethodConfig, workspace]);
 
-    // Entities for current selection (need them also when only a method is selected -> use first config just to fetch entities)
-    const [entities, setEntities] = useState([]);
-    const entitiesWorkspaceRef = useRef(null); // workspace key for which entities are valid
-    const [entitiesLoading, setEntitiesLoading] = useState(false);
-    const [entitiesError, setEntitiesError] = useState(null);
-    const [entitiesVersion, setEntitiesVersion] = useState(0); // manual refresh counter
-    const entitiesRequestIdRef = useRef(0);
-    const entitiesCacheRef = useRef(new Map()); // cache for entity fetch results
-    const entitiesFailedRef = useRef(new Set()); // cacheKey set for failed entity fetches
-
-    const refreshEntities = useCallback(() => setEntitiesVersion(v => v + 1), []);
-
+    // Entities effect
     useEffect(() => {
         let cancelled = false;
-        async function loadEntities() {
-            if (!workspaceData || !selectedMethodConfig || !selectedMethodConfig.method) {
-                setEntities([]);
-                setEntitiesLoading(false);
-                setEntitiesError(null);
+        const reqId = ++entitiesReqIdRef.current;
+
+        async function run() {
+            if (methodsLoading || !methodsAndConfigs) {
                 return;
-            }
-            // Guard: selection belongs to previous workspace -> wait for reset
-            if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) {
+            } // wait for fresh methods
+            if (!activeForecastDate || !selectedMethodConfig?.method) {
+                setEntities([]);
                 return;
             }
             const methodId = selectedMethodConfig.method.id;
-            // Ensure method still exists in current workspace tree
             if (!methodConfigTree.find(m => m.id === methodId)) {
+                setEntities([]);
                 return;
             }
-            // Use selected config if present, else first one for this method (only to get locations)
             let configId = selectedMethodConfig.config?.id;
             if (!configId) {
-                const method = methodConfigTree.find(m => m.id === methodId);
-                configId = method?.children?.[0]?.id;
-                if (!configId) { // cannot load entities
+                const m = methodConfigTree.find(m => m.id === methodId);
+                configId = m?.children?.[0]?.id;
+                if (!configId) {
                     setEntities([]);
-                    setEntitiesLoading(false);
                     return;
                 }
             }
-            const date = workspaceData.date?.last_forecast_date;
-            if (!date) {
-                setEntities([]);
-                setEntitiesLoading(false);
+            const cacheKey = `${workspace}|${activeForecastDate}|${methodId}|${configId}`;
+            const cached = entitiesCacheRef.current.get(cacheKey);
+            if (cached) {
+                setEntities(cached);
+                entitiesWorkspaceRef.current = workspace;
                 return;
             }
             setEntitiesLoading(true);
             setEntitiesError(null);
-            const currentId = ++entitiesRequestIdRef.current;
-            const cacheKey = `${workspace}|${date}|${methodId}|${configId}`;
             try {
-                if (entitiesFailedRef.current.has(cacheKey)) {
-                    // Avoid hammering after failure until manual refresh
-                    setEntitiesLoading(false);
-                    return;
-                }
-                const cached = entitiesCacheRef.current.get(cacheKey);
-                if (cached) {
-                    setEntities(cached);
+                const resp = await getEntities(workspace, activeForecastDate, methodId, configId);
+                if (cancelled || reqId !== entitiesReqIdRef.current) return;
+                const list = resp.entities || resp || [];
+                setEntities(list);
+                entitiesWorkspaceRef.current = workspace;
+                entitiesCacheRef.current.set(cacheKey, list);
+            } catch (e) {
+                if (!cancelled && reqId === entitiesReqIdRef.current) {
+                    setEntities([]);
+                    setEntitiesError(e);
                     entitiesWorkspaceRef.current = workspace;
-                    setEntitiesLoading(false);
-                    return;
+                    entitiesCacheRef.current.delete(cacheKey);
                 }
-                const list = await getEntities(workspace, date, methodId, configId);
-                if (cancelled || currentId !== entitiesRequestIdRef.current) return; // stale
-                setEntities(list.entities || list || []);
-                entitiesWorkspaceRef.current = workspace;
-                entitiesCacheRef.current.set(cacheKey, list.entities || list || []);
-            } catch (e) {
-                if (cancelled || currentId !== entitiesRequestIdRef.current) return; // stale
-                console.error('Entities load failed:', e);
-                setEntitiesError(e);
-                setEntities([]);
-                entitiesWorkspaceRef.current = workspace;
-                entitiesCacheRef.current.delete(cacheKey); // don't cache failures
-                entitiesFailedRef.current.add(cacheKey);
             } finally {
-                if (cancelled || currentId !== entitiesRequestIdRef.current) return; // stale
-                setEntitiesLoading(false);
+                if (!cancelled && reqId === entitiesReqIdRef.current) setEntitiesLoading(false);
             }
         }
-        loadEntities();
-        return () => { cancelled = true; };
-    }, [workspace, workspaceData, selectedMethodConfig, entitiesVersion, methodConfigTree]);
 
-    // Forecast values (aggregated if method only, else per config)
-    const [forecastValuesNorm, setForecastValuesNorm] = useState({}); // id -> normalized value
-    const [forecastValues, setForecastValues] = useState({}); // id -> raw (non-normalized) value
-    const [forecastLoading, setForecastLoading] = useState(false);
-    const [forecastError, setForecastError] = useState(null);
-    const [percentile, setPercentile] = useState(90); // selected percentile (e.g. 90)
-    const [normalizationRef, setNormalizationRef] = useState(10); // e.g. 2, 5, 10
-    const [forecastUnavailable, setForecastUnavailable] = useState(false); // lead time not available flag
-    // Lead time & synthesis series
-    const [selectedLead, setSelectedLead] = useState(0); // index in active resolution series
-    const [selectedTargetDate, setSelectedTargetDate] = useState(null); // Date object of selected lead target
-    const [leadResolution, setLeadResolution] = useState('daily'); // 'daily' | 'sub'
-    const [dailyLeads, setDailyLeads] = useState([]); // [{index,date,valueNorm?}]
-    const [subDailyLeads, setSubDailyLeads] = useState([]); // similar
-    const [forecastBaseDate, setForecastBaseDate] = useState(null); // Date object for forecast base (parameters.forecast_date)
-    // Per-method synthesis (alarms panel)
-    const [perMethodSynthesis, setPerMethodSynthesis] = useState([]);
-    const [perMethodSynthesisLoading, setPerMethodSynthesisLoading] = useState(false);
-    const [perMethodSynthesisError, setPerMethodSynthesisError] = useState(null);
-    const synthesisReqIdRef = useRef(0);
-    const forecastRequestIdRef = useRef(0);
-    const forecastCacheRef = useRef(new Map());
-    const forecastFailedRef = useRef(new Set());
+        run();
+        return () => {
+            cancelled = true
+        };
+    }, [workspace, activeForecastDate, selectedMethodConfig, entitiesVersion, methodConfigTree, methodsLoading, methodsAndConfigs]);
 
+    // Synthesis (leads)
     useEffect(() => {
         let cancelled = false;
-        async function loadForecastValues() {
-            if (!workspaceData || !selectedMethodConfig?.method) {
-                setForecastValues({});
-                setForecastValuesNorm({});
-                setForecastLoading(false);
-                setForecastError(null);
-                setForecastUnavailable(false);
-                return;
-            }
-            if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) {
-                return; // stale selection
-            }
-            const methodId = selectedMethodConfig.method.id;
-            if (!methodConfigTree.find(m => m.id === methodId)) {
-                setForecastValues({}); setForecastValuesNorm({}); setForecastUnavailable(false);
-                return; // method not in current workspace anymore
-            }
-            const configId = selectedMethodConfig.config?.id; // may be undefined for aggregated
-            const date = workspaceData.date?.last_forecast_date;
-            if (!date) {
-                setForecastValues({}); setForecastValuesNorm({});
-                setForecastLoading(false);
-                setForecastUnavailable(false);
-                return;
-            }
-            setForecastUnavailable(false);
-            // Clear previous values immediately to avoid stale display while new fetch pending
-            setForecastValues({}); setForecastValuesNorm({});
-            setForecastLoading(true);
-            setForecastError(null);
-            const currentId = ++forecastRequestIdRef.current;
-            // Compute lead in hours based on selected target date vs forecast base if available
-            let leadHours = 0;
-            if (forecastBaseDate && selectedTargetDate) {
-                leadHours = Math.round((selectedTargetDate.getTime() - forecastBaseDate.getTime()) / 3600000);
-                if (leadHours < 0) leadHours = 0; // guard
-            } else {
-                if (leadResolution === 'sub') {
-                    const step = subDailyLeads[selectedLead]?.time_step || (subDailyLeads.length ? subDailyLeads[0].time_step : 0);
-                    leadHours = step * selectedLead;
-                } else {
-                    const step = dailyLeads[selectedLead]?.time_step || (dailyLeads.length ? dailyLeads[0].time_step : 24);
-                    leadHours = step * selectedLead;
-                }
-            }
-            const perc = percentile; // percentile
-            const norm = normalizationRef; // normalization reference
-            const cacheKey = `${workspace}|${date}|${methodId}|${configId}|${leadHours}|${perc}|${norm||'raw'}`;
-            try {
-                if (forecastFailedRef.current.has(cacheKey)) {
-                    setForecastLoading(false);
-                    return; // skip repeated failing attempts
-                }
-                const cached = forecastCacheRef.current.get(cacheKey);
-                if (cached) {
-                    if (cached.norm && cached.raw) {
-                        setForecastValuesNorm(cached.norm);
-                        setForecastValues(cached.raw);
-                    } else {
-                        setForecastValuesNorm(cached);
-                        setForecastValues({});
-                    }
-                    setForecastUnavailable(false);
-                    setForecastLoading(false);
-                    return;
-                }
-                let resp;
-                if (configId) {
-                    resp = await getEntitiesValuesPercentile(workspace, date, methodId, configId, leadHours, perc, norm);
-                } else {
-                    resp = await getAggregatedEntitiesValues(workspace, date, methodId, leadHours, perc, norm);
-                }
-                if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
-                const ids = resp.entity_ids || [];
-                let valuesNorm = resp.values_normalized || [];
-                let valuesRaw = resp.values || [];
-                if (!Array.isArray(valuesNorm)) valuesNorm = [];
-                if (!Array.isArray(valuesRaw)) valuesRaw = [];
-                // Detect unavailable lead: ids present but no values
-                const allEmpty = ids.length > 0 && valuesNorm.length === 0 && valuesRaw.length === 0;
-                const lengthMismatch = ids.length > 0 && (valuesNorm.length > 0 && valuesNorm.length !== ids.length) && (valuesRaw.length > 0 && valuesRaw.length !== ids.length);
-                if (allEmpty || lengthMismatch) {
-                    setForecastValuesNorm({});
-                    setForecastValues({});
-                    setForecastUnavailable(true);
-                    setForecastLoading(false);
-                    return;
-                }
-                const normMap = {}; const rawMap = {};
-                ids.forEach((id, idx) => { normMap[id] = valuesNorm[idx]; rawMap[id] = valuesRaw[idx]; });
-                setForecastValuesNorm(normMap);
-                setForecastValues(rawMap);
-                setForecastUnavailable(false);
-                forecastCacheRef.current.set(cacheKey, { norm: normMap, raw: rawMap });
-            } catch (e) {
-                if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
-                console.error('Forecast values load failed:', e);
-                setForecastError(e); setForecastValuesNorm({}); setForecastValues({}); forecastCacheRef.current.delete(cacheKey);
-                forecastFailedRef.current.add(cacheKey);
-            } finally {
-                if (cancelled || currentId !== forecastRequestIdRef.current) return; // stale
-                setForecastLoading(false);
-            }
-        }
-        loadForecastValues();
-        return () => { cancelled = true; };
-    }, [workspace, workspaceData, selectedMethodConfig, percentile, normalizationRef, selectedLead, leadResolution, dailyLeads, subDailyLeads, forecastBaseDate, selectedTargetDate, methodConfigTree]);
+        const reqId = ++synthesisReqIdRef.current;
 
-    // Relevant entities (only when a specific config selected)
-    const [relevantEntities, setRelevantEntities] = useState(null); // null = not applicable (aggregated); Set when available
-    const relevantCacheRef = useRef(new Map());
-    const relevantReqIdRef = useRef(0);
-
-    useEffect(() => {
-        let cancelled = false;
-        async function loadRelevant() {
-            // Only fetch when a config is explicitly selected (not aggregated)
-            if (!workspaceData || !selectedMethodConfig?.method || !selectedMethodConfig.config) {
-                setRelevantEntities(null);
+        async function run() {
+            if (!activeForecastDate) {
+                setDailyLeads([]);
+                setSubDailyLeads([]);
+                setSelectedLead(0);
+                setSelectedTargetDate(null);
                 return;
             }
-            if (selectedMethodConfig.workspace && selectedMethodConfig.workspace !== workspace) return;
-            const methodId = selectedMethodConfig.method.id;
-            const configId = selectedMethodConfig.config.id;
-            const date = workspaceData.date?.last_forecast_date;
-            if (!date) { setRelevantEntities(null); return; }
-            const cacheKey = `${workspace}|${date}|${methodId}|${configId}`;
-            if (relevantCacheRef.current.has(cacheKey)) {
-                setRelevantEntities(relevantCacheRef.current.get(cacheKey));
-                return;
-            }
-            const currentId = ++relevantReqIdRef.current;
             try {
-                const resp = await getRelevantEntities(workspace, date, methodId, configId);
-                if (cancelled || currentId !== relevantReqIdRef.current) return;
-                let ids = [];
-                if (Array.isArray(resp)) {
-                    // Could be array of ids or objects
-                    if (resp.length && typeof resp[0] === 'object') {
-                        ids = resp.map(r => r.id ?? r.entity_id).filter(v => v != null);
-                    } else {
-                        ids = resp;
-                    }
-                } else if (resp && typeof resp === 'object') {
-                    ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
-                }
-                const set = new Set(ids);
-                relevantCacheRef.current.set(cacheKey, set);
-                setRelevantEntities(set);
-            } catch (e) {
-                if (cancelled || currentId !== relevantReqIdRef.current) return;
-                // On failure treat as not available rather than filtering everything
-                setRelevantEntities(null);
-            }
-        }
-        loadRelevant();
-        return () => { cancelled = true; };
-    }, [workspace, workspaceData, selectedMethodConfig]);
-
-    // Fetch synthesis total to derive lead target dates (for selecting lead time)
-    useEffect(() => {
-        let cancelled = false;
-        async function loadSynthesis() {
-            if (!workspaceData?.date?.last_forecast_date) { setDailyLeads([]); setSubDailyLeads([]); setSelectedLead(0); setSelectedTargetDate(null); return; }
-            const currentId = ++synthesisReqIdRef.current;
-            try {
-                const resp = await getSynthesisTotal(workspace, workspaceData.date.last_forecast_date, percentile, normalizationRef);
-                if (cancelled || currentId !== synthesisReqIdRef.current) return;
+                const resp = await getSynthesisTotal(workspace, activeForecastDate, percentile, normalizationRef);
+                if (cancelled || reqId !== synthesisReqIdRef.current) return;
                 const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
-                // Store forecast base date
-                const baseStr = resp?.parameters?.forecast_date;
-                setForecastBaseDate(baseStr ? new Date(baseStr) : null);
-                let daily = [];
-                let sub = [];
+                const baseStr = resp?.parameters?.forecast_date || activeForecastDate;
+                const baseDt = parseForecastDate(baseStr) || parseForecastDate(activeForecastDate) || (baseStr ? new Date(baseStr) : null);
+                setForecastBaseDate(baseDt);
+                let daily = [], sub = [];
                 arr.forEach(sp => {
                     const dates = Array.isArray(sp.target_dates) ? sp.target_dates : [];
-                    const valsNorm = Array.isArray(sp.values_normalized) ? sp.values_normalized : [];
-                    dates.forEach((dStr, idx) => {
-                        const dt = dStr ? new Date(dStr) : null;
-                        if (!dt) return;
-                        const rec = { index: idx, date: dt, time_step: sp.time_step, valueNorm: valsNorm[idx] };
-                        if (sp.time_step === 24) daily.push(rec); else sub.push({...rec, subIndex: idx});
+                    const vals = Array.isArray(sp.values_normalized) ? sp.values_normalized : [];
+                    dates.forEach((dStr, i) => {
+                        const dt = parseForecastDate(dStr) || new Date(dStr);
+                        if (isNaN(dt)) return;
+                        const rec = {index: i, date: dt, time_step: sp.time_step, valueNorm: vals[i]};
+                        if (sp.time_step === 24) daily.push(rec); else sub.push({...rec, subIndex: i});
                     });
                 });
-                daily = daily.sort((a,b)=>a.date-b.date);
-                sub = sub.sort((a,b)=>a.date-b.date);
+                daily.sort((a, b) => a.date - b.date);
+                sub.sort((a, b) => a.date - b.date);
                 setDailyLeads(daily);
                 setSubDailyLeads(sub);
-                // Reset selection to first daily
-                if (daily.length > 0) {
+                if (daily.length) {
                     setSelectedLead(0);
                     setLeadResolution('daily');
                     setSelectedTargetDate(daily[0].date);
-                } else if (sub.length > 0) {
+                } else if (sub.length) {
                     setSelectedLead(0);
                     setLeadResolution('sub');
                     setSelectedTargetDate(sub[0].date);
@@ -359,57 +316,217 @@ export function ForecastsProvider({children}) {
                     setSelectedTargetDate(null);
                     setLeadResolution('daily');
                 }
-            } catch (e) {
-                if (cancelled || currentId !== synthesisReqIdRef.current) return;
-                setDailyLeads([]); setSubDailyLeads([]); setSelectedLead(0); setSelectedTargetDate(null); setForecastBaseDate(null);
+            } catch {
+                if (cancelled || reqId !== synthesisReqIdRef.current) return;
+                setDailyLeads([]);
+                setSubDailyLeads([]);
+                setSelectedLead(0);
+                setSelectedTargetDate(null);
+                setForecastBaseDate(null);
             }
         }
-        loadSynthesis();
-        return () => { cancelled = true; };
-    }, [workspace, workspaceData, percentile, normalizationRef]);
 
-    // New: per-method synthesis (alarms panel)
+        run();
+        return () => {
+            cancelled = true
+        };
+    }, [workspace, activeForecastDate, percentile, normalizationRef]);
+
+    // Per-method synthesis
     useEffect(() => {
         let cancelled = false;
-        async function loadPerMethod() {
+        const reqId = ++perMethodReqIdRef.current;
+
+        async function run() {
             setPerMethodSynthesis([]);
             setPerMethodSynthesisError(null);
-            if (!workspaceData?.date?.last_forecast_date || !methodConfigTree.length) { return; }
+            if (!activeForecastDate || !methodConfigTree.length) return;
             setPerMethodSynthesisLoading(true);
             try {
-                const resp = await getSynthesisPerMethod(workspace, workspaceData.date.last_forecast_date, percentile);
-                if (!cancelled) {
-                    const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
-                    setPerMethodSynthesis(arr);
-                }
+                const resp = await getSynthesisPerMethod(workspace, activeForecastDate, percentile);
+                if (!cancelled && reqId === perMethodReqIdRef.current) setPerMethodSynthesis(Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : []);
             } catch (e) {
-                if (!cancelled) {
+                if (!cancelled && reqId === perMethodReqIdRef.current) {
                     setPerMethodSynthesisError(e);
                     setPerMethodSynthesis([]);
                 }
             } finally {
-                if (!cancelled) setPerMethodSynthesisLoading(false);
+                if (!cancelled && reqId === perMethodReqIdRef.current) setPerMethodSynthesisLoading(false);
             }
         }
-        loadPerMethod();
-        return () => { cancelled = true; };
-    }, [workspace, workspaceData, percentile, methodConfigTree]);
 
-    // Fallback: if we have workspace last_forecast_date but no forecastBaseDate yet (e.g. synthesis not fetched), set it.
+        run();
+        return () => {
+            cancelled = true
+        };
+    }, [workspace, activeForecastDate, percentile, methodConfigTree]);
+
+    // Forecast values
     useEffect(() => {
-        if (workspaceData?.date?.last_forecast_date) {
-            if (!forecastBaseDate) {
-                try { setForecastBaseDate(new Date(workspaceData.date.last_forecast_date)); } catch { /* ignore */ }
-            }
-        } else if (!workspaceData) {
-            // When workspace data cleared, also clear base date
-            if (forecastBaseDate) setForecastBaseDate(null);
-        }
-    }, [workspaceData, forecastBaseDate]);
+        let cancelled = false;
+        const reqId = ++forecastReqIdRef.current;
 
+        async function run() {
+            if (!activeForecastDate || !selectedMethodConfig?.method) {
+                setForecastValues({});
+                setForecastValuesNorm({});
+                setForecastLoading(false);
+                setForecastUnavailable(false);
+                setForecastError(null);
+                return;
+            }
+            const methodId = selectedMethodConfig.method.id;
+            if (!methodConfigTree.find(m => m.id === methodId)) {
+                setForecastValues({});
+                setForecastValuesNorm({});
+                return;
+            }
+            const configId = selectedMethodConfig.config?.id;
+            let leadHours = 0;
+            if (forecastBaseDate && selectedTargetDate) {
+                leadHours = Math.max(0, Math.round((selectedTargetDate.getTime() - forecastBaseDate.getTime()) / 3600000));
+            } else {
+                if (leadResolution === 'sub') {
+                    const step = subDailyLeads[selectedLead]?.time_step || (subDailyLeads[0]?.time_step || 0);
+                    leadHours = step * selectedLead;
+                } else {
+                    const step = dailyLeads[selectedLead]?.time_step || (dailyLeads[0]?.time_step || 24);
+                    leadHours = step * selectedLead;
+                }
+            }
+            const cacheKey = `${workspace}|${activeForecastDate}|${methodId}|${configId || 'agg'}|${leadHours}|${percentile}|${normalizationRef || 'raw'}`;
+            const cached = forecastCacheRef.current.get(cacheKey);
+            if (cached) {
+                setForecastValuesNorm(cached.norm);
+                setForecastValues(cached.raw);
+                setForecastUnavailable(false);
+                return;
+            }
+            setForecastLoading(true);
+            setForecastError(null);
+            setForecastValues({});
+            setForecastValuesNorm({});
+            try {
+                let resp;
+                if (configId) resp = await getEntitiesValuesPercentile(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef); else resp = await getAggregatedEntitiesValues(workspace, activeForecastDate, methodId, leadHours, percentile, normalizationRef);
+                if (cancelled || reqId !== forecastReqIdRef.current) return;
+                const ids = resp.entity_ids || [];
+                const valsNorm = Array.isArray(resp.values_normalized) ? resp.values_normalized : [];
+                const valsRaw = Array.isArray(resp.values) ? resp.values : [];
+                const allEmpty = ids.length > 0 && valsNorm.length === 0 && valsRaw.length === 0;
+                const mismatch = ids.length > 0 && ((valsNorm.length > 0 && valsNorm.length !== ids.length) && (valsRaw.length > 0 && valsRaw.length !== ids.length));
+                if (allEmpty || mismatch) {
+                    setForecastValues({});
+                    setForecastValuesNorm({});
+                    setForecastUnavailable(true);
+                    return;
+                }
+                const normMap = {}, rawMap = {};
+                ids.forEach((id, i) => {
+                    normMap[id] = valsNorm[i];
+                    rawMap[id] = valsRaw[i];
+                });
+                setForecastValuesNorm(normMap);
+                setForecastValues(rawMap);
+                setForecastUnavailable(false);
+                forecastCacheRef.current.set(cacheKey, {norm: normMap, raw: rawMap});
+            } catch (e) {
+                if (!cancelled && reqId === forecastReqIdRef.current) {
+                    setForecastError(e);
+                    setForecastValues({});
+                    setForecastValuesNorm({});
+                }
+            } finally {
+                if (!cancelled && reqId === forecastReqIdRef.current) setForecastLoading(false);
+            }
+        }
+
+        run();
+        return () => {
+            cancelled = true
+        };
+    }, [workspace, activeForecastDate, selectedMethodConfig, percentile, normalizationRef, selectedLead, leadResolution, dailyLeads, subDailyLeads, forecastBaseDate, selectedTargetDate, methodConfigTree]);
+
+    // Relevant entities
+    useEffect(() => {
+        let cancelled = false;
+        const reqId = ++relevantReqIdRef.current;
+
+        async function run() {
+            if (!activeForecastDate || !selectedMethodConfig?.method || !selectedMethodConfig.config) {
+                setRelevantEntities(null);
+                return;
+            }
+            const methodId = selectedMethodConfig.method.id;
+            const configId = selectedMethodConfig.config.id;
+            if (!methodConfigTree.find(m => m.id === methodId)) {
+                setRelevantEntities(null);
+                return;
+            }
+            const cacheKey = `${workspace}|${activeForecastDate}|${methodId}|${configId}`;
+            const cached = relevantCacheRef.current.get(cacheKey);
+            if (cached) {
+                setRelevantEntities(cached);
+                return;
+            }
+            try {
+                const resp = await getRelevantEntities(workspace, activeForecastDate, methodId, configId);
+                if (cancelled || reqId !== relevantReqIdRef.current) return;
+                let ids = [];
+                if (Array.isArray(resp)) {
+                    ids = typeof resp[0] === 'object' ? resp.map(r => r.id ?? r.entity_id).filter(v => v != null) : resp;
+                } else if (resp && typeof resp === 'object') {
+                    ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
+                }
+                const setIds = new Set(ids);
+                relevantCacheRef.current.set(cacheKey, setIds);
+                setRelevantEntities(setIds);
+            } catch {
+                if (!cancelled && reqId === relevantReqIdRef.current) setRelevantEntities(null);
+            }
+        }
+
+        run();
+        return () => {
+            cancelled = true
+        };
+    }, [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree]);
+
+    // Availability immediate feedback
+    useEffect(() => {
+        if (!selectedMethodConfig?.method || !activeForecastDate) {
+            setForecastUnavailable(false);
+            return;
+        }
+        if (!selectedTargetDate) {
+            setForecastUnavailable(false);
+            return;
+        }
+        if (leadResolution === 'sub') {
+            const match = subDailyLeads.find(l => l.date.getTime() === selectedTargetDate.getTime());
+            setForecastUnavailable(!match);
+        } else {
+            const match = dailyLeads.find(l => l.date.getFullYear() === selectedTargetDate.getFullYear() && l.date.getMonth() === selectedTargetDate.getMonth() && l.date.getDate() === selectedTargetDate.getDate());
+            setForecastUnavailable(!match);
+        }
+    }, [selectedMethodConfig, activeForecastDate, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
+
+    // Shift base date
+    const shiftForecastBaseDate = useCallback((hours) => {
+        setActiveForecastDate(prev => {
+            if (!prev) return prev;
+            const dt = parseForecastDate(prev);
+            if (!dt) return prev;
+            dt.setHours(dt.getHours() + hours);
+            const newRaw = formatForecastDateForApi(dt, activeForecastDatePattern || prev) || prev;
+            fullReset(dt);
+            return newRaw;
+        });
+    }, [activeForecastDatePattern, fullReset]);
+
+    // Select target date
     const selectTargetDate = useCallback((date, preferSub) => {
         if (!date) return;
-        // Try sub-daily if preferred and available
         if (preferSub && subDailyLeads.length) {
             const idx = subDailyLeads.findIndex(l => l.date.getTime() === date.getTime());
             if (idx >= 0) {
@@ -419,10 +536,9 @@ export function ForecastsProvider({children}) {
                 return;
             }
         }
-        // Fallback to daily (match by Y/M/D)
         if (dailyLeads.length) {
             const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
-            const idx = dailyLeads.findIndex(l => l.date.getFullYear()===y && l.date.getMonth()===m && l.date.getDate()===d);
+            const idx = dailyLeads.findIndex(l => l.date.getFullYear() === y && l.date.getMonth() === m && l.date.getDate() === d);
             if (idx >= 0) {
                 setSelectedLead(idx);
                 setLeadResolution('daily');
@@ -431,62 +547,28 @@ export function ForecastsProvider({children}) {
         }
     }, [dailyLeads, subDailyLeads]);
 
-    // Derive availability independently so UI updates immediately on selection change
-    useEffect(() => {
-        if (!selectedMethodConfig?.method || !workspaceData?.date?.last_forecast_date) {
-            setForecastUnavailable(false); // missing context
-            return;
-        }
-        if (!selectedTargetDate) {
-            // No selection yet -> don't show unavailable message
-            setForecastUnavailable(false);
-            return;
-        }
-        if (leadResolution === 'sub') {
-            const match = subDailyLeads.find(l => selectedTargetDate && l.date.getTime() === selectedTargetDate.getTime());
-            setForecastUnavailable(!match);
-        } else { // daily
-            const match = dailyLeads.find(l => selectedTargetDate && l.date.getFullYear()===selectedTargetDate.getFullYear() && l.date.getMonth()===selectedTargetDate.getMonth() && l.date.getDate()===selectedTargetDate.getDate());
-            setForecastUnavailable(!match);
-        }
-    }, [selectedMethodConfig, workspaceData, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
-
     const value = useMemo(() => ({
         methodConfigTree,
+        methodsLoading,
+        methodsError,
         selectedMethodConfig,
-        setSelectedMethodConfig: (sel) => setSelectedMethodConfig(sel ? { ...sel, workspace } : null),
+        setSelectedMethodConfig: sel => setSelectedMethodConfig(sel ? {...sel, workspace} : null),
         entities,
         entitiesWorkspace: entitiesWorkspaceRef.current,
-        entitiesLoading,
-        entitiesError,
-        refreshEntities,
-        forecastValues, // raw
-        forecastValuesNorm, // normalized
-        forecastLoading,
-        forecastError,
+        entitiesLoading, entitiesError, refreshEntities,
+        forecastValues, forecastValuesNorm, forecastLoading, forecastError,
         relevantEntities,
-        percentile,
-        setPercentile,
-        normalizationRef,
-        setNormalizationRef,
-        dailyLeads,
-        subDailyLeads,
-        leadResolution,
-        selectedLead,
-        selectedTargetDate,
-        selectTargetDate,
+        percentile, setPercentile,
+        normalizationRef, setNormalizationRef,
+        dailyLeads, subDailyLeads, leadResolution, selectedLead,
+        selectedTargetDate, selectTargetDate,
         forecastUnavailable,
-        forecastBaseDate,
-        perMethodSynthesis,
-        perMethodSynthesisLoading,
-        perMethodSynthesisError
-    }), [methodConfigTree, selectedMethodConfig, entities, entitiesLoading, entitiesError, refreshEntities, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, forecastBaseDate, workspace, selectTargetDate, forecastUnavailable, perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError]);
+        forecastBaseDate, activeForecastDate,
+        perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError,
+        shiftForecastBaseDate
+    }), [methodConfigTree, methodsLoading, methodsError, selectedMethodConfig, entities, entitiesLoading, entitiesError, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, forecastUnavailable, forecastBaseDate, activeForecastDate, perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError, shiftForecastBaseDate, workspace]);
 
-    return (
-        <ForecastsContext.Provider value={value}>
-            {children}
-        </ForecastsContext.Provider>
-    );
+    return <ForecastsContext.Provider value={value}>{children}</ForecastsContext.Provider>;
 }
 
 export function useForecasts() {
