@@ -68,13 +68,3 @@
     z-index: 50;
     pointer-events: none;
 }
-.map-loading-spinner {
-    width: 44px;
-    height: 44px;
-    border: 5px solid rgba(0,0,0,0.15);
-    border-top-color: #1976d2;
-    border-radius: 50%;
-    animation: map-spin 0.9s linear infinite;
-    box-shadow: 0 0 4px rgba(0,0,0,0.3);
-}
-@keyframes map-spin { to { transform: rotate(360deg); } }

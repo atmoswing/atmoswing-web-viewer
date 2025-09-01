@@ -19,6 +19,7 @@ import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
 import {useEntities, useForecastValues, useSynthesis} from '../contexts/ForecastsContext.jsx';
+import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
 import { valueToColor } from '../utils/colors.js';
@@ -345,7 +346,7 @@ export default function MapViewer() {
             {/* Loading overlay */}
             {(entitiesLoading || forecastLoading) && (
                 <div className="map-loading-overlay">
-                    <div className="map-loading-spinner" />
+                    <CircularProgress size={48} thickness={4} />
                 </div>
             )}
             {forecastUnavailable && selectedTargetDate && !(entitiesLoading || forecastLoading) && (
