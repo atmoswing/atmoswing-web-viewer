@@ -4,10 +4,10 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { useForecasts } from '../ForecastsContext.jsx';
+import { useForecastParameters } from '../ForecastsContext.jsx';
 
 export default function PanelDisplay(props) {
-    const { percentile, setPercentile, normalizationRef, setNormalizationRef } = useForecasts();
+    const { percentile, setPercentile, normalizationRef, setNormalizationRef } = useForecastParameters();
 
     const handleChangeNormalizationRef = (event) => {
         const val = Number(event.target.value);

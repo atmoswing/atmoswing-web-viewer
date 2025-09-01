@@ -6,10 +6,10 @@ const WorkspaceContext = createContext();
 
 export function WorkspaceProvider({ children }) {
     const config = useConfig();
-    const workspaces = config?.workspaces?.map(ws => ({
+    const workspaces = useMemo(() => (config?.workspaces?.map(ws => ({
         key: ws.key,
         name: ws.name
-    })) || [];
+    })) || []), [config]);
 
     const [workspace, setWorkspace] = useState(workspaces[0]?.key || '');
     const [workspaceData, setWorkspaceData] = useState(null);
@@ -45,8 +45,9 @@ export function WorkspaceProvider({ children }) {
                 setError(e);
                 setWorkspaceData(null);
             } finally {
-                if (cancelled || currentId !== requestIdRef.current) return; // stale
-                setLoading(false);
+                if (!(cancelled || currentId !== requestIdRef.current)) {
+                    setLoading(false);
+                }
             }
         }
         load();

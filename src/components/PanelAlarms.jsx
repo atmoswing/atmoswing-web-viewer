@@ -1,10 +1,12 @@
 import Panel from './Panel';
 import React, {useMemo, useCallback} from 'react';
-import {useForecasts} from '../ForecastsContext.jsx';
+import {usePerMethodSynthesis, useMethods, useSynthesis} from '../ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colors.js';
 
 export default function PanelAlarms(props) {
-    const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError, methodConfigTree, setSelectedMethodConfig, selectTargetDate, selectedMethodConfig, selectedTargetDate, dailyLeads } = useForecasts();
+    const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError } = usePerMethodSynthesis();
+    const { methodConfigTree, setSelectedMethodConfig, selectedMethodConfig } = useMethods();
+    const { selectTargetDate, selectedTargetDate, dailyLeads } = useSynthesis();
 
     // Map method id -> method name (order preserved as methodConfigTree)
     const methodOrder = useMemo(() => methodConfigTree.map(m => m.id), [methodConfigTree]);

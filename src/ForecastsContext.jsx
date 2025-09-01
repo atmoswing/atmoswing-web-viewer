@@ -10,12 +10,21 @@ import {
     getMethodsAndConfigs
 } from './services/api.js';
 
-const ForecastsContext = createContext();
+// Legacy combined context (kept for backward compatibility)
+const ForecastsContext = createContext({});
+// New granular contexts
+const MethodsContext = createContext({});
+const EntitiesContext = createContext({});
+const ParametersContext = createContext({});
+const SynthesisContext = createContext({});
+const PerMethodSynthesisContext = createContext({});
+const RelevantEntitiesContext = createContext({});
+const ForecastValuesContext = createContext({});
 
 // ---------------- Helpers ----------------
 function parseForecastDate(str) {
     if (!str) return null;
-    const mHourOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})$/);
+    const mHourOnly = str?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})$/);
     if (mHourOnly) {
         const [, y, mo, d, h] = mHourOnly;
         const dt = new Date(+y, +mo - 1, +d, +h, 0, 0);
@@ -52,22 +61,21 @@ function formatForecastDateForApi(dateObj, reference) {
 export function ForecastsProvider({children}) {
     const {workspace, workspaceData} = useWorkspace();
 
-    // Core forecast base date
+    // Core forecast date state
     const [activeForecastDate, setActiveForecastDate] = useState(null);
     const [activeForecastDatePattern, setActiveForecastDatePattern] = useState(null);
-    const activeForecastDateObj = useMemo(() => parseForecastDate(activeForecastDate), [activeForecastDate]);
 
-    // Methods/configs
+    // Methods / configs
     const [methodsAndConfigs, setMethodsAndConfigs] = useState(null);
     const [methodsLoading, setMethodsLoading] = useState(false);
     const [methodsError, setMethodsError] = useState(null);
     const methodsReqIdRef = useRef(0);
-    const methodsKeyRef = useRef(null); // track workspace|date key of loaded methods to avoid duplicate fetch
+    const methodsKeyRef = useRef(null);
 
-    // Selection
+    // Selected method-config pair
     const [selectedMethodConfig, setSelectedMethodConfig] = useState(null);
 
-    // Entities + caches
+    // Entities
     const [entities, setEntities] = useState([]);
     const entitiesWorkspaceRef = useRef(null);
     const [entitiesLoading, setEntitiesLoading] = useState(false);
@@ -112,8 +120,7 @@ export function ForecastsProvider({children}) {
 
     // Full reset
     const fullReset = useCallback((optimisticDateObj) => {
-        setSelectedMethodConfig(null);
-        setMethodsAndConfigs(null); // clear old methods
+        setMethodsAndConfigs(null);
         methodsKeyRef.current = null; // clear key so next effect can refetch if needed
         setEntities([]);
         entitiesWorkspaceRef.current = workspace;
@@ -156,6 +163,7 @@ export function ForecastsProvider({children}) {
     useEffect(() => {
         let cancelled = false;
         const reqId = ++methodsReqIdRef.current;
+
         async function run() {
             if (!workspace || !activeForecastDate) {
                 setMethodsAndConfigs(null);
@@ -184,8 +192,11 @@ export function ForecastsProvider({children}) {
                 if (!cancelled && reqId === methodsReqIdRef.current) setMethodsLoading(false);
             }
         }
+
         run();
-        return () => { cancelled = true };
+        return () => {
+            cancelled = true;
+        };
     }, [workspace, activeForecastDate, methodsAndConfigs]);
 
     // Build method tree
@@ -213,9 +224,7 @@ export function ForecastsProvider({children}) {
         const reqId = ++entitiesReqIdRef.current;
 
         async function run() {
-            if (methodsLoading || !methodsAndConfigs) {
-                return;
-            } // wait for fresh methods
+            if (methodsLoading || !methodsAndConfigs) return;
             if (!activeForecastDate || !selectedMethodConfig?.method) {
                 setEntities([]);
                 return;
@@ -234,6 +243,7 @@ export function ForecastsProvider({children}) {
                     return;
                 }
             }
+
             const cacheKey = `${workspace}|${activeForecastDate}|${methodId}|${configId}`;
             const cached = entitiesCacheRef.current.get(cacheKey);
             if (cached) {
@@ -264,11 +274,11 @@ export function ForecastsProvider({children}) {
 
         run();
         return () => {
-            cancelled = true
+            cancelled = true;
         };
     }, [workspace, activeForecastDate, selectedMethodConfig, entitiesVersion, methodConfigTree, methodsLoading, methodsAndConfigs]);
 
-    // Synthesis (leads)
+    // Synthesis
     useEffect(() => {
         let cancelled = false;
         const reqId = ++synthesisReqIdRef.current;
@@ -328,7 +338,7 @@ export function ForecastsProvider({children}) {
 
         run();
         return () => {
-            cancelled = true
+            cancelled = true;
         };
     }, [workspace, activeForecastDate, percentile, normalizationRef]);
 
@@ -357,7 +367,7 @@ export function ForecastsProvider({children}) {
 
         run();
         return () => {
-            cancelled = true
+            cancelled = true;
         };
     }, [workspace, activeForecastDate, percentile, methodConfigTree]);
 
@@ -443,7 +453,7 @@ export function ForecastsProvider({children}) {
 
         run();
         return () => {
-            cancelled = true
+            cancelled = true;
         };
     }, [workspace, activeForecastDate, selectedMethodConfig, percentile, normalizationRef, selectedLead, leadResolution, dailyLeads, subDailyLeads, forecastBaseDate, selectedTargetDate, methodConfigTree]);
 
@@ -488,7 +498,7 @@ export function ForecastsProvider({children}) {
 
         run();
         return () => {
-            cancelled = true
+            cancelled = true;
         };
     }, [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree]);
 
@@ -547,30 +557,107 @@ export function ForecastsProvider({children}) {
         }
     }, [dailyLeads, subDailyLeads]);
 
-    const value = useMemo(() => ({
+    // ---------- Context values ----------
+    const setSelectedMethodConfigScoped = useCallback(sel => setSelectedMethodConfig(sel ? {
+        ...sel,
+        workspace
+    } : null), [workspace]);
+
+    const methodsValue = useMemo(() => ({
         methodConfigTree,
         methodsLoading,
         methodsError,
         selectedMethodConfig,
-        setSelectedMethodConfig: sel => setSelectedMethodConfig(sel ? {...sel, workspace} : null),
-        entities,
-        entitiesWorkspace: entitiesWorkspaceRef.current,
-        entitiesLoading, entitiesError, refreshEntities,
-        forecastValues, forecastValuesNorm, forecastLoading, forecastError,
-        relevantEntities,
-        percentile, setPercentile,
-        normalizationRef, setNormalizationRef,
-        dailyLeads, subDailyLeads, leadResolution, selectedLead,
-        selectedTargetDate, selectTargetDate,
-        forecastUnavailable,
-        forecastBaseDate, activeForecastDate,
-        perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError,
-        shiftForecastBaseDate
-    }), [methodConfigTree, methodsLoading, methodsError, selectedMethodConfig, entities, entitiesLoading, entitiesError, forecastValues, forecastValuesNorm, forecastLoading, forecastError, relevantEntities, percentile, normalizationRef, dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, forecastUnavailable, forecastBaseDate, activeForecastDate, perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError, shiftForecastBaseDate, workspace]);
+        setSelectedMethodConfig: setSelectedMethodConfigScoped
+    }), [methodConfigTree, methodsLoading, methodsError, selectedMethodConfig, setSelectedMethodConfigScoped]);
 
-    return <ForecastsContext.Provider value={value}>{children}</ForecastsContext.Provider>;
+    const entitiesValue = useMemo(() => ({
+        entities,
+        entitiesLoading,
+        entitiesError,
+        refreshEntities,
+        setSelectedMethodConfig: setSelectedMethodConfigScoped
+    }), [entities, entitiesLoading, entitiesError, refreshEntities, setSelectedMethodConfigScoped]);
+
+    const parametersValue = useMemo(() => ({
+        percentile,
+        setPercentile,
+        normalizationRef,
+        setNormalizationRef
+    }), [percentile, normalizationRef]);
+
+    const synthesisValue = useMemo(() => ({
+        dailyLeads,
+        subDailyLeads,
+        leadResolution,
+        setLeadResolution,
+        selectedLead,
+        setSelectedLead,
+        selectedTargetDate,
+        selectTargetDate,
+        forecastBaseDate,
+        activeForecastDate,
+        shiftForecastBaseDate
+    }), [dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, selectTargetDate, forecastBaseDate, activeForecastDate, shiftForecastBaseDate]);
+
+    const perMethodValue = useMemo(() => ({
+        perMethodSynthesis,
+        perMethodSynthesisLoading,
+        perMethodSynthesisError
+    }), [perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError]);
+
+    const relevantValue = useMemo(() => ({relevantEntities}), [relevantEntities]);
+
+    const forecastValuesValue = useMemo(() => ({
+        forecastValues,
+        forecastValuesNorm,
+        forecastLoading,
+        forecastError,
+        forecastUnavailable
+    }), [forecastValues, forecastValuesNorm, forecastLoading, forecastError, forecastUnavailable]);
+
+    const combinedValue = useMemo(() => ({
+        ...methodsValue,
+        ...entitiesValue,
+        ...parametersValue,
+        ...synthesisValue,
+        ...perMethodValue,
+        ...relevantValue,
+        ...forecastValuesValue
+    }), [methodsValue, entitiesValue, parametersValue, synthesisValue, perMethodValue, relevantValue, forecastValuesValue]);
+
+    return (
+        <MethodsContext.Provider value={methodsValue}>
+            <ParametersContext.Provider value={parametersValue}>
+                <SynthesisContext.Provider value={synthesisValue}>
+                    <EntitiesContext.Provider value={entitiesValue}>
+                        <PerMethodSynthesisContext.Provider value={perMethodValue}>
+                            <RelevantEntitiesContext.Provider value={relevantValue}>
+                                <ForecastValuesContext.Provider value={forecastValuesValue}>
+                                    <ForecastsContext.Provider value={combinedValue}>
+                                        {children}
+                                    </ForecastsContext.Provider>
+                                </ForecastValuesContext.Provider>
+                            </RelevantEntitiesContext.Provider>
+                        </PerMethodSynthesisContext.Provider>
+                    </EntitiesContext.Provider>
+                </SynthesisContext.Provider>
+            </ParametersContext.Provider>
+        </MethodsContext.Provider>
+    );
 }
 
+// Legacy full hook
 export function useForecasts() {
     return useContext(ForecastsContext);
 }
+
+// Granular hooks
+export const useMethods = () => useContext(MethodsContext);
+export const useEntities = () => useContext(EntitiesContext);
+export const useForecastParameters = () => useContext(ParametersContext);
+export const useSynthesis = () => useContext(SynthesisContext);
+export const useForecastValues = () => useContext(ForecastValuesContext);
+export const useRelevantEntities = () => useContext(RelevantEntitiesContext);
+export const usePerMethodSynthesis = () => useContext(PerMethodSynthesisContext);
+

@@ -3,10 +3,10 @@ import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import {useForecasts} from '../ForecastsContext.jsx';
+import { useEntities } from '../ForecastsContext.jsx';
 
 export default function PanelStations(props) {
-    const {entities, entitiesLoading, entitiesError} = useForecasts();
+    const {entities, entitiesLoading, entitiesError} = useEntities();
     const [station, setStation] = React.useState('');
 
     // Ensure station value is always valid for current entities list (eager reset)

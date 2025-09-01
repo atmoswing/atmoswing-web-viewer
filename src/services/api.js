@@ -32,6 +32,7 @@ async function doFetch(fullUrl, endpoint) {
             try {
                 snippet = (await res.clone().text()).slice(0, 400);
             } catch {
+                // swallow fetch network error for retry logic; will retry unless attempts exhausted
             }
             if (config.API_DEBUG) {
                 console.groupCollapsed(`[API] ERROR ${status} ${endpoint}`);

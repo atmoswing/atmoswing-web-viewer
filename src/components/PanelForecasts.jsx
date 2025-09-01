@@ -1,13 +1,12 @@
 import * as React from 'react';
 import Panel from './Panel';
-import {useForecasts} from '../ForecastsContext.jsx';
+import {useMethods} from '../ForecastsContext.jsx';
 import {SimpleTreeView} from '@mui/x-tree-view/SimpleTreeView';
 import {TreeItem} from '@mui/x-tree-view/TreeItem';
 
 
 export default function PanelForecasts(props) {
-    const forecasts = useForecasts();
-    const {methodConfigTree, selectedMethodConfig, setSelectedMethodConfig} = forecasts;
+    const {methodConfigTree, selectedMethodConfig, setSelectedMethodConfig} = useMethods();
 
     const handleSelectedItemsChange = React.useCallback((event, itemIds) => {
         if (!itemIds || itemIds.length === 0) return;
