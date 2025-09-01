@@ -38,6 +38,7 @@ function ToolbarSquares() {
                 const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
                 const subs = subByDay.get(key) || [];
                 const subsByHour = new Map(subs.map(s => [s.date.getHours(), s]));
+                const hasAnySub = subHours.some(hr => subsByHour.has(hr));
                 const isSelected = selectedTargetDate && d.date.getFullYear()===selectedTargetDate.getFullYear() && d.date.getMonth()===selectedTargetDate.getMonth() && d.date.getDate()===selectedTargetDate.getDate() && (!selectedTargetDate.getHours() || subs.length===0);
                 return (
                     <div
@@ -48,7 +49,11 @@ function ToolbarSquares() {
                     >
                         <span>{label}</span>
                         {subHours.length > 0 && (
-                            <div className={`square-subdaily${subs.length ? ' has-subs' : ''}`} onClick={e=>{e.stopPropagation();}}>
+                            <div
+                                className={`square-subdaily${hasAnySub ? ' has-subs' : ''}`}
+                                style={!hasAnySub ? {display:'none'} : undefined}
+                                onClick={e=>{e.stopPropagation();}}
+                            >
                                 {subHours.map((hr, j) => {
                                     const s = subsByHour.get(hr);
                                     if (!s) return <div key={j} className="square-subdaily-seg placeholder"/>;
