@@ -207,11 +207,11 @@ export default function MapViewer() {
 
             mapInstanceRef.current.addControl(
                 new LayerSwitcher({
-                    tipLabel: 'Layers',
-                    groupSelectStyle: 'children',
-                    reverse: true
-                })
-            );
+                    tipLabel: t('map.layerSwitcherTip'),
+                     groupSelectStyle: 'children',
+                     reverse: true
+                 })
+             );
         })();
 
         return () => {
@@ -356,13 +356,13 @@ export default function MapViewer() {
             )}
             {forecastUnavailable && selectedTargetDate && !(entitiesLoading || forecastLoading) && (
                 <div className="map-loading-overlay" style={{backdropFilter:'blur(2px)', fontSize:18, color:'#222'}}>
-                    <div>No forecast available for the selected method and lead time</div>
+                    <div>{t('map.loading.noForecastAvailable')}</div>
                 </div>
             )}
             {/* Legend */}
             {legendStops.length > 0 && (
                 <div style={{position:'absolute', bottom:10, left:10, background:'rgba(255,255,255,0.9)', padding:'8px 10px', borderRadius:4, fontSize:12, boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}>
-                    <div style={{fontSize:14, marginBottom:2}}>Forecast values</div>
+                    <div style={{fontSize:14, marginBottom:2}}>{t('map.legend.title')}</div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                         <div style={{flex:1, height:14, background: gradientCSS, border:'1px solid #333'}} />
                     </div>

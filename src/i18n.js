@@ -56,6 +56,13 @@ const resources = {
                 },
                 "tooltip": {
                     "value": "Value"
+                },
+                "legend": {
+                    "title": "Forecast values"
+                },
+                "layerSwitcherTip": "Layers",
+                "loading": {
+                    "noForecastAvailable": "No forecast available for the selected method and lead time"
                 }
             }
         }
@@ -114,6 +121,13 @@ const resources = {
                 },
                 "tooltip": {
                     "value": "Valeur"
+                },
+                "legend": {
+                    "title": "Valeurs de prévision"
+                },
+                "layerSwitcherTip": "Couches",
+                "loading": {
+                    "noForecastAvailable": "Aucune prévision disponible pour la méthode et l'échéance sélectionnées"
                 }
             }
         }
