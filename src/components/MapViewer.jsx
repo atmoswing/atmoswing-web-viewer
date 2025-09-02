@@ -377,7 +377,7 @@ export default function MapViewer() {
             {tooltip && (
                 <div style={{position:'absolute', top: tooltip.y + 12, left: tooltip.x + 12, background:'rgba(0,0,0,0.75)', color:'#fff', padding:'4px 6px', borderRadius:4, fontSize:12, pointerEvents:'none', whiteSpace:'nowrap'}}>
                     <div>{tooltip.name}</div>
-                    <div>Value: {tooltip.valueRaw == null || isNaN(tooltip.valueRaw) ? 'NaN' : tooltip.valueRaw.toFixed(1)} mm</div>
+                    <div>{t('map.tooltip.value')}: {tooltip.valueRaw == null || isNaN(tooltip.valueRaw) ? 'NaN' : tooltip.valueRaw.toFixed(1)} mm</div>
                 </div>
             )}
         </div>

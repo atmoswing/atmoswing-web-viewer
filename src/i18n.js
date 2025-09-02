@@ -53,6 +53,9 @@ const resources = {
                     "adminIgn": "Admin (IGN)",
                     "bcae": "Waterways BCAE (IGN)",
                     "hydro": "Hydrography (IGN)"
+                },
+                "tooltip": {
+                    "value": "Value"
                 }
             }
         }
@@ -108,6 +111,9 @@ const resources = {
                     "adminIgn": "Admin (IGN)",
                     "bcae": "Cours d'eau BCAE (IGN)",
                     "hydro": "Hydrographie (IGN)"
+                },
+                "tooltip": {
+                    "value": "Valeur"
                 }
             }
         }
