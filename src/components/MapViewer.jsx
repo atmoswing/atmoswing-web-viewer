@@ -2,15 +2,15 @@ import 'ol/ol.css';
 import 'ol-layerswitcher/dist/ol-layerswitcher.css';
 import '../styles/map.css';
 
-import React, { useRef, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, {useRef, useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import LayerGroup from 'ol/layer/Group';
 import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
-import WMTS, { optionsFromCapabilities } from 'ol/source/WMTS';
+import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
 import WMTSCapabilities from 'ol/format/WMTSCapabilities';
 import WMTSTileGrid from 'ol/tilegrid/WMTS';
 import LayerSwitcher from 'ol-layerswitcher';
@@ -24,7 +24,7 @@ import {useSelectedEntity} from '../contexts/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
-import { valueToColor } from '../utils/colors.js';
+import {valueToColor} from '../utils/colors.js';
 
 // Add projection imports
 import proj4 from 'proj4';
@@ -44,7 +44,7 @@ const MANUAL_PM = (() => {
     const tileSize = 256;
     const baseResolution = worldExtent / tileSize;
     const maxMatrix = 18;
-    const resolutions = Array.from({ length: maxMatrix + 1 }, (_, z) => baseResolution / 2 ** z);
+    const resolutions = Array.from({length: maxMatrix + 1}, (_, z) => baseResolution / 2 ** z);
     const matrixIds = resolutions.map((_, z) => z.toString());
     return new WMTSTileGrid({
         origin: [-20037508, 20037508],
@@ -54,7 +54,7 @@ const MANUAL_PM = (() => {
 })();
 
 export default function MapViewer() {
-    const { t } = useTranslation();
+    const {t} = useTranslation();
     const containerRef = useRef(null);
     const mapInstanceRef = useRef(null); // guard
     const forecastLayerRef = useRef(null);
@@ -120,8 +120,14 @@ export default function MapViewer() {
                     'ORTHOIMAGERY.ORTHOPHOTOS': makeManual('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg'),
                     'ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW': makeManual('ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW', 'image/png'),
                     'ADMINEXPRESS-COG.LATEST': makeManual('ADMINEXPRESS-COG.LATEST', 'image/png'),
-                    'HYDROGRAPHY.BCAE.LATEST': { ...makeManual('HYDROGRAPHY.BCAE.LATEST', 'image/png'), style: 'nolegend' },
-                    'HYDROGRAPHY.HYDROGRAPHY': { ...makeManual('HYDROGRAPHY.HYDROGRAPHY', 'image/png'), style: 'nolegend' }
+                    'HYDROGRAPHY.BCAE.LATEST': {
+                        ...makeManual('HYDROGRAPHY.BCAE.LATEST', 'image/png'),
+                        style: 'nolegend'
+                    },
+                    'HYDROGRAPHY.HYDROGRAPHY': {
+                        ...makeManual('HYDROGRAPHY.HYDROGRAPHY', 'image/png'),
+                        style: 'nolegend'
+                    }
                 };
             }
 
@@ -208,14 +214,30 @@ export default function MapViewer() {
             mapInstanceRef.current.addControl(
                 new LayerSwitcher({
                     tipLabel: t('map.layerSwitcherTip'),
-                     groupSelectStyle: 'children',
-                     reverse: true
-                 })
-             );
+                    groupSelectStyle: 'children',
+                    reverse: true
+                })
+            );
+
+            // single-click handler: log clicked station id (attached at creation so handler is always registered)
+            const clickHandler = (evt) => {
+                if (!forecastLayerRef.current) return;
+                const map = mapInstanceRef.current;
+                const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === forecastLayerRef.current });
+                if (feature) {
+                    const fid = typeof feature.getId === 'function' ? feature.getId() : undefined;
+                    const id = fid != null ? fid : (feature.get('id') ?? feature.get('entity_id') ?? feature.get('entityId'));
+                    setSelectedEntityId(id === '' ? null : id);
+                }
+            };
+            mapInstanceRef.current.__singleClickHandler = clickHandler;
+            mapInstanceRef.current.on('singleclick', clickHandler);
         })();
 
         return () => {
             if (mapInstanceRef.current) {
+                // remove click handler if present
+                try { if (mapInstanceRef.current.__singleClickHandler) mapInstanceRef.current.un('singleclick', mapInstanceRef.current.__singleClickHandler); } catch (_) {}
                 mapInstanceRef.current.setTarget(null);
                 mapInstanceRef.current = null;
             }
@@ -227,6 +249,7 @@ export default function MapViewer() {
         // Add pointer move & out for tooltip after map created
         if (!mapInstanceRef.current) return;
         const map = mapInstanceRef.current;
+
         function handleMove(evt) {
             if (!forecastLayerRef.current) return;
             const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, {layerFilter: l => l === forecastLayerRef.current});
@@ -242,23 +265,15 @@ export default function MapViewer() {
                 setTooltip(null);
             }
         }
-        function handleOut() { setTooltip(null); }
-        map.on('pointermove', handleMove);
-        map.getViewport().addEventListener('mouseout', handleOut);
-        return () => {
-            map.un('pointermove', handleMove);
-            map.getViewport().removeEventListener('mouseout', handleOut);
-        };
+
     }, [mapInstanceRef.current]);
 
     // Update forecast points when entities or forecast values change
     useEffect(() => {
         if (!mapInstanceRef.current || !forecastLayerRef.current) return;
-        // If forecast unavailable: clear layer and return
         if (forecastUnavailable) {
             forecastLayerRef.current.getSource().clear();
             setLegendStops([]);
-            return;
         }
         // If data belongs to previous workspace, clear layer and reset legend, wait for new entities
         if (entitiesWorkspace && entitiesWorkspace !== workspace) {
@@ -282,7 +297,7 @@ export default function MapViewer() {
         const stops = [];
         for (let i = 0; i <= samples; i++) {
             const v = (i / samples) * maxVal;
-            const [r,g,b] = valueToColor(v, maxVal);
+            const [r, g, b] = valueToColor(v, maxVal);
             const pct = (i / samples) * 100;
             stops.push({color: `rgb(${r},${g},${b})`, pct});
         }
@@ -292,7 +307,7 @@ export default function MapViewer() {
         entities.forEach(ent => {
             const normVal = forecastValuesNorm[ent.id];
             const rawVal = forecastValues ? forecastValues[ent.id] : undefined;
-            const [r,g,b] = valueToColor(normVal, maxVal);
+            const [r, g, b] = valueToColor(normVal, maxVal);
             const isRelevant = !relevantEntities || relevantEntities.has(ent.id);
             const opacity = isRelevant ? 0.9 : 0.7;
             const radius = isRelevant ? 8 : 6;
@@ -308,7 +323,8 @@ export default function MapViewer() {
             let coord = [ent.x, ent.y];
             try {
                 coord = transform(coord, SOURCE_EPSG, 'EPSG:3857');
-            } catch (_) {}
+            } catch (_) {
+            }
             if (coord[0] < minX) minX = coord[0];
             if (coord[0] > maxX) maxX = coord[0];
             if (coord[1] < minY) minY = coord[1];
@@ -329,11 +345,16 @@ export default function MapViewer() {
         // Fit view once per workspace after entities load
         if (workspace && lastFittedWorkspaceRef.current !== workspace && isFinite(minX) && isFinite(minY) && isFinite(maxX) && isFinite(maxY) && minX < maxX && minY < maxY) {
             const view = mapInstanceRef.current.getView();
-            view.fit([minX, minY, maxX, maxY], { padding: [60, 60, 60, 60], duration: 500, maxZoom: 11 });
+            view.fit([minX, minY, maxX, maxY], {padding: [60, 60, 60, 60], duration: 500, maxZoom: 11});
             lastFittedWorkspaceRef.current = workspace;
         }
     }, [entities, forecastValuesNorm, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable]);
 
+    // Also set OL internal id so feature.getId() returns the entity id
+    try {
+        feat.setId(ent.id);
+    } catch (_) {
+    }
     // Reset layer and fit flag when workspace changes so new workspace extent is used
     useEffect(() => {
         if (forecastLayerRef.current) {
@@ -346,36 +367,56 @@ export default function MapViewer() {
     const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#fff' }}>
-            <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+        <div style={{position: 'relative', width: '100%', height: '100%', background: '#fff'}}>
+            <div ref={containerRef} style={{width: '100%', height: '100%'}}/>
             {/* Loading overlay */}
             {(entitiesLoading || forecastLoading) && (
                 <div className="map-loading-overlay">
-                    <CircularProgress size={48} thickness={4} />
+                    <CircularProgress size={48} thickness={4}/>
                 </div>
             )}
             {forecastUnavailable && selectedTargetDate && !(entitiesLoading || forecastLoading) && (
-                <div className="map-loading-overlay" style={{backdropFilter:'blur(2px)', fontSize:18, color:'#222'}}>
+                <div className="map-loading-overlay" style={{backdropFilter: 'blur(2px)', fontSize: 18, color: '#222'}}>
                     <div>{t('map.loading.noForecastAvailable')}</div>
                 </div>
             )}
             {/* Legend */}
             {legendStops.length > 0 && (
-                <div style={{position:'absolute', bottom:10, left:10, background:'rgba(255,255,255,0.9)', padding:'8px 10px', borderRadius:4, fontSize:12, boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}>
-                    <div style={{fontSize:14, marginBottom:2}}>{t('map.legend.title')}</div>
-                    <div style={{display:'flex', alignItems:'center', gap:8}}>
-                        <div style={{flex:1, height:14, background: gradientCSS, border:'1px solid #333'}} />
+                <div style={{
+                    position: 'absolute',
+                    bottom: 10,
+                    left: 10,
+                    background: 'rgba(255,255,255,0.9)',
+                    padding: '8px 10px',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                }}>
+                    <div style={{fontSize: 14, marginBottom: 2}}>{t('map.legend.title')}</div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div style={{flex: 1, height: 14, background: gradientCSS, border: '1px solid #333'}}/>
                     </div>
-                    <div style={{display:'flex', justifyContent:'space-between', marginTop:2}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 2}}>
                         <span>0</span>
-                        <span>{(legendMax*0.5).toFixed(1)}</span>
+                        <span>{(legendMax * 0.5).toFixed(1)}</span>
                         <span>{legendMax.toFixed(1)}</span>
                     </div>
                 </div>
             )}
             {/* Tooltip */}
             {tooltip && (
-                <div style={{position:'absolute', top: tooltip.y + 12, left: tooltip.x + 12, background:'rgba(0,0,0,0.75)', color:'#fff', padding:'4px 6px', borderRadius:4, fontSize:12, pointerEvents:'none', whiteSpace:'nowrap'}}>
+                <div style={{
+                    position: 'absolute',
+                    top: tooltip.y + 12,
+                    left: tooltip.x + 12,
+                    background: 'rgba(0,0,0,0.75)',
+                    color: '#fff',
+                    padding: '4px 6px',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap'
+                }}>
                     <div>{tooltip.name}</div>
                     <div>{t('map.tooltip.value')}: {tooltip.valueRaw == null || isNaN(tooltip.valueRaw) ? 'NaN' : tooltip.valueRaw.toFixed(1)} mm</div>
                 </div>
