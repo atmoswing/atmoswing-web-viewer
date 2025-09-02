@@ -3,6 +3,7 @@ import 'ol-layerswitcher/dist/ol-layerswitcher.css';
 import '../styles/map.css';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -53,6 +54,7 @@ const MANUAL_PM = (() => {
 })();
 
 export default function MapViewer() {
+    const { t } = useTranslation();
     const containerRef = useRef(null);
     const mapInstanceRef = useRef(null); // guard
     const forecastLayerRef = useRef(null);
@@ -124,11 +126,11 @@ export default function MapViewer() {
             }
 
             const baseLayers = new LayerGroup({
-                title: 'Base maps',
+                title: t('map.baseLayers'),
                 fold: 'open',
                 layers: [
                     new TileLayer({
-                        title: 'Esri World Imagery',
+                        title: t('map.layers.esri'),
                         type: 'base',
                         visible: false,
                         source: new XYZ({
@@ -137,25 +139,25 @@ export default function MapViewer() {
                         })
                     }),
                     new TileLayer({
-                        title: 'Plan OpenStreetMap',
+                        title: t('map.layers.osm'),
                         type: 'base',
                         visible: false,
                         source: new OSM()
                     }),
                     new TileLayer({
-                        title: 'Ombrage (IGN)',
+                        title: t('map.layers.shadow'),
                         type: 'base',
                         visible: false,
                         source: new WMTS(wmtsOptionsCache['ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'])
                     }),
                     new TileLayer({
-                        title: 'Orthophotos (IGN)',
+                        title: t('map.layers.ortho'),
                         type: 'base',
                         visible: false,
                         source: new WMTS(wmtsOptionsCache['ORTHOIMAGERY.ORTHOPHOTOS'])
                     }),
                     new TileLayer({
-                        title: 'Plan IGN',
+                        title: t('map.layers.planIgn'),
                         type: 'base',
                         visible: true,
                         source: new WMTS(wmtsOptionsCache['GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'])
@@ -164,21 +166,21 @@ export default function MapViewer() {
             });
 
             const overlayLayers = new LayerGroup({
-                title: 'Overlays',
+                title: t('map.overlays'),
                 fold: 'open',
                 layers: [
                     new TileLayer({
-                        title: 'Admin (IGN)',
+                        title: t('map.layers.adminIgn'),
                         visible: false,
                         source: new WMTS(wmtsOptionsCache['ADMINEXPRESS-COG.LATEST'])
                     }),
                     new TileLayer({
-                        title: 'Cours d\'eau BCAE (IGN)',
+                        title: t('map.layers.bcae'),
                         visible: false,
                         source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.BCAE.LATEST'])
                     }),
                     new TileLayer({
-                        title: 'Hydrographie (IGN)',
+                        title: t('map.layers.hydro'),
                         visible: false,
                         source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.HYDROGRAPHY'])
                     })

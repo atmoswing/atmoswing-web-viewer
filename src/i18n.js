@@ -40,6 +40,20 @@ const resources = {
                     "date": "Date",
                     "criteria": "Criteria"
                 }
+            },
+            "map": {
+                "baseLayers": "Base maps",
+                "overlays": "Overlays",
+                "layers": {
+                    "esri": "Esri World Imagery",
+                    "osm": "OpenStreetMap",
+                    "shadow": "Shaded relief (IGN)",
+                    "ortho": "Orthophotos (IGN)",
+                    "planIgn": "Map IGN",
+                    "adminIgn": "Admin (IGN)",
+                    "bcae": "Waterways BCAE (IGN)",
+                    "hydro": "Hydrography (IGN)"
+                }
             }
         }
     },
@@ -80,6 +94,20 @@ const resources = {
                     "rank": "Rang",
                     "date": "Date",
                     "criteria": "Critère"
+                }
+            },
+            "map": {
+                "baseLayers": "Fonds de carte",
+                "overlays": "Couches",
+                "layers": {
+                    "esri": "Esri World Imagery",
+                    "osm": "OpenStreetMap",
+                    "shadow": "Ombrage (IGN)",
+                    "ortho": "Orthophotos (IGN)",
+                    "planIgn": "Plan IGN",
+                    "adminIgn": "Admin (IGN)",
+                    "bcae": "Cours d'eau BCAE (IGN)",
+                    "hydro": "Hydrographie (IGN)"
                 }
             }
         }
