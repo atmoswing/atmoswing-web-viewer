@@ -27,6 +27,18 @@ export default function PanelStations(props) {
         return selectedEntityId != null && entities.some(e => e.id === selectedEntityId) ? selectedEntityId : '';
     }, [entities, selectedEntityId]);
 
+    // Memoize sorted entities by name (case-insensitive), fall back to id
+    const sortedEntities = React.useMemo(() => {
+        if (!entities || entities.length === 0) return [];
+        return [...entities].sort((a, b) => {
+            const aName = (a.name || a.id || '').toString().toLowerCase();
+            const bName = (b.name || b.id || '').toString().toLowerCase();
+            if (aName < bName) return -1;
+            if (aName > bName) return 1;
+            return 0;
+        });
+    }, [entities]);
+
     const handleChangeStation = (event) => {
         const val = event.target.value;
         setSelectedEntityId(val === '' ? null : val);
@@ -53,7 +65,7 @@ export default function PanelStations(props) {
                     <MenuItem value="" disabled={entitiesLoading || !!entitiesError || entities.length === 0}>
                         {entitiesLoading ? t('stations.loading') : (entitiesError ? t('stations.errorLoading') : t('stations.select'))}
                     </MenuItem>
-                    {entities && entities.length > 0 && entities.map(entity => (
+                    {sortedEntities.length > 0 && sortedEntities.map(entity => (
                         <MenuItem key={entity.id} value={entity.id}>{entity.name || entity.id}</MenuItem>
                     ))}
                 </Select>
