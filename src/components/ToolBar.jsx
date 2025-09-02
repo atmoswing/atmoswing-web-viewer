@@ -10,6 +10,7 @@ import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArro
 import { useSynthesis, useMethods, useForecastSession } from '../contexts/ForecastsContext.jsx';
 import { valueToColorCSS } from '../utils/colors.js';
 import Tooltip from '@mui/material/Tooltip';
+import { useTranslation } from 'react-i18next';
 
 function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useSynthesis();
@@ -78,6 +79,7 @@ function ToolbarSquares() {
 }
 
 function ToolbarCenter() {
+    const { t } = useTranslation();
     const { selectedMethodConfig } = useMethods();
     const { forecastBaseDate, shiftForecastBaseDate, activeForecastDate } = useForecastSession();
     const forecastDateStr = React.useMemo(() => {
@@ -95,7 +97,7 @@ function ToolbarCenter() {
     return (
         <div className="toolbar-center">
             <div className="toolbar-center-row">
-                <span>{forecastDateStr ? `Prévision du ${forecastDateStr}` : 'Loading...'}</span>
+                <span>{forecastDateStr ? t('toolbar.forecastOf', { date: forecastDateStr }) : t('toolbar.loading')}</span>
                 <Tooltip title="-24h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-24)}><KeyboardDoubleArrowLeftIcon fontSize="small" /></button></span></Tooltip>
                 <Tooltip title="-6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-6)}><KeyboardArrowLeftIcon fontSize="small" /></button></span></Tooltip>
                 <Tooltip title="+6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(6)}><KeyboardArrowRightIcon fontSize="small" /></button></span></Tooltip>

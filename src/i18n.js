@@ -1,0 +1,98 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+const resources = {
+    en: {
+        translation: {
+            "panel": {
+                "display": "Display",
+                "forecasts": "Forecasts",
+                "alarms": "Alarms",
+                "stationSelection": "Station selection",
+                "analogDates": "Analog dates",
+                "loading": "Loading…",
+                "noData": "No data",
+                "errorLoading": "Error loading {{what}}"
+            },
+            "workspace": {
+                "noWorkspaces": "No workspaces available. Please check your configuration.",
+                "label": "Workspace"
+            },
+            "stations": {
+                "loading": "Loading stations…",
+                "errorLoading": "Error loading stations",
+                "select": "Select a station"
+            },
+            "display": {
+                "options": "Display Options",
+                "percentile": "Percentile"
+            },
+            "toolbar": {
+                "forecastOf": "Forecast of {{date}}",
+                "loading": "Loading..."
+            },
+            "forecasts": {
+                "noForecasts": "No forecasts available"
+            },
+            "analog": {
+                "columns": {
+                    "rank": "Rank",
+                    "date": "Date",
+                    "criteria": "Criteria"
+                }
+            }
+        }
+    },
+    fr: {
+        translation: {
+            "panel": {
+                "display": "Affichage",
+                "forecasts": "Prévisions",
+                "alarms": "Alertes",
+                "stationSelection": "Sélection de la station",
+                "analogDates": "Dates analogues",
+                "loading": "Chargement…",
+                "noData": "Aucune donnée",
+                "errorLoading": "Erreur lors du chargement de {{what}}"
+            },
+            "workspace": {
+                "noWorkspaces": "Aucun espace de travail disponible. Vérifiez votre configuration.",
+                "label": "Espace de travail"
+            },
+            "stations": {
+                "loading": "Chargement des stations…",
+                "errorLoading": "Erreur lors du chargement des stations",
+                "select": "Sélectionner une station"
+            },
+            "display": {
+                "options": "Options d'affichage",
+                "percentile": "Percentile"
+            },
+            "toolbar": {
+                "forecastOf": "Prévision du {{date}}",
+                "loading": "Chargement..."
+            },
+            "forecasts": {
+                "noForecasts": "Aucune prévision disponible"
+            },
+            "analog": {
+                "columns": {
+                    "rank": "Rang",
+                    "date": "Date",
+                    "criteria": "Critère"
+                }
+            }
+        }
+    }
+};
+
+i18n
+    .use(initReactI18next)
+    .init({
+        resources,
+        lng: 'fr', // default language set to French
+        fallbackLng: 'en',
+        interpolation: {
+            escapeValue: false
+        }
+    });

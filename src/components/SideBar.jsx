@@ -8,9 +8,11 @@ import PanelAlarms from "./PanelAlarms.jsx";
 import PanelStations from "./PanelStations.jsx";
 import PanelAnalogDates from "./PanelAnalogDates.jsx";
 import Snackbar from '@mui/material/Snackbar';
+import { useTranslation } from 'react-i18next';
 
 
 export default function SideBar() {
+    const { t } = useTranslation();
     const config = useConfig();
     const workspaceOptions = config?.workspaces?.map(ws => ({
         key: ws.key,
@@ -26,7 +28,7 @@ export default function SideBar() {
                 <Snackbar
                     anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
                     open={true}
-                    message="No workspaces available. Please check your configuration."
+                    message={t('workspace.noWorkspaces')}
                     autoHideDuration={6000}
                 />
             )}

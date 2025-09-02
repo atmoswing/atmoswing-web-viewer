@@ -4,8 +4,10 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { useEntities, useSelectedEntity } from '../contexts/ForecastsContext.jsx';
+import { useTranslation } from 'react-i18next';
 
 export default function PanelStations(props) {
+    const { t } = useTranslation();
     const {entities, entitiesLoading, entitiesError} = useEntities();
     const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
 
@@ -33,7 +35,7 @@ export default function PanelStations(props) {
     const disabled = entitiesLoading || !!entitiesError || !entities || entities.length === 0;
 
     return (
-        <Panel title="Station selection" defaultOpen={props.defaultOpen}>
+        <Panel title={t('panel.stationSelection')} defaultOpen={props.defaultOpen}>
             <FormControl variant="standard" sx={{m: 1, width: 265}}>
                 <Select
                     variant="standard"
@@ -43,13 +45,13 @@ export default function PanelStations(props) {
                     displayEmpty
                     disabled={disabled}
                     renderValue={(value) => {
-                        if (value === '' || value == null) return entitiesLoading ? 'Loading stations…' : (entitiesError ? 'Error loading stations' : 'Select a station');
+                        if (value === '' || value == null) return entitiesLoading ? t('stations.loading') : (entitiesError ? t('stations.errorLoading') : t('stations.select'));
                         const match = entities?.find(e => e.id === value);
                         return match?.name || match?.id || value;
                     }}
                 >
                     <MenuItem value="" disabled={entitiesLoading || !!entitiesError || entities.length === 0}>
-                        {entitiesLoading ? 'Loading stations…' : (entitiesError ? 'Error loading stations' : 'Select a station')}
+                        {entitiesLoading ? t('stations.loading') : (entitiesError ? t('stations.errorLoading') : t('stations.select'))}
                     </MenuItem>
                     {entities && entities.length > 0 && entities.map(entity => (
                         <MenuItem key={entity.id} value={entity.id}>{entity.name || entity.id}</MenuItem>

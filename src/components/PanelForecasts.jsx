@@ -3,9 +3,11 @@ import Panel from './Panel';
 import {useMethods} from '../contexts/ForecastsContext.jsx';
 import {SimpleTreeView} from '@mui/x-tree-view/SimpleTreeView';
 import {TreeItem} from '@mui/x-tree-view/TreeItem';
+import { useTranslation } from 'react-i18next';
 
 
 export default function PanelForecasts(props) {
+    const { t } = useTranslation();
     const {methodConfigTree, selectedMethodConfig, setSelectedMethodConfig} = useMethods();
 
     const handleSelectedItemsChange = React.useCallback((event, itemIds) => {
@@ -30,11 +32,11 @@ export default function PanelForecasts(props) {
     }, [selectedMethodConfig]);
 
     if (!methodConfigTree || methodConfigTree.length === 0) {
-        return <Panel title="Forecasts" defaultOpen={props.defaultOpen}>No forecasts available</Panel>;
+        return <Panel title={t('panel.forecasts')} defaultOpen={props.defaultOpen}>{t('forecasts.noForecasts')}</Panel>;
     }
 
     return (
-        <Panel title="Forecasts" defaultOpen={props.defaultOpen}>
+        <Panel title={t('panel.forecasts')} defaultOpen={props.defaultOpen}>
             <SimpleTreeView
                 expansionTrigger="iconContainer"
                 selectedItems={selectedItems}

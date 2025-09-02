@@ -1,5 +1,6 @@
 import Panel from './Panel';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -7,6 +8,7 @@ import Select from '@mui/material/Select';
 import { useForecastParameters } from '../contexts/ForecastsContext.jsx';
 
 export default function PanelDisplay(props) {
+    const { t } = useTranslation();
     const { percentile, setPercentile, normalizationRef, setNormalizationRef } = useForecastParameters();
 
     const handleChangeNormalizationRef = (event) => {
@@ -19,15 +21,16 @@ export default function PanelDisplay(props) {
     }
 
     return (
-        <Panel title="Display" defaultOpen={props.defaultOpen}>
+        <Panel title={t('panel.display')} defaultOpen={props.defaultOpen}>
             <FormControl variant="standard" sx={{ m: 1, minWidth: 125 }}>
-                <InputLabel id="select-display-label">Display Options</InputLabel>
+                <InputLabel id="select-display-label">{t('display.options')}</InputLabel>
                 <Select
+                    variant="standard"
                     labelId="select-display-label"
                     id="select-display"
                     value={normalizationRef}
                     onChange={handleChangeNormalizationRef}
-                    label="Display Options"
+                    label={t('display.options')}
                 >
                     <MenuItem value={2}>P/P2</MenuItem>
                     <MenuItem value={5}>P/P5</MenuItem>
@@ -38,13 +41,14 @@ export default function PanelDisplay(props) {
                 </Select>
             </FormControl>
             <FormControl variant="standard" sx={{ m: 1, minWidth: 125 }}>
-                <InputLabel id="select-percentile-label">Percentile</InputLabel>
+                <InputLabel id="select-percentile-label">{t('display.percentile')}</InputLabel>
                 <Select
+                    variant="standard"
                     labelId="select-percentile-label"
                     id="select-percentile"
                     value={percentile}
                     onChange={handleChangePercentile}
-                    label="Percentile"
+                    label={t('display.percentile')}
                 >
                     <MenuItem value={90}>q90</MenuItem>
                     <MenuItem value={60}>q60</MenuItem>

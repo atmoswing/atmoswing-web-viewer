@@ -2,8 +2,10 @@ import Panel from './Panel';
 import React, {useMemo, useCallback} from 'react';
 import {useMethods, useSynthesis} from '../contexts/ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colors.js';
+import { useTranslation } from 'react-i18next';
 
 export default function PanelAlarms(props) {
+    const { t } = useTranslation();
     const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError } = useSynthesis();
     const { methodConfigTree, setSelectedMethodConfig, selectedMethodConfig } = useMethods();
     const { selectTargetDate, selectedTargetDate, dailyLeads } = useSynthesis();
@@ -68,17 +70,17 @@ export default function PanelAlarms(props) {
     const subHours = useMemo(() => [0,6,12,18], []);
 
     if (perMethodSynthesisLoading) {
-        return <Panel title="Alarms" defaultOpen={props.defaultOpen}>Loading…</Panel>;
+        return <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>{t('panel.loading')}</Panel>;
     }
     if (perMethodSynthesisError) {
-        return <Panel title="Alarms" defaultOpen={props.defaultOpen}>Error loading alarms</Panel>;
+        return <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>{t('panel.errorLoading', { what: t('panel.alarms') })}</Panel>;
     }
     if (!perMethodSynthesis.length) {
-        return <Panel title="Alarms" defaultOpen={props.defaultOpen}>No data</Panel>;
+        return <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>{t('panel.noData')}</Panel>;
     }
 
     return (
-        <Panel title="Alarms" defaultOpen={props.defaultOpen}>
+        <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>
             <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
                 <thead>
                 <tr>
