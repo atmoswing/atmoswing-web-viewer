@@ -32,7 +32,7 @@ export default function PanelForecasts(props) {
     }, [selectedMethodConfig]);
 
     if (!methodConfigTree || methodConfigTree.length === 0) {
-        return <Panel title={t('panel.forecasts')} defaultOpen={props.defaultOpen}>{t('forecasts.noForecasts')}</Panel>;
+        return <Panel title={t('panel.forecasts')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('forecasts.loading')}</span></Panel>;
     }
 
     return (

@@ -19,7 +19,7 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
-import {useEntities, useForecastValues, useSynthesis} from '../contexts/ForecastsContext.jsx';
+import {useEntities, useForecastParameters, useForecastValues, useSynthesis} from '../contexts/ForecastsContext.jsx';
 import {useSelectedEntity} from '../contexts/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
@@ -62,10 +62,10 @@ export default function MapViewer() {
 
     const {entities, entitiesWorkspace, entitiesLoading, relevantEntities} = useEntities();
     const {forecastValues, forecastValuesNorm, forecastLoading, forecastUnavailable} = useForecastValues();
+    const { percentile, normalizationRef } = useForecastParameters();
     const {selectedTargetDate} = useSynthesis();
     const {workspace} = useWorkspace();
-
-    const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
+    const {setSelectedEntityId} = useSelectedEntity();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);
@@ -402,7 +402,7 @@ export default function MapViewer() {
                     fontSize: 12,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                 }}>
-                    <div style={{fontSize: 14, marginBottom: 2}}>{t('map.legend.title')}</div>
+                    <div style={{fontSize: 14, marginBottom: 2}}>{t('map.legend.title')} (P/P{normalizationRef}, q{percentile})</div>
                     <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
                         <div style={{flex: 1, height: 14, background: gradientCSS, border: '1px solid #333'}}/>
                     </div>

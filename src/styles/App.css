@@ -243,6 +243,13 @@
   overflow-y: auto;
 }
 
+.panel-secondary-text {
+  font-size: 0.9em;
+  color: #aaa;
+  display: block;
+  margin: 0.3em;
+}
+
 .main-content {
   flex: 1;
   display: flex;

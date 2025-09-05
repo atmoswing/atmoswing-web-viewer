@@ -23,14 +23,14 @@ export default function PanelDisplay(props) {
     return (
         <Panel title={t('panel.display')} defaultOpen={props.defaultOpen}>
             <FormControl variant="standard" sx={{ m: 1, minWidth: 125 }}>
-                <InputLabel id="select-display-label">{t('display.options')}</InputLabel>
+                <InputLabel id="select-display-label">{t('display.normalization')}</InputLabel>
                 <Select
                     variant="standard"
                     labelId="select-display-label"
                     id="select-display"
                     value={normalizationRef}
                     onChange={handleChangeNormalizationRef}
-                    label={t('display.options')}
+                    label={t('display.normalization')}
                 >
                     <MenuItem value={2}>P/P2</MenuItem>
                     <MenuItem value={5}>P/P5</MenuItem>

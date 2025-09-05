@@ -7,7 +7,7 @@ const resources = {
             "panel": {
                 "display": "Display",
                 "forecasts": "Forecasts",
-                "alarms": "Alarms",
+                "synthesis": "Synthesis",
                 "stationSelection": "Station selection",
                 "analogDates": "Analog dates",
                 "loading": "Loading…",
@@ -24,15 +24,18 @@ const resources = {
                 "select": "Select a station"
             },
             "display": {
-                "options": "Display Options",
+                "normalization": "Normalization",
                 "percentile": "Percentile"
+            },
+            "synthesis": {
+                "normalizedValues": "Normalized values"
             },
             "toolbar": {
                 "forecastOf": "Forecast of {{date}}",
                 "loading": "Loading..."
             },
             "forecasts": {
-                "noForecasts": "No forecasts available"
+                "loading": "Loading..."
             },
             "analog": {
                 "columns": {
@@ -58,7 +61,7 @@ const resources = {
                     "value": "Value"
                 },
                 "legend": {
-                    "title": "Forecast values"
+                    "title": "Normalized values"
                 },
                 "layerSwitcherTip": "Layers",
                 "loading": {
@@ -72,7 +75,7 @@ const resources = {
             "panel": {
                 "display": "Affichage",
                 "forecasts": "Prévisions",
-                "alarms": "Alertes",
+                "synthesis": "Synthèse",
                 "stationSelection": "Sélection de la station",
                 "analogDates": "Dates analogues",
                 "loading": "Chargement…",
@@ -89,15 +92,18 @@ const resources = {
                 "select": "Sélectionner une station"
             },
             "display": {
-                "options": "Options d'affichage",
+                "normalization": "Normalisation",
                 "percentile": "Percentile"
+            },
+            "synthesis": {
+                "normalizedValues": "Valeurs normalisées"
             },
             "toolbar": {
                 "forecastOf": "Prévision du {{date}}",
                 "loading": "Chargement..."
             },
             "forecasts": {
-                "noForecasts": "Aucune prévision disponible"
+                "loading": "Chargement..."
             },
             "analog": {
                 "columns": {
@@ -123,7 +129,7 @@ const resources = {
                     "value": "Valeur"
                 },
                 "legend": {
-                    "title": "Valeurs de prévision"
+                    "title": "Valeurs normalisées"
                 },
                 "layerSwitcherTip": "Couches",
                 "loading": {

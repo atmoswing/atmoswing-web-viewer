@@ -4,7 +4,7 @@ import {useMethods, useSynthesis} from '../contexts/ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colors.js';
 import { useTranslation } from 'react-i18next';
 
-export default function PanelAlarms(props) {
+export default function PanelSynthesis(props) {
     const { t } = useTranslation();
     const { perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError } = useSynthesis();
     const { methodConfigTree, setSelectedMethodConfig, selectedMethodConfig } = useMethods();
@@ -70,17 +70,19 @@ export default function PanelAlarms(props) {
     const subHours = useMemo(() => [0,6,12,18], []);
 
     if (perMethodSynthesisLoading) {
-        return <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>{t('panel.loading')}</Panel>;
+        return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.loading')}</span></Panel>;
     }
     if (perMethodSynthesisError) {
-        return <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>{t('panel.errorLoading', { what: t('panel.alarms') })}</Panel>;
+        return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.errorLoading', { what: t('panel.synthesis') })}</span></Panel>;
     }
     if (!perMethodSynthesis.length) {
-        return <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>{t('panel.noData')}</Panel>;
+        return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.noData')}</span></Panel>;
     }
 
     return (
-        <Panel title={t('panel.alarms')} defaultOpen={props.defaultOpen}>
+        <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}>
+            <span className="panel-secondary-text">{t('synthesis.normalizedValues')} (P/P10, q90)</span>
+
             <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
                 <thead>
                 <tr>
