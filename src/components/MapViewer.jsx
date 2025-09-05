@@ -246,7 +246,6 @@ export default function MapViewer() {
 
     // Add pointer move & out for tooltip after map created
     useEffect(() => {
-        // Add pointer move & out for tooltip after map created
         if (!mapInstanceRef.current) return;
         const map = mapInstanceRef.current;
 
@@ -266,6 +265,17 @@ export default function MapViewer() {
             }
         }
 
+        function handleOut() {
+            setTooltip(null);
+        }
+
+        map.on('pointermove', handleMove);
+        map.on('pointerout', handleOut);
+
+        return () => {
+            map.un('pointermove', handleMove);
+            map.un('pointerout', handleOut);
+        };
     }, [mapInstanceRef.current]);
 
     // Update forecast points when entities or forecast values change
