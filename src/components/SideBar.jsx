@@ -8,23 +8,21 @@ import PanelSynthesis from "./PanelSynthesis.jsx";
 import PanelStations from "./PanelStations.jsx";
 import PanelAnalogDates from "./PanelAnalogDates.jsx";
 import Snackbar from '@mui/material/Snackbar';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 
 export default function SideBar() {
-    const { t } = useTranslation();
+    const {t} = useTranslation();
     const config = useConfig();
-    const workspaceOptions = config?.workspaces?.map(ws => ({
-        key: ws.key,
-        name: ws.name
-    })) || [];
+    const workspaceOptions = config?.workspaces?.map(ws => ({key: ws.key, name: ws.name})) || [];
+    const workspacesLoaded = config?.__workspacesLoaded; // flag from context
 
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
-                <img src="./logo.svg" alt="Logo"/>
+                <img src="/logo.svg" alt="Logo"/>
             </div>
-            {workspaceOptions.length === 0 && (
+            {workspacesLoaded && workspaceOptions.length === 0 && (
                 <Snackbar
                     anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
                     open={true}
@@ -32,9 +30,7 @@ export default function SideBar() {
                     autoHideDuration={6000}
                 />
             )}
-            <SidebarWorkspaceDropdown
-                options={workspaceOptions}
-            />
+            <SidebarWorkspaceDropdown options={workspaceOptions}/>
             <PanelForecasts defaultOpen={true}/>
             <PanelDisplay defaultOpen={false}/>
             <PanelSynthesis defaultOpen={true}/>
