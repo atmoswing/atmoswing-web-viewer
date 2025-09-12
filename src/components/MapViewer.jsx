@@ -59,6 +59,7 @@ export default function MapViewer() {
     const mapInstanceRef = useRef(null); // guard
     const forecastLayerRef = useRef(null);
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
+    const [mapReady, setMapReady] = useState(false); // NEW: flag when map & forecast layer initialized
 
     const {entities, entitiesWorkspace, entitiesLoading, relevantEntities} = useEntities();
     const {forecastValues, forecastValuesNorm, forecastLoading, forecastUnavailable} = useForecastValues();
@@ -232,6 +233,8 @@ export default function MapViewer() {
             };
             mapInstanceRef.current.__singleClickHandler = clickHandler;
             mapInstanceRef.current.on('singleclick', clickHandler);
+            // Mark map ready so data effect can populate features
+            setMapReady(true);
         })();
 
         return () => {
@@ -280,6 +283,7 @@ export default function MapViewer() {
 
     // Update forecast points when entities or forecast values change
     useEffect(() => {
+        if (!mapReady) return; // wait until map & layer exist
         if (!mapInstanceRef.current || !forecastLayerRef.current) return;
         if (forecastUnavailable) {
             forecastLayerRef.current.getSource().clear();
@@ -358,7 +362,7 @@ export default function MapViewer() {
             view.fit([minX, minY, maxX, maxY], {padding: [60, 60, 60, 60], duration: 500, maxZoom: 11});
             lastFittedWorkspaceRef.current = workspace;
         }
-    }, [entities, forecastValuesNorm, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable]);
+    }, [mapReady, entities, forecastValuesNorm, forecastValues, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable]);
 
     // Also set OL internal id so feature.getId() returns the entity id
     try {
