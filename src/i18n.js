@@ -32,7 +32,8 @@ const resources = {
             },
             "toolbar": {
                 "forecastOf": "Forecast of {{date}}",
-                "loading": "Loading..."
+                "loading": "Loading...",
+                "searching": "Searching..."
             },
             "forecasts": {
                 "loading": "Loading..."
@@ -65,7 +66,8 @@ const resources = {
                 },
                 "layerSwitcherTip": "Layers",
                 "loading": {
-                    "noForecastAvailable": "No forecast available for the selected method and lead time"
+                    "noForecastAvailable": "No forecast available for the selected method and lead time",
+                    "noForecastFoundSearch": "No forecast found within the searched time range"
                 }
             }
         }
@@ -100,7 +102,8 @@ const resources = {
             },
             "toolbar": {
                 "forecastOf": "Prévision du {{date}}",
-                "loading": "Chargement..."
+                "loading": "Chargement...",
+                "searching": "Recherche..."
             },
             "forecasts": {
                 "loading": "Chargement..."
@@ -133,7 +136,8 @@ const resources = {
                 },
                 "layerSwitcherTip": "Couches",
                 "loading": {
-                    "noForecastAvailable": "Aucune prévision disponible pour la méthode et l'échéance sélectionnées"
+                    "noForecastAvailable": "Aucune prévision disponible pour la méthode et l'échéance sélectionnées",
+                    "noForecastFoundSearch": "Aucune prévision trouvée dans l'intervalle de recherche"
                 }
             }
         }

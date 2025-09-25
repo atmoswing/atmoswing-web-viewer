@@ -1,6 +1,7 @@
 import React, {createContext, useContext, useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {parseForecastDate, formatForecastDateForApi} from '../utils/forecastDateUtils.js';
+import {hasForecastDate, getSynthesisTotal} from '../services/api.js';
 
 const ForecastSessionContext = createContext({});
 
@@ -18,6 +19,11 @@ export function ForecastSessionProvider({children}) {
     // Incremented whenever a date shift or explicit reset occurs; downstream providers clear caches on change
     const [resetVersion, setResetVersion] = useState(0);
 
+    // Flag set when a shift search (6h navigation) exhausted 12 attempts without finding any available forecast
+    const [baseDateSearchFailed, setBaseDateSearchFailed] = useState(false);
+    const [baseDateSearching, setBaseDateSearching] = useState(false);
+    const searchReqIdRef = useRef(0);
+
     const bumpResetVersion = useCallback(() => setResetVersion(v => v + 1), []);
 
     const fullReset = useCallback((newBaseDateObj) => {
@@ -32,6 +38,7 @@ export function ForecastSessionProvider({children}) {
             setActiveForecastDate(raw);
             setActiveForecastDatePattern(p => p || raw);
             fullReset(parseForecastDate(raw));
+            setBaseDateSearchFailed(false);
         }
     }, [workspaceData, fullReset]);
 
@@ -43,22 +50,54 @@ export function ForecastSessionProvider({children}) {
             setActiveForecastDate(null);
             setActiveForecastDatePattern(null);
             fullReset(null); // increments resetVersion + clears base date
+            setBaseDateSearchFailed(false);
+            setBaseDateSearching(false);
             prevWorkspaceRef.current = workspace;
         }
     }, [workspace, fullReset]);
 
-    // Shift base date by hours
+    // Shift base date by hours (with search logic for 6h increments)
     const shiftForecastBaseDate = useCallback((hours) => {
-        setActiveForecastDate(prev => {
-            if (!prev) return prev;
-            const dt = parseForecastDate(prev);
-            if (!dt) return prev;
-            dt.setHours(dt.getHours() + hours);
-            const newRaw = formatForecastDateForApi(dt, activeForecastDatePattern || prev) || prev;
-            fullReset(dt);
-            return newRaw;
-        });
-    }, [activeForecastDatePattern, fullReset]);
+        if (baseDateSearching) return; // avoid concurrent searches
+        (async () => {
+            const reqId = ++searchReqIdRef.current;
+            setBaseDateSearchFailed(false);
+            setBaseDateSearching(true);
+            if (!activeForecastDate || !workspace) { setBaseDateSearchFailed(false); setBaseDateSearching(false); return; }
+            const start = parseForecastDate(activeForecastDate);
+            if (!start || isNaN(start)) { setBaseDateSearching(false); return; }
+            const MAX_ATTEMPTS = 12;
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                if (searchReqIdRef.current !== reqId) return; // cancelled
+                const candidate = new Date(start.getTime());
+                candidate.setHours(candidate.getHours() + hours * attempt);
+                const raw = formatForecastDateForApi(candidate, activeForecastDatePattern || activeForecastDate);
+                const exists = await hasForecastDate(workspace, raw);
+                if (!exists['has_forecasts']) {
+                    continue;
+                }
+                try {
+                    const resp = await getSynthesisTotal(workspace, raw, 90, 10);
+                    if (searchReqIdRef.current !== reqId) return; // stale
+                    const series = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+                    const hasLeads = series.some(sp => Array.isArray(sp?.target_dates) && sp.target_dates.length > 0);
+                    if (hasLeads) {
+                        setActiveForecastDate(raw);
+                        fullReset(candidate);
+                        setBaseDateSearchFailed(false);
+                        setBaseDateSearching(false);
+                        return;
+                    }
+                } catch (_) {
+                    if (searchReqIdRef.current !== reqId) return;
+                }
+            }
+            if (searchReqIdRef.current === reqId) {
+                setBaseDateSearchFailed(true);
+                setBaseDateSearching(false);
+            }
+        })();
+    }, [activeForecastDate, activeForecastDatePattern, workspace, fullReset, baseDateSearching]);
 
     const value = useMemo(() => ({
         workspace,
@@ -73,8 +112,11 @@ export function ForecastSessionProvider({children}) {
         normalizationRef, setNormalizationRef,
         // reset control
         resetVersion,
-        fullReset
-    }), [workspace, activeForecastDate, activeForecastDatePattern, forecastBaseDate, shiftForecastBaseDate, percentile, normalizationRef, resetVersion, fullReset]);
+        fullReset,
+        // search feedback
+        baseDateSearchFailed,
+        baseDateSearching
+    }), [workspace, activeForecastDate, activeForecastDatePattern, forecastBaseDate, shiftForecastBaseDate, percentile, normalizationRef, resetVersion, fullReset, baseDateSearchFailed, baseDateSearching]);
 
     return <ForecastSessionContext.Provider value={value}>{children}</ForecastSessionContext.Provider>;
 }

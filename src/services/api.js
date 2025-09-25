@@ -66,6 +66,7 @@ async function request(endpoint) {
 // --- Metadata ---
 export const getConfig = () => request("/meta/show-config");
 export const getLastForecastDate = region => request(`/meta/${region}/last-forecast-date`);
+export const hasForecastDate = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/has-forecasts`);
 export const getAvailableMethods = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/methods`);
 export const getMethodsAndConfigs = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/methods-and-configs`);
 export const getEntities = (region, date, methodId, configId) => request(`/meta/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/entities`);

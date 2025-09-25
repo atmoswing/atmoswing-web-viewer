@@ -81,7 +81,7 @@ function ToolbarSquares() {
 function ToolbarCenter() {
     const { t } = useTranslation();
     const { selectedMethodConfig } = useMethods();
-    const { forecastBaseDate, shiftForecastBaseDate, activeForecastDate } = useForecastSession();
+    const { forecastBaseDate, shiftForecastBaseDate, activeForecastDate, baseDateSearching } = useForecastSession();
     const forecastDateStr = React.useMemo(() => {
         if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
             const fd = forecastBaseDate;
@@ -93,11 +93,12 @@ function ToolbarCenter() {
         }
         return '';
     }, [forecastBaseDate]);
-    const buttonsDisabled = !activeForecastDate; // only disable if we have absolutely no base date
+    const buttonsDisabled = !activeForecastDate || baseDateSearching; // disable while searching
+    const statusLabel = baseDateSearching ? t('toolbar.searching') : (forecastDateStr ? t('toolbar.forecastOf', { date: forecastDateStr }) : t('toolbar.loading'));
     return (
         <div className="toolbar-center">
             <div className="toolbar-center-row">
-                <span>{forecastDateStr ? t('toolbar.forecastOf', { date: forecastDateStr }) : t('toolbar.loading')}</span>
+                <span>{statusLabel}</span>
                 <Tooltip title="-24h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-24)}><KeyboardDoubleArrowLeftIcon fontSize="small" /></button></span></Tooltip>
                 <Tooltip title="-6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-6)}><KeyboardArrowLeftIcon fontSize="small" /></button></span></Tooltip>
                 <Tooltip title="+6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(6)}><KeyboardArrowRightIcon fontSize="small" /></button></span></Tooltip>
