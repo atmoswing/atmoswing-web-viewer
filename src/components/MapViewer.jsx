@@ -19,7 +19,7 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
-import {useEntities, useForecastParameters, useForecastValues, useSynthesis} from '../contexts/ForecastsContext.jsx';
+import {useEntities, useForecastParameters, useForecastValues, useSynthesis, useForecastSession} from '../contexts/ForecastsContext.jsx';
 import {useSelectedEntity} from '../contexts/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
@@ -67,6 +67,7 @@ export default function MapViewer() {
     const {selectedTargetDate} = useSynthesis();
     const {workspace} = useWorkspace();
     const {setSelectedEntityId} = useSelectedEntity();
+    const { baseDateSearchFailed, clearBaseDateSearchFailed } = useForecastSession();
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);
@@ -247,6 +248,15 @@ export default function MapViewer() {
         };
     }, []);
 
+    // Auto-dismiss the temporary overlay after 2 seconds when search failed
+    useEffect(() => {
+        if (!baseDateSearchFailed) return;
+        const id = setTimeout(() => {
+            try { clearBaseDateSearchFailed(); } catch (_) {}
+        }, 2000);
+        return () => clearTimeout(id);
+    }, [baseDateSearchFailed, clearBaseDateSearchFailed]);
+
     // Add pointer move & out for tooltip after map created
     useEffect(() => {
         if (!mapInstanceRef.current) return;
@@ -392,6 +402,12 @@ export default function MapViewer() {
             {forecastUnavailable && selectedTargetDate && !(entitiesLoading || forecastLoading) && (
                 <div className="map-loading-overlay" style={{backdropFilter: 'blur(2px)', fontSize: 18, color: '#222'}}>
                     <div>{t('map.loading.noForecastAvailable')}</div>
+                </div>
+            )}
+            {/* Show a temporary, non-clickable overlay when automated search failed; dismiss after 2s */}
+            {baseDateSearchFailed && !(entitiesLoading || forecastLoading) && (
+                <div className="map-loading-overlay" style={{backdropFilter: 'blur(2px)', fontSize: 18, color: '#222'}}>
+                    <div>{t('map.loading.noForecastFoundSearch')}</div>
                 </div>
             )}
             {/* Legend */}

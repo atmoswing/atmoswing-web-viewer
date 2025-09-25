@@ -99,6 +99,11 @@ export function ForecastSessionProvider({children}) {
         })();
     }, [activeForecastDate, activeForecastDatePattern, workspace, fullReset, baseDateSearching]);
 
+    // Allow UI to clear the "search failed" flag (used for temporary overlays)
+    const clearBaseDateSearchFailed = useCallback(() => {
+        setBaseDateSearchFailed(false);
+    }, []);
+
     const value = useMemo(() => ({
         workspace,
         activeForecastDate,
@@ -113,6 +118,7 @@ export function ForecastSessionProvider({children}) {
         // reset control
         resetVersion,
         fullReset,
+        clearBaseDateSearchFailed,
         // search feedback
         baseDateSearchFailed,
         baseDateSearching
