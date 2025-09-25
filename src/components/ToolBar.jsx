@@ -7,7 +7,9 @@ import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrow
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
+import UpdateIcon from '@mui/icons-material/Update';
 import { useSynthesis, useMethods, useForecastSession } from '../contexts/ForecastsContext.jsx';
+import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
 import { valueToColorCSS } from '../utils/colors.js';
 import Tooltip from '@mui/material/Tooltip';
 import { useTranslation } from 'react-i18next';
@@ -81,7 +83,9 @@ function ToolbarSquares() {
 function ToolbarCenter() {
     const { t } = useTranslation();
     const { selectedMethodConfig } = useMethods();
-    const { forecastBaseDate, shiftForecastBaseDate, activeForecastDate, baseDateSearching } = useForecastSession();
+    const { forecastBaseDate, shiftForecastBaseDate, activeForecastDate, baseDateSearching, restoreLastAvailableForecast } = useForecastSession();
+    const { workspaceData } = useWorkspace();
+    const isShowingLastForecast = !!(activeForecastDate && workspaceData?.date?.last_forecast_date && activeForecastDate === workspaceData.date.last_forecast_date);
     const forecastDateStr = React.useMemo(() => {
         if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
             const fd = forecastBaseDate;
@@ -98,6 +102,20 @@ function ToolbarCenter() {
     return (
         <div className="toolbar-center">
             <div className="toolbar-center-row">
+                {!isShowingLastForecast && (
+                    <Tooltip title={t('toolbar.restoreLastForecast')} arrow>
+                        <span>
+                            <button
+                                className="toolbar-center-btn"
+                                disabled={baseDateSearching}
+                                onClick={() => restoreLastAvailableForecast && restoreLastAvailableForecast()}
+                                aria-label={t('toolbar.restoreLastForecast')}
+                            >
+                                <UpdateIcon fontSize="small" />
+                            </button>
+                        </span>
+                    </Tooltip>
+                )}
                 <span>{statusLabel}</span>
                 <Tooltip title="-24h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-24)}><KeyboardDoubleArrowLeftIcon fontSize="small" /></button></span></Tooltip>
                 <Tooltip title="-6h" arrow><span><button className="toolbar-center-btn" disabled={buttonsDisabled} onClick={()=>shiftForecastBaseDate(-6)}><KeyboardArrowLeftIcon fontSize="small" /></button></span></Tooltip>

@@ -1,7 +1,7 @@
 import React, {createContext, useContext, useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {parseForecastDate, formatForecastDateForApi} from '../utils/forecastDateUtils.js';
-import {hasForecastDate, getSynthesisTotal} from '../services/api.js';
+import {hasForecastDate, getSynthesisTotal, getLastForecastDate} from '../services/api.js';
 
 const ForecastSessionContext = createContext({});
 
@@ -104,6 +104,29 @@ export function ForecastSessionProvider({children}) {
         setBaseDateSearchFailed(false);
     }, []);
 
+    // Restore the session to the workspace's last known forecast (used by toolbar button)
+    const restoreLastAvailableForecast = useCallback(async () => {
+        try {
+            let raw = workspaceData?.date?.last_forecast_date;
+            if (!raw && workspace) {
+                try {
+                    const resp = await getLastForecastDate(workspace);
+                    raw = resp?.last_forecast_date;
+                } catch (e) {
+                    // ignore — nothing to restore
+                    console.warn('[ForecastSession] getLastForecastDate failed', e);
+                }
+            }
+            if (!raw) return;
+            setActiveForecastDate(raw);
+            setActiveForecastDatePattern(p => p || raw);
+            fullReset(parseForecastDate(raw));
+            setBaseDateSearchFailed(false);
+        } catch (err) {
+            console.error('[ForecastSession] restoreLastAvailableForecast error', err);
+        }
+    }, [workspaceData, fullReset, workspace]);
+
     const value = useMemo(() => ({
         workspace,
         activeForecastDate,
@@ -119,6 +142,7 @@ export function ForecastSessionProvider({children}) {
         resetVersion,
         fullReset,
         clearBaseDateSearchFailed,
+        restoreLastAvailableForecast,
         // search feedback
         baseDateSearchFailed,
         baseDateSearching

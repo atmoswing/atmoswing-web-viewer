@@ -33,7 +33,8 @@ const resources = {
             "toolbar": {
                 "forecastOf": "Forecast of {{date}}",
                 "loading": "Loading...",
-                "searching": "Searching..."
+                "searching": "Searching...",
+                "restoreLastForecast": "Restore last forecast"
             },
             "forecasts": {
                 "loading": "Loading..."
@@ -103,7 +104,8 @@ const resources = {
             "toolbar": {
                 "forecastOf": "Prévision du {{date}}",
                 "loading": "Chargement...",
-                "searching": "Recherche..."
+                "searching": "Recherche...",
+                "restoreLastForecast": "Restaurer la dernière prévision"
             },
             "forecasts": {
                 "loading": "Chargement..."
