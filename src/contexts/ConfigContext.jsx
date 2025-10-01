@@ -1,21 +1,30 @@
 import React, {createContext, useState, useEffect, useContext} from 'react';
-import staticConfig from '../config.js';
+import config, {normalizeRuntimeConfig, updateConfig} from '../config.js';
 
 const ConfigContext = createContext();
 
 export function ConfigProvider({children}) {
-    // Add a metadata flag to know when (attempted) runtime config load is finished
-    const [config, setConfig] = useState({...staticConfig, __workspacesLoaded: false});
+    const [current, setCurrent] = useState({...config, __workspacesLoaded: false});
 
     useEffect(() => {
-        fetch('/config.json')
+        let cancelled = false;
+        fetch('/config.json', {cache: 'no-store'})
             .then(res => res.json())
-            .then(runtimeConfig => setConfig(prev => ({...prev, ...runtimeConfig, __workspacesLoaded: true})))
-            .catch(() => setConfig(prev => ({...prev, __workspacesLoaded: true})));
+            .then(json => {
+                if (cancelled) return;
+                const normalized = normalizeRuntimeConfig(json);
+                updateConfig(normalized); // mutate shared config object used by imports (e.g. api service)
+                setCurrent(prev => ({...prev, ...config, __workspacesLoaded: true}));
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setCurrent(prev => ({...prev, __workspacesLoaded: true}));
+            });
+        return () => { cancelled = true; };
     }, []);
 
     return (
-        <ConfigContext.Provider value={config}>
+        <ConfigContext.Provider value={current}>
             {children}
         </ConfigContext.Provider>
     );

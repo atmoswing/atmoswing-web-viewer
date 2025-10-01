@@ -25,18 +25,12 @@ import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
 import {valueToColor} from '../utils/colors.js';
+import {useConfig} from '../contexts/ConfigContext.jsx';
 
 // Add projection imports
 import proj4 from 'proj4';
 import {register} from 'ol/proj/proj4';
 import {transform} from 'ol/proj';
-
-// Register source projection from env
-const SOURCE_EPSG = config.ENTITIES_SOURCE_EPSG;
-if (SOURCE_EPSG === 'EPSG:2154' && !proj4.defs[SOURCE_EPSG]) {
-    proj4.defs('EPSG:2154', '+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
-}
-register(proj4);
 
 // Define the Pseudo-Mercator (PM) tile grid manually
 const MANUAL_PM = (() => {
@@ -68,10 +62,39 @@ export default function MapViewer() {
     const {workspace} = useWorkspace();
     const {setSelectedEntityId} = useSelectedEntity();
     const { baseDateSearchFailed, clearBaseDateSearchFailed } = useForecastSession();
+    const runtimeConfig = useConfig();
+    const ENTITIES_SOURCE_EPSG = runtimeConfig?.ENTITIES_SOURCE_EPSG || 'EPSG:4326';
+    const lastRegisteredProjRef = useRef(null);
 
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);
     const [tooltip, setTooltip] = useState(null); // {x, y, name, value}
+
+    // Clear features when projection changes so they reproject cleanly
+    useEffect(() => {
+        if (!mapReady) return;
+        if (!forecastLayerRef.current) return;
+        if (lastRegisteredProjRef.current && ENTITIES_SOURCE_EPSG !== lastRegisteredProjRef.current) {
+            forecastLayerRef.current.getSource().clear();
+            lastFittedWorkspaceRef.current = null;
+        }
+    }, [ENTITIES_SOURCE_EPSG, mapReady]);
+
+    // Dynamically (re)register source projection if config changes
+    useEffect(() => {
+        if (!ENTITIES_SOURCE_EPSG) return;
+        if (lastRegisteredProjRef.current === ENTITIES_SOURCE_EPSG) return;
+        // Provide known proj4 definitions (extend as needed)
+        if (ENTITIES_SOURCE_EPSG === 'EPSG:2154' && !proj4.defs[ENTITIES_SOURCE_EPSG]) {
+            proj4.defs('EPSG:2154', '+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
+        }
+        if (ENTITIES_SOURCE_EPSG === 'EPSG:2056' && !proj4.defs[ENTITIES_SOURCE_EPSG]) {
+            // Swiss LV95
+            proj4.defs('EPSG:2056', '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs +type=crs');
+        }
+        try { register(proj4); } catch (_) {}
+        lastRegisteredProjRef.current = ENTITIES_SOURCE_EPSG;
+    }, [ENTITIES_SOURCE_EPSG]);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -293,6 +316,8 @@ export default function MapViewer() {
 
     // Update forecast points when entities or forecast values change
     useEffect(() => {
+        // Removed projectionReadyRef check; instead wait until projection is defined if not EPSG:4326
+        if (ENTITIES_SOURCE_EPSG !== 'EPSG:4326' && !proj4.defs[ENTITIES_SOURCE_EPSG]) return;
         if (!mapReady) return; // wait until map & layer exist
         if (!mapInstanceRef.current || !forecastLayerRef.current) return;
         if (forecastUnavailable) {
@@ -343,11 +368,11 @@ export default function MapViewer() {
                     fill: new Fill({color: `rgba(${r},${g},${b},${opacity})`})
                 })
             });
-            // Transform from source projection to map projection
             let coord = [ent.x, ent.y];
             try {
-                coord = transform(coord, SOURCE_EPSG, 'EPSG:3857');
-            } catch (_) {
+                coord = transform(coord, ENTITIES_SOURCE_EPSG, 'EPSG:3857');
+            } catch (e) {
+                if (config.API_DEBUG) console.warn(`Transform failed for entity ${ent.id} from ${ENTITIES_SOURCE_EPSG} -> EPSG:3857`, e);
             }
             if (coord[0] < minX) minX = coord[0];
             if (coord[0] > maxX) maxX = coord[0];
@@ -363,6 +388,7 @@ export default function MapViewer() {
                 style
             });
             feat.setStyle(style);
+            try { feat.setId(ent.id); } catch (_) {}
             source.addFeature(feat);
         });
 
@@ -372,13 +398,8 @@ export default function MapViewer() {
             view.fit([minX, minY, maxX, maxY], {padding: [60, 60, 60, 60], duration: 500, maxZoom: 11});
             lastFittedWorkspaceRef.current = workspace;
         }
-    }, [mapReady, entities, forecastValuesNorm, forecastValues, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable]);
+    }, [mapReady, entities, forecastValuesNorm, forecastValues, workspace, entitiesWorkspace, relevantEntities, forecastUnavailable, ENTITIES_SOURCE_EPSG]);
 
-    // Also set OL internal id so feature.getId() returns the entity id
-    try {
-        feat.setId(ent.id);
-    } catch (_) {
-    }
     // Reset layer and fit flag when workspace changes so new workspace extent is used
     useEffect(() => {
         if (forecastLayerRef.current) {

@@ -1,7 +1,5 @@
 import config from "../config";
 
-const BASE = config.API_BASE_URL;
-
 // In-flight request de-duplication: endpoint -> Promise
 const inflight = new Map();
 
@@ -32,7 +30,7 @@ async function doFetch(fullUrl, endpoint) {
             try {
                 snippet = (await res.clone().text()).slice(0, 400);
             } catch {
-                // swallow fetch network error for retry logic; will retry unless attempts exhausted
+                // ignore snippet errors
             }
             if (config.API_DEBUG) {
                 console.groupCollapsed(`[API] ERROR ${status} ${endpoint}`);
@@ -53,7 +51,11 @@ async function doFetch(fullUrl, endpoint) {
 }
 
 function buildUrl(endpoint) {
-    return `${BASE}${endpoint}`;
+    const base = config.API_BASE_URL || '';
+    if (!base && config.API_DEBUG) {
+        console.warn('[API] Empty API_BASE_URL; requests are relative to current origin');
+    }
+    return `${base}${endpoint}`;
 }
 
 async function request(endpoint) {
