@@ -1,21 +1,12 @@
 # atmoswing/web-viewer
 
-# Build React app
-FROM node:20 AS build
+# Build stage
+FROM node:20-alpine as builder
 WORKDIR /app
-COPY package*.json ./
-RUN rm -f package-lock.json && npm install
 COPY . .
-RUN npm run build
+RUN npm install && npm run build
 
-# Serve with Nginx
+# Serve stage
 FROM nginx:alpine
-# Copy built assets
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 80
-
-# Default command (no custom entrypoint; override config via mounted /usr/share/nginx/html/config.json)
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=builder /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
