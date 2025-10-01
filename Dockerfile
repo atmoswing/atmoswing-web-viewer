@@ -17,5 +17,5 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Expose port
 EXPOSE 80
 
-# Default command (no custom entrypoint; override config via mounted /usr/share/nginx/html/config.json)
+# Default command
 CMD ["nginx", "-g", "daemon off;"]
