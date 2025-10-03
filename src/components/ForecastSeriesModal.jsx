@@ -4,9 +4,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {Box, Checkbox, Divider, FormControlLabel, FormGroup, Typography} from '@mui/material';
+import {Box, Checkbox, CircularProgress, Divider, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
-import {getSeriesValuesPercentiles} from '../services/api.js';
+import {getSeriesValuesPercentiles, getRelevantEntities} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
 
@@ -56,13 +56,68 @@ export default function ForecastSeriesModal() {
     const chartRef = useRef(null);
     // Replace previous width-only state with width+height
     const [chartSize, setChartSize] = useState({width: 0, height: 0});
+    const [autoConfigId, setAutoConfigId] = useState(null);
+    const [resolvingConfig, setResolvingConfig] = useState(false);
+    const autoConfigCache = useRef(new Map()); // key: workspace|date|methodId|entityId -> configId
+
+    // Effect to auto-determine config for selected entity if none chosen explicitly
+    useEffect(() => {
+        let cancelled = false;
+        async function resolve() {
+            // Reset previous auto config when dependencies change
+            setAutoConfigId(null);
+            setResolvingConfig(false);
+            if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || selectedMethodConfig?.config || selectedEntityId == null) {
+                // Explicit config selected or insufficient info; nothing to resolve
+                return;
+            }
+            const methodNode = methodConfigTree.find(m => m.id === selectedMethodConfig.method.id);
+            if (!methodNode || !methodNode.children?.length) { return; }
+            const cacheKey = `${workspace}|${selectedMethodConfig.method.id}|${selectedEntityId}`;
+            if (autoConfigCache.current.has(cacheKey)) {
+                setAutoConfigId(autoConfigCache.current.get(cacheKey));
+                return;
+            }
+            setResolvingConfig(true);
+            // Try each config until entity is relevant
+            for (const cfg of methodNode.children) {
+                try {
+                    const rel = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, cfg.id);
+                    if (cancelled) return;
+                    if (Array.isArray(rel?.entities) && rel.entities.find(e => e.id === selectedEntityId)) {
+                        autoConfigCache.current.set(cacheKey, cfg.id);
+                        setAutoConfigId(cfg.id);
+                        setResolvingConfig(false);
+                        return;
+                    }
+                } catch (_) {
+                    if (cancelled) return; // ignore individual errors and continue
+                }
+            }
+            // Fallback to first config if none matched
+            const fallback = methodNode.children[0].id;
+            autoConfigCache.current.set(cacheKey, fallback);
+            if (!cancelled) {
+                setAutoConfigId(fallback);
+                setResolvingConfig(false);
+            }
+        }
+        resolve();
+        return () => { cancelled = true; };
+    }, [workspace, activeForecastDate, selectedMethodConfig, selectedEntityId, methodConfigTree]);
 
     const resolvedConfigId = useMemo(() => {
         if (!selectedMethodConfig?.method) return null;
-        if (selectedMethodConfig.config) return selectedMethodConfig.config.id;
-        const m = methodConfigTree.find(m => m.id === selectedMethodConfig.method.id);
-        return m?.children?.[0]?.id || null;
-    }, [selectedMethodConfig, methodConfigTree]);
+        if (selectedMethodConfig.config) return selectedMethodConfig.config.id; // user selection overrides
+        if (resolvingConfig) return null; // delay until auto config determined
+        if (autoConfigId) return autoConfigId;
+        return null; // no config yet
+    }, [selectedMethodConfig, autoConfigId, resolvingConfig]);
+
+    // Clear series while waiting for config resolution to avoid flashing stale data
+    useEffect(() => {
+        setSeries(null);
+    }, [resolvedConfigId, selectedEntityId, selectedMethodConfig, workspace, activeForecastDate]);
 
     const cacheKey = useMemo(() => {
         if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
@@ -91,6 +146,7 @@ export default function ForecastSeriesModal() {
             try {
                 const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
                 if (cancelled || reqId !== reqIdRef.current) return;
+                console.log(resp);
                 const targetDates = (resp?.series_values?.target_dates || []).map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d));
                 const percentilesArr = resp?.series_values?.series_percentiles || [];
                 const pList = {20: [], 60: [], 90: []};
@@ -276,14 +332,19 @@ export default function ForecastSeriesModal() {
                         )}
                     </Box>
                 )}
-                <Box sx={{flex:1, minWidth:0, display:'flex'}}>
+                <Box sx={{flex:1, minWidth:0, display:'flex', position:'relative', alignItems:'center', justifyContent:'center'}}>
                     {!selectedEntityId && <div style={{fontSize:13}}>Select a station to view the forecast series.</div>}
-                    {selectedEntityId && loading && <div style={{fontSize:13}}>Loading series…</div>}
-                    {selectedEntityId && error && <div style={{fontSize:13, color:'#b00020'}}>Error loading series.</div>}
-                    {selectedEntityId && !loading && !error && series && (
+                    {selectedEntityId && (loading || resolvingConfig) && (
+                        <Box sx={{display:'flex', flexDirection:'column', alignItems:'center', gap:1}}>
+                            <CircularProgress size={28} />
+                            <Typography variant="caption" sx={{color:'#555'}}>{resolvingConfig ? 'Resolving configuration…' : 'Loading series…'}</Typography>
+                        </Box>
+                    )}
+                    {selectedEntityId && error && !loading && !resolvingConfig && <div style={{fontSize:13, color:'#b00020'}}>Error loading series.</div>}
+                    {selectedEntityId && !loading && !resolvingConfig && !error && series && (
                         <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
                     )}
-                    {selectedEntityId && !loading && !error && !series && <div style={{fontSize:13}}>No data available for this station.</div>}
+                    {selectedEntityId && !loading && !resolvingConfig && !error && !series && resolvedConfigId && <div style={{fontSize:13}}>No data available for this station.</div>}
                 </Box>
             </DialogContent>
         </Dialog>
