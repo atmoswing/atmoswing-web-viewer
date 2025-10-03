@@ -54,6 +54,8 @@ export default function ForecastSeriesModal() {
 
     const reqIdRef = useRef(0);
     const chartRef = useRef(null);
+    // Replace previous width-only state with width+height
+    const [chartSize, setChartSize] = useState({width: 0, height: 0});
 
     const resolvedConfigId = useMemo(() => {
         if (!selectedMethodConfig?.method) return null;
@@ -129,24 +131,34 @@ export default function ForecastSeriesModal() {
         d3.select(container).selectAll('*').remove();
         if (!series || !series.dates?.length) return;
 
+        let {width, height} = chartSize;
+        // Fallbacks in case ResizeObserver reports 0 (initial layout) or element not sized yet
+        if (!width || width < 10) width = container.clientWidth || 600;
+        if (!height || height < 50) {
+            // Try parent height first; if still small use default 420
+            const parentH = container.parentElement?.clientHeight;
+            height = (parentH && parentH > 200) ? parentH : 420;
+        }
+
         const {dates, p20, p60, p90} = series;
-        const allValues = [...p20, ...p60, ...p90].filter(v => typeof v === 'number');
+        const allValues = [...p20, ...p60, ...p90].filter(v => typeof v === 'number' && isFinite(v));
         if (!allValues.length) return;
 
-        const width = 620;
-        const height = 260;
-        const margin = {top: 12, right: 8, bottom: 28, left: 50};
-        const innerW = width - margin.left - margin.right;
-        const innerH = height - margin.top - margin.bottom;
+        const dynamicWidth = Math.max(420, width);
+        const dynamicHeight = Math.max(300, height);
+
+        const margin = {top: 12, right: 12, bottom: 34, left: 56};
+        const innerW = Math.max(10, dynamicWidth - margin.left - margin.right);
+        const innerH = Math.max(10, dynamicHeight - margin.top - margin.bottom);
 
         const svg = d3.select(container)
             .append('svg')
-            .attr('width', width)
-            .attr('height', height)
+            .attr('width', dynamicWidth)
+            .attr('height', dynamicHeight)
             .attr('role', 'img')
             .attr('aria-label', 'Forecast percentiles time series');
 
-        svg.append('rect').attr('x', 0).attr('y', 0).attr('width', width).attr('height', height).attr('fill', '#fff').attr('stroke', '#ddd');
+        svg.append('rect').attr('x', 0).attr('y', 0).attr('width', dynamicWidth).attr('height', dynamicHeight).attr('fill', '#fff').attr('stroke', '#ddd');
 
         const xScale = d3.scaleTime().domain(d3.extent(dates)).range([0, innerW]);
         const yMax = Math.max(...allValues) * 1.08 || 1;
@@ -154,33 +166,37 @@ export default function ForecastSeriesModal() {
 
         const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-        const yAxis = d3.axisLeft(yScale).ticks(5).tickSize(-innerW).tickPadding(8);
+        const yAxis = d3.axisLeft(yScale).ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55)))).tickSize(-innerW).tickPadding(8);
         g.append('g').attr('class', 'y-axis').call(yAxis).selectAll('line').attr('stroke', '#eee');
         g.selectAll('.y-axis text').attr('fill', '#555').attr('font-size', 11);
+        if (innerH > 120) {
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -innerH / 2)
+                .attr('y', -margin.left + 14)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#444')
+                .attr('font-size', 12)
+                .text('Precipitation [mm]');
+        }
 
-        const xAxis = d3.axisBottom(xScale).ticks(Math.min(dates.length, 6)).tickFormat(d3.timeFormat('%-d/%-m'));
+        const xTicksTarget = Math.min(dates.length, Math.max(3, Math.floor(innerW / 120)));
+        const xAxis = d3.axisBottom(xScale).ticks(xTicksTarget).tickFormat(d3.timeFormat('%-d/%-m'));
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
         const lineGen = d3.line().defined(d => typeof d.value === 'number').x(d => xScale(d.date)).y(d => yScale(d.value));
         const toPoints = arr => arr.map((v, i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN}));
 
-        // Color palette
-        const COLORS = {
-            p90: '#0b2e8a', // dark strong blue
-            p60: '#1d53d2', // medium blue
-            p20: '#04b4e6', // cyan-light blue
-        };
-
+        const COLORS = {p90: '#0b2e8a', p60: '#1d53d2', p20: '#04b4e6'};
         if (options.threeQuantiles) {
             g.append('path').datum(toPoints(p90)).attr('fill', 'none').attr('stroke', COLORS.p90).attr('stroke-width', 3).attr('d', lineGen);
             g.append('path').datum(toPoints(p60)).attr('fill', 'none').attr('stroke', COLORS.p60).attr('stroke-width', 3).attr('d', lineGen);
             g.append('path').datum(toPoints(p20)).attr('fill', 'none').attr('stroke', COLORS.p20).attr('stroke-width', 3).attr('d', lineGen);
         }
 
-        // legend (reordered 90, 60, 20)
+        const legendWidth = Math.min(160, innerW * 0.45);
         const legend = svg.append('g').attr('transform', `translate(${margin.left + 4},${6})`);
-        legend.append('rect').attr('width', 160).attr('height', 54).attr('fill', '#fafafa').attr('stroke', '#ddd');
-
+        legend.append('rect').attr('width', legendWidth).attr('height', 54).attr('fill', '#fafafa').attr('stroke', '#ddd');
         const legendItems = [
             {label: 'Quantile 90', color: COLORS.p90, y: 18},
             {label: 'Quantile 60', color: COLORS.p60, y: 32},
@@ -191,12 +207,30 @@ export default function ForecastSeriesModal() {
             legend.append('text').attr('x', 56).attr('y', item.y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
         });
 
-    }, [series, options.threeQuantiles]);
+    }, [series, options.threeQuantiles, chartSize.width, chartSize.height]);
 
     const handleClose = () => setSelectedEntityId(null);
 
+    // Observe size changes of chart container for responsive width
+    useEffect(() => {
+        const el = chartRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                const {width, height} = entry.contentRect;
+                setChartSize(prev => (prev.width !== width || prev.height !== height ? {width, height} : prev));
+            }
+        });
+        ro.observe(el);
+        // initialize once
+        const rect = el.getBoundingClientRect();
+        setChartSize(prev => (prev.width !== rect.width || prev.height !== rect.height ? {width: rect.width, height: rect.height} : prev));
+        return () => ro.disconnect();
+    }, [selectedEntityId]);
+
     return (
-        <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth="lg" fullWidth>
+        <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
+                PaperProps={{sx:{width:'90vw', maxWidth:'1500px', height:'60vh', display:'flex', flexDirection:'column'}}}>
             <DialogTitle sx={{pr: 5}}>
                 Forecast percentiles{stationName ? ` - ${stationName}` : ''}
                 <IconButton aria-label="close" onClick={handleClose} size="small"
@@ -204,9 +238,9 @@ export default function ForecastSeriesModal() {
                     <CloseIcon fontSize="small"/>
                 </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'stretch'}}>
+            <DialogContent dividers sx={{display:'flex', flexDirection:'row', gap:2, alignItems:'stretch', flex:1, minHeight:0}}>
                 {selectedEntityId && (
-                    <Box sx={{width: 220, flexShrink: 0, borderRight: '1px solid #e0e0e0', pr: 1}}>
+                    <Box sx={{width: 220, flexShrink:0, borderRight:'1px solid #e0e0e0', pr:1, overflowY:'auto'}}>
                         <FormGroup>
                             <FormControlLabel control={<Checkbox size="small" checked={options.threeQuantiles} onChange={handleOptionChange('threeQuantiles')} />} label={<Typography variant="body2">3 quantiles</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} disabled onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">All quantiles</Typography>} />
@@ -215,11 +249,11 @@ export default function ForecastSeriesModal() {
                             <FormControlLabel control={<Checkbox size="small" checked={options.fiveBestAnalogs} disabled onChange={handleOptionChange('fiveBestAnalogs')} />} label={<Typography variant="body2">5 best analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} disabled onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} disabled onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
-                            <Divider sx={{my: 1}} />
+                            <Divider sx={{my:1}} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts} onChange={handleOptionChange('previousForecasts')} />} label={<Typography variant="body2">Previous forecasts</Typography>} />
                         </FormGroup>
                         {options.previousForecasts && (
-                            <Box sx={{mt: 1, maxHeight: 160, overflowY: 'auto', border: '1px solid #eee', p: 1}}>
+                            <Box sx={{mt: 1, maxHeight: 180, overflowY: 'auto', border: '1px solid #eee', p: 1}}>
                                 <Typography variant="caption" sx={{display: 'block', mb: 0.5}}>Forecast cycles (placeholder)</Typography>
                                 {previousForecastCandidates.map(d => {
                                     const key = d.toISOString();
@@ -236,14 +270,14 @@ export default function ForecastSeriesModal() {
                         )}
                     </Box>
                 )}
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    {!selectedEntityId && <div style={{fontSize: 13}}>Select a station to view the forecast series.</div>}
-                    {selectedEntityId && loading && <div style={{fontSize: 13}}>Loading series…</div>}
-                    {selectedEntityId && error && <div style={{fontSize: 13, color: '#b00020'}}>Error loading series.</div>}
-                    {selectedEntityId && !loading && !error && series &&
-                        <div ref={chartRef} style={{position: 'relative'}}/>}
-                    {selectedEntityId && !loading && !error && !series &&
-                        <div style={{fontSize: 13}}>No data available for this station.</div>}
+                <Box sx={{flex:1, minWidth:0, display:'flex'}}>
+                    {!selectedEntityId && <div style={{fontSize:13}}>Select a station to view the forecast series.</div>}
+                    {selectedEntityId && loading && <div style={{fontSize:13}}>Loading series…</div>}
+                    {selectedEntityId && error && <div style={{fontSize:13, color:'#b00020'}}>Error loading series.</div>}
+                    {selectedEntityId && !loading && !error && series && (
+                        <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
+                    )}
+                    {selectedEntityId && !loading && !error && !series && <div style={{fontSize:13}}>No data available for this station.</div>}
                 </Box>
             </DialogContent>
         </Dialog>
