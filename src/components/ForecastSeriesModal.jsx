@@ -148,23 +148,6 @@ export default function ForecastSeriesModal() {
         legend.append('line').attr('x1', 10).attr('x2', 40).attr('y1', 46).attr('y2', 46).attr('stroke', '#2e7d32').attr('stroke-width', 3).attr('stroke-dasharray', '3 3');
         legend.append('text').attr('x', 48).attr('y', 50).attr('font-size', 12).attr('fill', '#2e7d32').text('P90');
 
-        // simple tooltips on hover
-        const tooltip = d3.select(container).append('div').style('position', 'absolute').style('pointer-events', 'none').style('background', '#fff').style('border', '1px solid #ddd').style('padding', '6px').style('font-size', '12px').style('display', 'none');
-
-        g.append('rect').attr('width', innerW).attr('height', innerH).attr('fill', 'transparent').on('mousemove', (event) => {
-            const [mx] = d3.pointer(event);
-            const x0 = xScale.invert(mx);
-            let idx = d3.bisector(d => d).left(dates, x0);
-            if (idx > 0) idx -= 1;
-            const dt = dates[idx];
-            const p20v = p20[idx];
-            const p60v = p60[idx];
-            const p90v = p90[idx];
-            tooltip.style('display', 'block').style('left', (event.pageX + 8) + 'px').style('top', (event.pageY + 8) + 'px').html(`${dt.getDate()}/${dt.getMonth() + 1}<br/>P20: ${p20v ?? '-'}<br/>P60: ${p60v ?? '-'}<br/>P90: ${p90v ?? '-'}`);
-        }).on('mouseout', () => {
-            tooltip.style('display', 'none');
-        });
-
     }, [series]);
 
     const handleClose = () => setSelectedEntityId(null);
