@@ -7,8 +7,7 @@ import ToolBar from "./components/ToolBar.jsx";
 import MapViewer from "./components/MapViewer.jsx";
 import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
 import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
-// TEMP DISABLED: Temporal plot modal (ForecastSeriesModal)
-// import ForecastSeriesModal from './components/ForecastSeriesModal.jsx';
+import ForecastSeriesModal from './components/ForecastSeriesModal.jsx';
 
 function MapArea() {
     return (
@@ -27,7 +26,7 @@ export default function App() {
                     <div className="main-content">
                         <ToolBar />
                         <MapArea />
-                        {/* TEMP DISABLED: <ForecastSeriesModal /> */}
+                        <ForecastSeriesModal />
                     </div>
                 </ForecastsProvider>
             </WorkspaceProvider>
