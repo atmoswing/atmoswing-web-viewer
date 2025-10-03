@@ -158,7 +158,7 @@ export default function ForecastSeriesModal() {
             .attr('role', 'img')
             .attr('aria-label', 'Forecast percentiles time series');
 
-        svg.append('rect').attr('x', 0).attr('y', 0).attr('width', dynamicWidth).attr('height', dynamicHeight).attr('fill', '#fff').attr('stroke', '#ddd');
+        svg.append('rect').attr('x',0).attr('y',0).attr('width',dynamicWidth).attr('height',dynamicHeight).attr('fill','#fff');
 
         const xScale = d3.scaleTime().domain(d3.extent(dates)).range([0, innerW]);
         const yMax = Math.max(...allValues) * 1.08 || 1;
@@ -167,7 +167,10 @@ export default function ForecastSeriesModal() {
         const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
         const yAxis = d3.axisLeft(yScale).ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55)))).tickSize(-innerW).tickPadding(8);
-        g.append('g').attr('class', 'y-axis').call(yAxis).selectAll('line').attr('stroke', '#eee');
+        const yAxisG = g.append('g').attr('class', 'y-axis').call(yAxis);
+        yAxisG.selectAll('line').attr('stroke', '#ccc').attr('stroke-opacity', 0.9); // grid lines
+        yAxisG.selectAll('path.domain').remove(); // remove domain line
+
         g.selectAll('.y-axis text').attr('fill', '#555').attr('font-size', 11);
         if (innerH > 120) {
             g.append('text')
@@ -194,9 +197,12 @@ export default function ForecastSeriesModal() {
             g.append('path').datum(toPoints(p20)).attr('fill', 'none').attr('stroke', COLORS.p20).attr('stroke-width', 3).attr('d', lineGen);
         }
 
-        const legendWidth = Math.min(160, innerW * 0.45);
-        const legend = svg.append('g').attr('transform', `translate(${margin.left + 4},${6})`);
-        legend.append('rect').attr('width', legendWidth).attr('height', 54).attr('fill', '#fafafa').attr('stroke', '#ddd');
+        const legendWidth = 150;
+        // Position legend at upper-right inside plotting area (with 4px padding)
+        const legendX = margin.left + innerW - legendWidth - 4;
+        const legendY = margin.top + 4;
+        const legend = svg.append('g').attr('transform', `translate(${legendX},${legendY})`);
+        legend.append('rect').attr('width', legendWidth).attr('height', 62).attr('fill', '#fafafa').attr('stroke', '#ddd');
         const legendItems = [
             {label: 'Quantile 90', color: COLORS.p90, y: 18},
             {label: 'Quantile 60', color: COLORS.p60, y: 32},
@@ -230,7 +236,7 @@ export default function ForecastSeriesModal() {
 
     return (
         <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
-                PaperProps={{sx:{width:'90vw', maxWidth:'1500px', height:'60vh', display:'flex', flexDirection:'column'}}}>
+                PaperProps={{sx:{width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
             <DialogTitle sx={{pr: 5}}>
                 Forecast percentiles{stationName ? ` - ${stationName}` : ''}
                 <IconButton aria-label="close" onClick={handleClose} size="small"
