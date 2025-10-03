@@ -94,17 +94,25 @@ export function EntitiesProvider({children}) {
         return () => { cancelled = true; };
     }, [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree, methodsLoading, versionRef.current]);
 
-    // Fetch relevant entities
+    // Fetch relevant entities (only when an explicit configuration is selected)
     useEffect(() => {
         let cancelled = false;
         const reqId = ++relevantReqIdRef.current;
         const fetchWorkspace = workspace;
         async function run() {
-            if (!fetchWorkspace || !activeForecastDate || !selectedMethodConfig?.method || !selectedMethodConfig.config) {
+            if (!fetchWorkspace || !activeForecastDate || !selectedMethodConfig?.method) {
                 setRelevantEntities(null);
                 return;
             }
-            if (selectedMethodConfig._workspace && selectedMethodConfig._workspace !== fetchWorkspace) { setRelevantEntities(null); return; }
+            // If user selected only the method (no config), clear any previous relevant subset
+            if (!selectedMethodConfig.config) {
+                setRelevantEntities(null);
+                return;
+            }
+            if (selectedMethodConfig._workspace && selectedMethodConfig._workspace !== fetchWorkspace) {
+                setRelevantEntities(null);
+                return;
+            }
             const methodId = selectedMethodConfig.method.id;
             const configId = selectedMethodConfig.config.id;
             if (!methodConfigTree.find(m => m.id === methodId)) { setRelevantEntities(null); return; }
@@ -116,11 +124,13 @@ export function EntitiesProvider({children}) {
                 if (cancelled || reqId !== relevantReqIdRef.current) return;
                 if (fetchWorkspace !== workspace) return;
                 let ids = [];
-                if (Array.isArray(resp)) ids = typeof resp[0] === 'object' ? resp.map(r => r.id ?? r.entity_id).filter(v => v != null) : resp; else if (resp && typeof resp === 'object') ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
+                if (Array.isArray(resp)) ids = (typeof resp[0] === 'object') ? resp.map(r => r.id ?? r.entity_id).filter(v => v != null) : resp; else if (resp && typeof resp === 'object') ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
                 const setIds = new Set(ids);
                 relevantCacheRef.current.set(key, setIds);
                 setRelevantEntities(setIds);
-            } catch { if (!cancelled && reqId === relevantReqIdRef.current) setRelevantEntities(null); }
+            } catch {
+                if (!cancelled && reqId === relevantReqIdRef.current) setRelevantEntities(null);
+            }
         }
         run();
         return () => { cancelled = true; };
