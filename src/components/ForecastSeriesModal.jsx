@@ -43,6 +43,12 @@ export default function ForecastSeriesModal() {
         allReturnPeriods: false,
         previousForecasts: false,
     });
+
+    // Percentile sets used for requests
+    const DEFAULT_PCTS = [20, 60, 90];
+    const FULL_PCTS = [0,10,20,30,40,50,60,70,80,90,100];
+    const requestedPercentiles = useMemo(() => (options.allQuantiles ? FULL_PCTS : DEFAULT_PCTS), [options.allQuantiles]);
+
     const handleOptionChange = (key) => (e) => {
         const checked = e.target.checked;
         setOptions(o => {
@@ -143,8 +149,10 @@ export default function ForecastSeriesModal() {
 
     const cacheKey = useMemo(() => {
         if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
-        return `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
-    }, [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+        // include requested percentiles in cache key so different percentile requests don't collide
+        const pctsKey = (requestedPercentiles && requestedPercentiles.length) ? `|pcts=${requestedPercentiles.join(',')}` : '';
+        return `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}${pctsKey}`;
+    }, [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles]);
 
     useEffect(() => {
         let cancelled = false;
@@ -166,18 +174,26 @@ export default function ForecastSeriesModal() {
             setError(null);
             setSeries(null);
             try {
-                const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+                const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId, requestedPercentiles);
                 if (cancelled || reqId !== reqIdRef.current) return;
-                console.log(resp);
+                // Parse response
                 const targetDates = (resp?.series_values?.target_dates || []).map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d));
                 const percentilesArr = resp?.series_values?.series_percentiles || [];
-                const pList = {20: [], 60: [], 90: []};
+                // Build map of percentile -> series values
+                const pctMap = {};
                 percentilesArr.forEach(sp => {
-                    if (pList[sp.percentile] !== undefined) pList[sp.percentile] = sp.series_values || [];
+                    const p = Number(sp.percentile);
+                    pctMap[p] = sp.series_values || [];
                 });
+                const pctList = Object.keys(pctMap).map(Number).sort((a,b) => a - b);
+
+                // Normalize series lengths to targetDates
                 const normLen = targetDates.length;
-                const norm = arr => arr.length === normLen ? arr : targetDates.map((_, i) => (typeof arr[i] === 'number' ? arr[i] : null));
-                const data = {dates: targetDates, p20: norm(pList[20]), p60: norm(pList[60]), p90: norm(pList[90])};
+                const normArr = arr => (Array.isArray(arr) && arr.length === normLen) ? arr : targetDates.map((_, i) => (Array.isArray(arr) && typeof arr[i] === 'number' ? arr[i] : null));
+                const normalizedMap = {};
+                pctList.forEach(p => { normalizedMap[p] = normArr(pctMap[p]); });
+
+                const data = {dates: targetDates, percentiles: normalizedMap, pctList};
                 seriesCache.set(cacheKey, data);
                 setSeries(data);
             } catch (e) {
@@ -191,10 +207,8 @@ export default function ForecastSeriesModal() {
         }
 
         run();
-        return () => {
-            cancelled = true;
-        };
-    }, [cacheKey, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+        return () => { cancelled = true; };
+    }, [cacheKey, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles]);
 
     const stationName = useMemo(() => {
         if (selectedEntityId == null) return '';
@@ -218,9 +232,18 @@ export default function ForecastSeriesModal() {
             height = (parentH && parentH > 200) ? parentH : 420;
         }
 
-        const {dates, p20, p60, p90} = series;
-        const allValues = [...p20, ...p60, ...p90].filter(v => typeof v === 'number' && isFinite(v));
-        // Determine 10-year value from referenceValues (expecting {axis, values})
+        const {dates} = series;
+        // Build array of percentile series (sorted)
+        const pctList = series.pctList || [];
+        const percentilesMap = series.percentiles || {};
+
+        // build list of all numeric values for y-scaling
+        const allValues = [];
+        pctList.forEach(p => {
+            const arr = percentilesMap[p] || [];
+            arr.forEach(v => { if (typeof v === 'number' && isFinite(v)) allValues.push(v); });
+        });
+        // Derive tenYearVal and include if requested
         let tenYearVal = null;
         if (referenceValues) {
             if (referenceValues.axis && Array.isArray(referenceValues.axis) && Array.isArray(referenceValues.values)) {
@@ -229,7 +252,7 @@ export default function ForecastSeriesModal() {
             }
         }
         if (options.tenYearReturn && typeof tenYearVal === 'number' && isFinite(tenYearVal)) allValues.push(tenYearVal);
-        // Build rpPairs from referenceValues (axis/values). Populate allValues if requested.
+        // Include all return periods values if requested
         let rpPairs = [];
         if (referenceValues && Array.isArray(referenceValues.axis) && Array.isArray(referenceValues.values)) {
             rpPairs = referenceValues.axis.map((a, i) => ({ rp: Number(a), val: Number(referenceValues.values[i]) }))
@@ -283,15 +306,71 @@ export default function ForecastSeriesModal() {
         const xAxis = d3.axisBottom(xScale).ticks(xTicksTarget).tickFormat(d3.timeFormat('%-d/%-m'));
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
-        const lineGen = d3.line().defined(d => typeof d.value === 'number').x(d => xScale(d.date)).y(d => yScale(d.value));
-        const toPoints = arr => arr.map((v, i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN}));
+        // Draw shaded bands between adjacent percentiles (light to darker towards center)
+        if (pctList.length > 3) {
+            // compute max distance from 50 for normalization
+            const minP = pctList[0];
+            const maxP = pctList[pctList.length - 1];
+            const maxDist = Math.max(Math.abs(50 - minP), Math.abs(maxP - 50), 1);
+            // build band descriptors
+            const bands = [];
+            for (let i = 0; i < pctList.length - 1; i++) {
+                const lowP = pctList[i];
+                const highP = pctList[i+1];
+                const mid = (lowP + highP) / 2;
+                const dist = Math.abs(mid - 50);
+                bands.push({lowP, highP, dist, lowArr: percentilesMap[lowP] || [], highArr: percentilesMap[highP] || []});
+            }
+            // draw from farthest (light) to nearest (dark) so inner bands are on top
+            bands.sort((a,b) => b.dist - a.dist);
+            const minOpacity = 0.05;
+            const maxOpacity = 0.70;
+            bands.forEach(b => {
+                const {lowArr, highArr, dist} = b;
+                const area = d3.area()
+                    .defined((d,i) => typeof lowArr[i] === 'number' && typeof highArr[i] === 'number')
+                    .x((d,i) => xScale(dates[i]))
+                    .y0((d,i) => yScale(lowArr[i]))
+                    .y1((d,i) => yScale(highArr[i]));
+                const normalized = Math.min(1, Math.max(0, dist / maxDist));
+                const opacity = minOpacity + (1 - normalized) * (maxOpacity - minOpacity);
+                g.append('path')
+                    .datum(dates)
+                    .attr('fill', '#777')
+                    .attr('fill-opacity', Math.max(minOpacity, Math.min(maxOpacity, opacity)))
+                    .attr('stroke', 'none')
+                    .attr('d', area);
+            });
+        }
 
+        // Draw median (50%) as a dark dashed line when present
+        const MEDIAN_COLOR = '#222';
+        if (pctList.includes(50)) {
+            const arr = percentilesMap[50];
+            g.append('path').datum(arr.map((v,i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN})))
+                .attr('fill', 'none')
+                .attr('stroke', MEDIAN_COLOR)
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '6 4')
+                .attr('stroke-linecap', 'round')
+                .attr('d', d3.line().defined(d => typeof d.value === 'number').x(d => xScale(d.date)).y(d => yScale(d.value)));
+        }
+
+        // Draw colored quantile lines if present (90/60/20) and if the option is enabled
         const COLORS = {p90: '#0b2e8a', p60: '#1d53d2', p20: '#04b4e6'};
-        const TENYR_COLOR = '#d00000'; // prominent red for 10-year
+        const TENYR_COLOR = '#d00000';
+        const drawLineIf = (pct, color, widthPx=3, opts = {}) => {
+            const arr = percentilesMap[pct];
+            if (!arr) return;
+            const path = g.append('path').datum(arr.map((v,i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN})))
+                .attr('fill', 'none').attr('stroke', color).attr('stroke-width', widthPx)
+                .attr('d', d3.line().defined(d => typeof d.value === 'number').x(d => xScale(d.date)).y(d => yScale(d.value)));
+            if (opts.dashed) path.attr('stroke-dasharray', opts.dashPattern || '6 4');
+        };
         if (options.threeQuantiles) {
-            g.append('path').datum(toPoints(p90)).attr('fill', 'none').attr('stroke', COLORS.p90).attr('stroke-width', 3).attr('d', lineGen);
-            g.append('path').datum(toPoints(p60)).attr('fill', 'none').attr('stroke', COLORS.p60).attr('stroke-width', 3).attr('d', lineGen);
-            g.append('path').datum(toPoints(p20)).attr('fill', 'none').attr('stroke', COLORS.p20).attr('stroke-width', 3).attr('d', lineGen);
+            drawLineIf(90, COLORS.p90, 3);
+            drawLineIf(60, COLORS.p60, 3);
+            drawLineIf(20, COLORS.p20, 3);
         }
 
         // Draw reference lines: 10-year (prominent) and optionally all return periods (subtle)
@@ -305,7 +384,6 @@ export default function ForecastSeriesModal() {
                 .attr('stroke-width', 2);
         }
         if (options.allReturnPeriods && rpPairs.length) {
-            // use ascending order for mapping index->color (small RP -> yellow, large RP -> red)
             const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
             rpPairsAsc.forEach((p, i) => {
                 const n = rpPairsAsc.length;
@@ -329,22 +407,34 @@ export default function ForecastSeriesModal() {
         // If allReturnPeriods is on, show all RP entries; otherwise, if tenYearReturn is on and a tenYearVal exists, reserve one slot for P10
         const showAllRPs = options.allReturnPeriods && rpCount > 0;
         const showP10Only = !showAllRPs && options.tenYearReturn && (typeof tenYearVal === 'number' && isFinite(tenYearVal));
-        const legendItemCount = 3 + (showAllRPs ? rpCount : (showP10Only ? 1 : 0));
+        // Build legend items first so we can calculate height including the median entry when present
+        const quantileLegendItems = [];
+        if (options.threeQuantiles) {
+            quantileLegendItems.push({label: 'Quantile 90', color: COLORS.p90});
+            quantileLegendItems.push({label: 'Quantile 60', color: COLORS.p60});
+            quantileLegendItems.push({label: 'Quantile 20', color: COLORS.p20});
+        }
+        // add median legend entry when 50% was returned
+        const legendItems = [];
+        if (pctList.includes(50)) {
+            legendItems.push({label: 'Median 50', color: MEDIAN_COLOR, dashed: true});
+        }
+        // follow with quantile legend entries if enabled
+        legendItems.push(...quantileLegendItems);
+
+        // now compute total legend item count including RP entries that will be listed below
+        const legendItemCount = legendItems.length + (showAllRPs ? rpCount : (showP10Only ? 1 : 0));
         const legendHeight = 14 * legendItemCount + 16;
         const legendX = margin.left + innerW - legendWidth - 4;
         const legendY = margin.top + 4;
         const legend = svg.append('g').attr('transform', `translate(${legendX},${legendY})`);
         legend.append('rect').attr('width', legendWidth).attr('height', legendHeight).attr('fill', '#fafafa').attr('stroke', '#ddd');
-        const legendItems = [
-            {label: 'Quantile 90', color: COLORS.p90},
-            {label: 'Quantile 60', color: COLORS.p60},
-            {label: 'Quantile 20', color: COLORS.p20},
-        ];
         legendItems.forEach((item, idx) => {
-            const y = 18 + idx * 14;
-            legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', item.color).attr('stroke-width', 3);
-            legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
-        });
+             const y = 18 + idx * 14;
+             const lineEl = legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', item.color).attr('stroke-width', 3);
+             if (item.dashed) lineEl.attr('stroke-dasharray', '6 4');
+             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
+         });
         // RP legend entries
         const baseY = 18 + 14 * legendItems.length;
         if (showAllRPs) {
@@ -368,7 +458,7 @@ export default function ForecastSeriesModal() {
             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text('P10');
         }
 
-    }, [series, options.threeQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods]);
+    }, [series, options.threeQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles]);
 
     const handleClose = () => setSelectedEntityId(null);
 
@@ -460,7 +550,7 @@ export default function ForecastSeriesModal() {
                     <Box sx={{width: 220, flexShrink:0, borderRight:'1px solid #e0e0e0', pr:1, overflowY:'auto'}}>
                         <FormGroup>
                             <FormControlLabel control={<Checkbox size="small" checked={options.threeQuantiles} onChange={handleOptionChange('threeQuantiles')} />} label={<Typography variant="body2">3 quantiles</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} disabled onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">All quantiles</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">All quantiles</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allAnalogs} disabled onChange={handleOptionChange('allAnalogs')} />} label={<Typography variant="body2">All analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenBestAnalogs} disabled onChange={handleOptionChange('tenBestAnalogs')} />} label={<Typography variant="body2">10 best analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.fiveBestAnalogs} disabled onChange={handleOptionChange('fiveBestAnalogs')} />} label={<Typography variant="body2">5 best analogs</Typography>} />
