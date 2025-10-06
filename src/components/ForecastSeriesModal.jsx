@@ -34,11 +34,9 @@ export default function ForecastSeriesModal() {
 
     // Sidebar state
     const [options, setOptions] = useState({
-        threeQuantiles: true,
+        mainQuantiles: true,
         allQuantiles: false,
-        allAnalogs: false,
         tenBestAnalogs: false,
-        fiveBestAnalogs: false,
         tenYearReturn: true,
         allReturnPeriods: false,
         previousForecasts: false,
@@ -367,7 +365,7 @@ export default function ForecastSeriesModal() {
                 .attr('d', d3.line().defined(d => typeof d.value === 'number').x(d => xScale(d.date)).y(d => yScale(d.value)));
             if (opts.dashed) path.attr('stroke-dasharray', opts.dashPattern || '6 4');
         };
-        if (options.threeQuantiles) {
+        if (options.mainQuantiles) {
             drawLineIf(90, COLORS.p90, 3);
             drawLineIf(60, COLORS.p60, 3);
             drawLineIf(20, COLORS.p20, 3);
@@ -409,7 +407,7 @@ export default function ForecastSeriesModal() {
         const showP10Only = !showAllRPs && options.tenYearReturn && (typeof tenYearVal === 'number' && isFinite(tenYearVal));
         // Build legend items first so we can calculate height including the median entry when present
         const quantileLegendItems = [];
-        if (options.threeQuantiles) {
+        if (options.mainQuantiles) {
             quantileLegendItems.push({label: 'Quantile 90', color: COLORS.p90});
             quantileLegendItems.push({label: 'Quantile 60', color: COLORS.p60});
             quantileLegendItems.push({label: 'Quantile 20', color: COLORS.p20});
@@ -458,7 +456,7 @@ export default function ForecastSeriesModal() {
             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text('P10');
         }
 
-    }, [series, options.threeQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles]);
+    }, [series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles]);
 
     const handleClose = () => setSelectedEntityId(null);
 
@@ -549,11 +547,9 @@ export default function ForecastSeriesModal() {
                 {selectedEntityId && (
                     <Box sx={{width: 220, flexShrink:0, borderRight:'1px solid #e0e0e0', pr:1, overflowY:'auto'}}>
                         <FormGroup>
-                            <FormControlLabel control={<Checkbox size="small" checked={options.threeQuantiles} onChange={handleOptionChange('threeQuantiles')} />} label={<Typography variant="body2">3 quantiles</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.mainQuantiles} onChange={handleOptionChange('mainQuantiles')} />} label={<Typography variant="body2">Main quantiles</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">All quantiles</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.allAnalogs} disabled onChange={handleOptionChange('allAnalogs')} />} label={<Typography variant="body2">All analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenBestAnalogs} disabled onChange={handleOptionChange('tenBestAnalogs')} />} label={<Typography variant="body2">10 best analogs</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.fiveBestAnalogs} disabled onChange={handleOptionChange('fiveBestAnalogs')} />} label={<Typography variant="body2">5 best analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
                             <Divider sx={{my:1}} />
