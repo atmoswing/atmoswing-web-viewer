@@ -6,7 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import {Box, Checkbox, CircularProgress, Divider, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
-import {getSeriesValuesPercentiles, getRelevantEntities} from '../services/api.js';
+import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
 
@@ -22,6 +22,15 @@ export default function ForecastSeriesModal() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [series, setSeries] = useState(null);
+    // referenceValues stores { axis: number[], values: number[] } or null
+    const [referenceValues, setReferenceValues] = useState(null);
+    const referenceCache = useRef(new Map()); // key: workspace|methodId|configId|entity -> value
+    const [_refLoading, setRefLoading] = useState(false);
+    const [_refError, setRefError] = useState(null);
+    // Ensure these refs are referenced for static analysis (used in JSX below)
+    // (no-op uses to avoid unused-variable warnings from static checker)
+    void _refLoading;
+    void _refError;
 
     // Sidebar state
     const [options, setOptions] = useState({
@@ -30,11 +39,24 @@ export default function ForecastSeriesModal() {
         allAnalogs: false,
         tenBestAnalogs: false,
         fiveBestAnalogs: false,
-        tenYearReturn: false,
+        tenYearReturn: true,
         allReturnPeriods: false,
         previousForecasts: false,
     });
-    const handleOptionChange = (key) => (e) => setOptions(o => ({...o, [key]: e.target.checked}));
+    const handleOptionChange = (key) => (e) => {
+        const checked = e.target.checked;
+        setOptions(o => {
+            if (key === 'tenYearReturn') {
+                // if enabling tenYearReturn, disable allReturnPeriods
+                return {...o, tenYearReturn: checked, allReturnPeriods: checked ? false : o.allReturnPeriods};
+            }
+            if (key === 'allReturnPeriods') {
+                // if enabling allReturnPeriods, disable tenYearReturn
+                return {...o, allReturnPeriods: checked, tenYearReturn: checked ? false : o.tenYearReturn};
+            }
+            return {...o, [key]: checked};
+        });
+    };
 
     // Placeholder previous forecast selections
     const previousForecastCandidates = useMemo(() => {
@@ -90,7 +112,7 @@ export default function ForecastSeriesModal() {
                         setResolvingConfig(false);
                         return;
                     }
-                } catch (_) {
+                } catch {
                     if (cancelled) return; // ignore individual errors and continue
                 }
             }
@@ -198,6 +220,24 @@ export default function ForecastSeriesModal() {
 
         const {dates, p20, p60, p90} = series;
         const allValues = [...p20, ...p60, ...p90].filter(v => typeof v === 'number' && isFinite(v));
+        // Determine 10-year value from referenceValues (expecting {axis, values})
+        let tenYearVal = null;
+        if (referenceValues) {
+            if (referenceValues.axis && Array.isArray(referenceValues.axis) && Array.isArray(referenceValues.values)) {
+                const idx = referenceValues.axis.findIndex(a => Number(a) === 10);
+                if (idx >= 0) tenYearVal = referenceValues.values[idx];
+            }
+        }
+        if (options.tenYearReturn && typeof tenYearVal === 'number' && isFinite(tenYearVal)) allValues.push(tenYearVal);
+        // Build rpPairs from referenceValues (axis/values). Populate allValues if requested.
+        let rpPairs = [];
+        if (referenceValues && Array.isArray(referenceValues.axis) && Array.isArray(referenceValues.values)) {
+            rpPairs = referenceValues.axis.map((a, i) => ({ rp: Number(a), val: Number(referenceValues.values[i]) }))
+                .filter(p => typeof p.val === 'number' && isFinite(p.val));
+            if (options.allReturnPeriods) {
+                rpPairs.forEach(p => allValues.push(p.val));
+            }
+        }
         if (!allValues.length) return;
 
         const dynamicWidth = Math.max(420, width);
@@ -247,29 +287,88 @@ export default function ForecastSeriesModal() {
         const toPoints = arr => arr.map((v, i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN}));
 
         const COLORS = {p90: '#0b2e8a', p60: '#1d53d2', p20: '#04b4e6'};
+        const TENYR_COLOR = '#d00000'; // prominent red for 10-year
         if (options.threeQuantiles) {
             g.append('path').datum(toPoints(p90)).attr('fill', 'none').attr('stroke', COLORS.p90).attr('stroke-width', 3).attr('d', lineGen);
             g.append('path').datum(toPoints(p60)).attr('fill', 'none').attr('stroke', COLORS.p60).attr('stroke-width', 3).attr('d', lineGen);
             g.append('path').datum(toPoints(p20)).attr('fill', 'none').attr('stroke', COLORS.p20).attr('stroke-width', 3).attr('d', lineGen);
         }
 
+        // Draw reference lines: 10-year (prominent) and optionally all return periods (subtle)
+        if (options.tenYearReturn && typeof tenYearVal === 'number' && isFinite(tenYearVal)) {
+            g.append('line')
+                .attr('x1', 0)
+                .attr('x2', innerW)
+                .attr('y1', yScale(tenYearVal))
+                .attr('y2', yScale(tenYearVal))
+                .attr('stroke', TENYR_COLOR)
+                .attr('stroke-width', 2);
+        }
+        if (options.allReturnPeriods && rpPairs.length) {
+            // use ascending order for mapping index->color (small RP -> yellow, large RP -> red)
+            const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
+            rpPairsAsc.forEach((p, i) => {
+                const n = rpPairsAsc.length;
+                const ratio = n > 1 ? (i / (n - 1)) : 0;
+                const gVal = Math.round(255 - ratio * 255);
+                const clr = `rgb(255, ${gVal}, 0)`;
+                g.append('line')
+                    .attr('x1', 0)
+                    .attr('x2', innerW)
+                    .attr('y1', yScale(p.val))
+                    .attr('y2', yScale(p.val))
+                    .attr('stroke', clr)
+                    .attr('stroke-width', 2)
+                    .attr('stroke-opacity', 0.95);
+            });
+        }
+
+        // Build legend after knowing rpPairs size so it rescales correctly
         const legendWidth = 150;
-        // Position legend at upper-right inside plotting area (with 4px padding)
+        const rpCount = rpPairs.length || 0;
+        // If allReturnPeriods is on, show all RP entries; otherwise, if tenYearReturn is on and a tenYearVal exists, reserve one slot for P10
+        const showAllRPs = options.allReturnPeriods && rpCount > 0;
+        const showP10Only = !showAllRPs && options.tenYearReturn && (typeof tenYearVal === 'number' && isFinite(tenYearVal));
+        const legendItemCount = 3 + (showAllRPs ? rpCount : (showP10Only ? 1 : 0));
+        const legendHeight = 14 * legendItemCount + 16;
         const legendX = margin.left + innerW - legendWidth - 4;
         const legendY = margin.top + 4;
         const legend = svg.append('g').attr('transform', `translate(${legendX},${legendY})`);
-        legend.append('rect').attr('width', legendWidth).attr('height', 62).attr('fill', '#fafafa').attr('stroke', '#ddd');
+        legend.append('rect').attr('width', legendWidth).attr('height', legendHeight).attr('fill', '#fafafa').attr('stroke', '#ddd');
         const legendItems = [
-            {label: 'Quantile 90', color: COLORS.p90, y: 18},
-            {label: 'Quantile 60', color: COLORS.p60, y: 32},
-            {label: 'Quantile 20', color: COLORS.p20, y: 46},
+            {label: 'Quantile 90', color: COLORS.p90},
+            {label: 'Quantile 60', color: COLORS.p60},
+            {label: 'Quantile 20', color: COLORS.p20},
         ];
-        legendItems.forEach(item => {
-            legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', item.y).attr('y2', item.y).attr('stroke', item.color).attr('stroke-width', 3);
-            legend.append('text').attr('x', 56).attr('y', item.y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
+        legendItems.forEach((item, idx) => {
+            const y = 18 + idx * 14;
+            legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', item.color).attr('stroke-width', 3);
+            legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
         });
+        // RP legend entries
+        const baseY = 18 + 14 * legendItems.length;
+        if (showAllRPs) {
+            const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
+            const rpPairsDesc = rpPairsAsc.slice().reverse();
+            rpPairsDesc.forEach((p, i) => {
+                const y = baseY + i * 14;
+                const idxAsc = rpPairsAsc.findIndex(r => r.rp === p.rp);
+                const n = rpPairsAsc.length;
+                const ratio = n > 1 ? (idxAsc / (n - 1)) : 0;
+                const gVal = Math.round(255 - ratio * 255);
+                const clr = `rgb(255, ${gVal}, 0)`;
+                legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
+                const label = `P${Number.isInteger(p.rp) ? p.rp : p.rp}`;
+                legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(label);
+            });
+        } else if (showP10Only) {
+            let clr = TENYR_COLOR;
+            const y = baseY;
+            legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
+            legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text('P10');
+        }
 
-    }, [series, options.threeQuantiles, chartSize.width, chartSize.height]);
+    }, [series, options.threeQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods]);
 
     const handleClose = () => setSelectedEntityId(null);
 
@@ -290,9 +389,65 @@ export default function ForecastSeriesModal() {
         return () => ro.disconnect();
     }, [selectedEntityId]);
 
+    // Fetch reference values when requested (either 10yr or all return periods)
+    useEffect(() => {
+        if (!options.tenYearReturn && !options.allReturnPeriods) return; // only fetch when user requests any RP data
+        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
+        const key = `${workspace}|${selectedMethodConfig.method.id}|${selectedEntityId}`;
+        if (referenceCache.current.has(key)) {
+            setReferenceValues(referenceCache.current.get(key));
+            return;
+        }
+        let cancelled = false;
+        setRefLoading(true);
+        setRefError(null);
+        setReferenceValues(null);
+        (async () => {
+            try {
+                const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+                if (cancelled) return;
+                // Attempt to parse response into {axis: number[], values: number[]}
+                let parsed = null;
+                if (resp && Array.isArray(resp.reference_axis) && Array.isArray(resp.reference_values) && resp.reference_axis.length === resp.reference_values.length) {
+                    parsed = {axis: resp.reference_axis.map(a => Number(a)), values: resp.reference_values.map(v => Number(v))};
+                } else if (resp && Array.isArray(resp.reference_values) && resp.reference_values.length && typeof resp.reference_values[0] === 'object') {
+                    // array of objects with return_period and value
+                    const axis = [];
+                    const values = [];
+                    resp.reference_values.forEach(o => {
+                        const rp = o.return_period ?? o.returnPeriod ?? o.period ?? o.p;
+                        const v = o.value ?? o.val ?? o.v;
+                        if (rp != null && v != null) { axis.push(Number(rp)); values.push(Number(v)); }
+                    });
+                    if (axis.length) parsed = {axis, values};
+                } else if (resp && typeof resp === 'object' && resp.reference_values && typeof resp.reference_values === 'object') {
+                    // object mapping like { '10': val, '20': val }
+                    const axis = Object.keys(resp.reference_values).map(k => Number(k)).sort((a,b)=>a-b);
+                    const values = axis.map(k => Number(resp.reference_values[String(k)]));
+                    if (axis.length) parsed = {axis, values};
+                } else {
+                    // No longer accept single numeric fallback – require axis+values or structured mapping
+                    parsed = null;
+                }
+
+                if (parsed && parsed.axis && parsed.values && parsed.axis.length === parsed.values.length) {
+                    referenceCache.current.set(key, parsed);
+                    setReferenceValues(parsed);
+                } else {
+                    setRefError(new Error('reference values not found'));
+                }
+            } catch (e) {
+                if (!cancelled) setRefError(e);
+            } finally {
+                if (!cancelled) setRefLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [options.tenYearReturn, options.allReturnPeriods, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+
     return (
         <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
-                PaperProps={{sx:{width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
+                sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
             <DialogTitle sx={{pr: 5}}>
                 Forecast percentiles{stationName ? ` - ${stationName}` : ''}
                 <IconButton aria-label="close" onClick={handleClose} size="small"
@@ -309,8 +464,8 @@ export default function ForecastSeriesModal() {
                             <FormControlLabel control={<Checkbox size="small" checked={options.allAnalogs} disabled onChange={handleOptionChange('allAnalogs')} />} label={<Typography variant="body2">All analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenBestAnalogs} disabled onChange={handleOptionChange('tenBestAnalogs')} />} label={<Typography variant="body2">10 best analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.fiveBestAnalogs} disabled onChange={handleOptionChange('fiveBestAnalogs')} />} label={<Typography variant="body2">5 best analogs</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} disabled onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} disabled onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
                             <Divider sx={{my:1}} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts} onChange={handleOptionChange('previousForecasts')} />} label={<Typography variant="body2">Previous forecasts</Typography>} />
                         </FormGroup>
@@ -345,6 +500,13 @@ export default function ForecastSeriesModal() {
                         <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
                     )}
                     {selectedEntityId && !loading && !resolvingConfig && !error && !series && resolvedConfigId && <div style={{fontSize:13}}>No data available for this station.</div>}
+                    {/* Reference values status messages (used to show refLoading/refError) */}
+                    {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && _refLoading && (
+                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>Loading reference values…</div>
+                    )}
+                    {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && !_refLoading && _refError && (
+                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>No reference values</div>
+                    )}
                 </Box>
             </DialogContent>
         </Dialog>
