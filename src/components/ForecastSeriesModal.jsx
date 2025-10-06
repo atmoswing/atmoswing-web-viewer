@@ -4,7 +4,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography} from '@mui/material';
+import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography, Button, Menu, MenuItem} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
 import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs, getSeriesValuesPercentilesHistory} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
@@ -790,6 +791,223 @@ export default function ForecastSeriesModal() {
         return () => { cancelled = true; };
     }, [options.previousForecasts, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
 
+    // Export menu state
+    const [exportAnchorEl, setExportAnchorEl] = useState(null);
+    const openExportMenu = (e) => setExportAnchorEl(e.currentTarget);
+    const closeExportMenu = () => setExportAnchorEl(null);
+
+    // Helper: find first SVG node inside chartRef
+    const findChartSVG = () => {
+        const el = chartRef.current;
+        if (!el) return null;
+        return el.querySelector('svg');
+    };
+
+    const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    // Inline computed styles into a cloned SVG so exported SVG/PDF matches on-screen appearance
+    const inlineAllStyles = (svg) => {
+        // Walk elements and copy computed styles as style attributes for relevant properties
+        const recurse = (el) => {
+            if (!(el instanceof Element)) return;
+            try {
+                const cs = getComputedStyle(el);
+                const styleProps = ['fill','stroke','stroke-width','stroke-opacity','fill-opacity','font-size','font-family','font-weight','opacity','text-anchor','stroke-linecap','stroke-linejoin','stroke-dasharray','background','background-color'];
+                let inline = '';
+                styleProps.forEach(p => {
+                    const v = cs.getPropertyValue(p);
+                    if (v) inline += `${p}:${v};`;
+                });
+                if (inline) {
+                    const prev = el.getAttribute('style') || '';
+                    el.setAttribute('style', prev + inline);
+                }
+            } catch (e) {
+                // ignore cross-origin or other issues
+            }
+            for (let i = 0; i < el.children.length; i++) recurse(el.children[i]);
+        };
+        recurse(svg);
+    };
+
+    // Helper to compute intrinsic SVG width/height in pixels
+    const getSVGSize = (svg) => {
+        const widthAttr = svg.getAttribute('width');
+        const heightAttr = svg.getAttribute('height');
+        const viewBoxAttr = svg.getAttribute('viewBox');
+        if (widthAttr && heightAttr) {
+            const w = parseFloat(widthAttr);
+            const h = parseFloat(heightAttr);
+            if (Number.isFinite(w) && Number.isFinite(h)) return {width: w, height: h};
+        }
+        if (viewBoxAttr) {
+            const parts = viewBoxAttr.split(/[\s,]+/).map(Number);
+            if (parts.length === 4 && parts.every(Number.isFinite)) return {width: parts[2], height: parts[3]};
+        }
+        // fallback to bounding client rect
+        return {width: svg.clientWidth || 800, height: svg.clientHeight || 600};
+    };
+
+    // Utility: append clone to offscreen container, inline styles, and optionally return serialized string
+    const withTemporaryContainer = (clone, cb) => {
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '0';
+        container.style.height = '0';
+        container.appendChild(clone);
+        document.body.appendChild(container);
+        try {
+            // Now inline styles with the clone in the DOM so getComputedStyle works
+            try { inlineAllStyles(clone); } catch (e) { /* ignore */ }
+            return cb && cb();
+        } finally {
+            document.body.removeChild(container);
+        }
+    };
+
+    // Export SVG as .svg file (append clone to DOM so computed styles are captured)
+    const exportSVG = () => {
+        const svg = findChartSVG();
+        if (!svg) return;
+        const clone = svg.cloneNode(true);
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        const serializer = new XMLSerializer();
+        withTemporaryContainer(clone, () => {
+            const svgStr = serializer.serializeToString(clone);
+            const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+            const filename = `${stationName || 'series'}-plot.svg`;
+            downloadBlob(blob, filename);
+        });
+        closeExportMenu();
+    };
+
+    // Export PNG (render SVG into canvas then to blob) with higher resolution
+    const exportPNG = async () => {
+        const svg = findChartSVG();
+        if (!svg) return;
+        const clone = svg.cloneNode(true);
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        const {width, height} = getSVGSize(clone);
+        const serializer = new XMLSerializer();
+        // Ensure computed styles are inlined by using temporary container
+        let svgStr;
+        withTemporaryContainer(clone, () => {
+            svgStr = serializer.serializeToString(clone);
+        });
+        const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(svgBlob);
+        try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = url;
+            });
+            // Use a higher scale factor for much higher resolution PNG (3x)
+            const scale = 3;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(width * scale));
+            canvas.height = Math.max(1, Math.round(height * scale));
+            const ctx = canvas.getContext('2d');
+            // white background to avoid transparency issues
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // draw the rasterized SVG scaled to canvas size
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const filename = `${stationName || 'series'}-plot.png`;
+            downloadBlob(blob, filename);
+        } catch (e) {
+            console.error('Export PNG failed', e);
+        } finally {
+            URL.revokeObjectURL(url);
+            closeExportMenu();
+        }
+    };
+
+    // Export PDF as vector using svg2pdf.js + jsPDF; append clone to DOM and inline styles
+    const exportPDF = async () => {
+        const svg = findChartSVG();
+        if (!svg) return;
+        // dynamic imports
+        let jsPDFLib, svg2pdfModule;
+        try {
+            jsPDFLib = await import('jspdf');
+            svg2pdfModule = await import('svg2pdf.js');
+        } catch (e) {
+            console.error('Failed to load PDF libraries', e);
+            closeExportMenu();
+            return;
+        }
+        const jsPDF = jsPDFLib.jsPDF || jsPDFLib.default || jsPDFLib;
+        const svg2pdf = svg2pdfModule.svg2pdf || svg2pdfModule.default || svg2pdfModule;
+        if (!jsPDF || !svg2pdf) {
+            console.error('PDF libraries did not provide expected exports', {jsPDF, svg2pdf});
+            closeExportMenu();
+            return;
+        }
+        const clone = svg.cloneNode(true);
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        // Use temporary container to ensure getComputedStyle works, then compute content bbox
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.appendChild(clone);
+        document.body.appendChild(container);
+        try {
+            try { inlineAllStyles(clone); } catch (e) { /* ignore */ }
+            // Determine logical size: prefer explicit width/height or viewBox, fallback to bbox of content
+            let {width: svgW, height: svgH} = getSVGSize(clone);
+            // Attempt to compute tight bbox of content to avoid clipping (requires the clone to be in the DOM)
+            try {
+                const bbox = clone.getBBox();
+                if (bbox && Number.isFinite(bbox.width) && Number.isFinite(bbox.height) && bbox.width > 0 && bbox.height > 0) {
+                    // expand bbox slightly to include strokes
+                    const pad = 2;
+                    svgW = bbox.width + pad * 2;
+                    svgH = bbox.height + pad * 2;
+                    // reposition contents if bbox.x/y not zero: set viewBox to bbox
+                    clone.setAttribute('viewBox', `${bbox.x - pad} ${bbox.y - pad} ${svgW} ${svgH}`);
+                } else {
+                    // ensure viewBox exists matching current size
+                    clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+                }
+            } catch (e) {
+                // getBBox might fail for some SVGs; fallback to viewBox or existing dimensions
+                clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+            }
+            // also set explicit width/height attributes in px so svg2pdf maps coordinates predictably
+            clone.setAttribute('width', String(Math.round(svgW)));
+            clone.setAttribute('height', String(Math.round(svgH)));
+
+            // Use pixels as unit for jsPDF and svg2pdf so coordinates map 1:1
+            const pdfWidth = Math.round(svgW);
+            const pdfHeight = Math.round(svgH);
+            const pdf = new jsPDF({unit: 'px', format: [pdfWidth, pdfHeight], orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait'});
+            await svg2pdf(clone, pdf, {x:0, y:0, width: pdfWidth, height: pdfHeight});
+            const filename = `${stationName || 'series'}-plot.pdf`;
+            pdf.save(filename);
+        } catch (e) {
+            console.error('Export PDF (vector) failed', e);
+        } finally {
+            document.body.removeChild(container);
+            closeExportMenu();
+        }
+    };
+
     return (
         <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
                 sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
@@ -811,6 +1029,17 @@ export default function ForecastSeriesModal() {
                             <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">{t('seriesModal.allReturnPeriods')}</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts} onChange={handleOptionChange('previousForecasts')} />} label={<Typography variant="body2">{t('seriesModal.previousForecasts')}</Typography>} />
                         </FormGroup>
+                       {/* Export button under the menu */}
+                       <Box sx={{display:'flex', justifyContent:'center', mt:1}}>
+                           <Button variant="outlined" size="small" startIcon={<FileDownloadIcon />} onClick={openExportMenu} aria-controls={exportAnchorEl ? 'export-menu' : undefined} aria-haspopup="true">
+                               {t('seriesModal.export')}
+                           </Button>
+                           <Menu id="export-menu" anchorEl={exportAnchorEl} open={Boolean(exportAnchorEl)} onClose={closeExportMenu} anchorOrigin={{vertical:'bottom', horizontal:'left'}}>
+                               <MenuItem onClick={exportPNG}>PNG</MenuItem>
+                               <MenuItem onClick={exportSVG}>SVG</MenuItem>
+                               <MenuItem onClick={exportPDF}>PDF</MenuItem>
+                           </Menu>
+                       </Box>
                      </Box>
                  )}
                 <Box sx={{flex:1, minWidth:0, display:'flex', position:'relative', alignItems:'center', justifyContent:'center'}}>
