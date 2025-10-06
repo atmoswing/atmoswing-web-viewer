@@ -4,9 +4,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {Box, Checkbox, CircularProgress, Divider, FormControlLabel, FormGroup, Typography} from '@mui/material';
+import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
-import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs} from '../services/api.js';
+import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs, getSeriesValuesPercentilesHistory} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
 
@@ -27,6 +27,11 @@ export default function ForecastSeriesModal() {
     // bestAnalogs: { items: Array<{label, values: number[]}>, dates?: Date[] }
     const [bestAnalogs, setBestAnalogs] = useState(null);
     const bestAnalogsCache = useRef(new Map());
+    // previous forecasts history
+    const [pastForecasts, setPastForecasts] = useState(null);
+    const pastForecastsCache = useRef(new Map());
+    const [_pastLoading, setPastLoading] = useState(false);
+    const [_pastError, setPastError] = useState(null);
     const referenceCache = useRef(new Map()); // key: workspace|methodId|configId|entity -> value
     const [_refLoading, setRefLoading] = useState(false);
     const [_refError, setRefError] = useState(null);
@@ -66,22 +71,6 @@ export default function ForecastSeriesModal() {
             return {...o, [key]: checked};
         });
     };
-
-    // Placeholder previous forecast selections
-    const previousForecastCandidates = useMemo(() => {
-        if (!activeForecastDate) return [];
-        try {
-            const base = parseForecastDate(activeForecastDate) || new Date(activeForecastDate);
-            if (!base || isNaN(base)) return [];
-            const arr = [];
-            for (let i = 1; i <= 10; i++) { // last 10 issuance cycles (12h steps assumed)
-                const d = new Date(base.getTime() - i * 12 * 3600 * 1000);
-                arr.push(d);
-            }
-            return arr;
-        } catch {return []}
-    }, [activeForecastDate]);
-    const [selectedPreviousForecasts, setSelectedPreviousForecasts] = useState([]); // no effect yet
 
     const reqIdRef = useRef(0);
     const chartRef = useRef(null);
@@ -225,10 +214,22 @@ export default function ForecastSeriesModal() {
         if (!container) return;
         d3.select(container).selectAll('*').remove();
 
-        // Determine dates from series (preferred) or bestAnalogs (fallback)
-        const dates = (series && Array.isArray(series.dates) && series.dates.length) ? series.dates
-            : (bestAnalogs && Array.isArray(bestAnalogs.dates) && bestAnalogs.dates.length) ? bestAnalogs.dates
-            : null;
+        // Determine dates from series (preferred), then bestAnalogs, then fall back to union of pastForecasts dates
+        let dates = null;
+        if (series && Array.isArray(series.dates) && series.dates.length) {
+            dates = series.dates;
+        } else if (bestAnalogs && Array.isArray(bestAnalogs.dates) && bestAnalogs.dates.length) {
+            dates = bestAnalogs.dates;
+        } else if (pastForecasts && Array.isArray(pastForecasts) && pastForecasts.length) {
+            // union all past forecast dates and sort
+            const all = [];
+            pastForecasts.forEach(pf => {
+                if (Array.isArray(pf.dates)) all.push(...pf.dates);
+            });
+            if (all.length) {
+                dates = Array.from(new Set(all.map(d => (+d)))).map(t => new Date(t)).sort((a,b)=>a-b);
+            }
+        }
         if (!dates || !dates.length) return; // nothing to plot along x-axis
 
         let {width, height} = chartSize;
@@ -295,39 +296,58 @@ export default function ForecastSeriesModal() {
 
         svg.append('rect').attr('x',0).attr('y',0).attr('width',dynamicWidth).attr('height',dynamicHeight).attr('fill','#fff');
 
-        const xScale = d3.scaleTime().domain(d3.extent(dates)).range([0, innerW]);
+        // Compute x-domain from the primary dates only (series or bestAnalogs). Do NOT include pastForecasts
+        const maxX = d3.max(dates);
+        // Limit the start of the plot to 2 days before the active forecast date, but do NOT expand domain for past forecasts
+        const activeDateObj = (activeForecastDate ? (parseForecastDate(activeForecastDate) || new Date(activeForecastDate)) : null);
+        const twoDaysBefore = activeDateObj ? new Date(activeDateObj.getTime() - 2 * 24 * 3600 * 1000) : null;
+        const minX = d3.min(dates);
+        const startDomain = (twoDaysBefore && minX) ? (twoDaysBefore < minX ? twoDaysBefore : minX) : (twoDaysBefore || minX);
+
+        const xScale = d3.scaleTime().domain([startDomain, maxX || d3.max(dates)]).range([0, innerW]);
         const yScale = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0]);
+
+        // Quantile colors used for main and historical traces
+        const COLORS = {p90: '#0b2e8a', p60: '#1d53d2', p20: '#04b4e6'};
+        const TENYR_COLOR = '#d00000';
 
         const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-        const yAxis = d3.axisLeft(yScale).ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55)))).tickSize(-innerW).tickPadding(8);
-        const yAxisG = g.append('g').attr('class', 'y-axis').call(yAxis);
-        yAxisG.selectAll('line').attr('stroke', '#ccc').attr('stroke-opacity', 0.9); // grid lines
-        yAxisG.selectAll('path.domain').remove(); // remove domain line
+        // Create a clip path so anything outside the plotting area (e.g. prior forecasts before the x-domain start) is hidden
+        const clipId = `plot-clip-${Math.random().toString(36).slice(2,9)}`;
+        svg.append('defs').append('clipPath').attr('id', clipId).append('rect').attr('x', 0).attr('y', 0).attr('width', innerW).attr('height', innerH);
+        const plotG = g.append('g').attr('class', 'plot-area').attr('clip-path', `url(#${clipId})`);
 
-        g.selectAll('.y-axis text').attr('fill', '#555').attr('font-size', 11);
-        if (innerH > 120) {
-            g.append('text')
-                .attr('transform', 'rotate(-90)')
-                .attr('x', -innerH / 2)
-                .attr('y', -margin.left + 14)
-                .attr('text-anchor', 'middle')
-                .attr('fill', '#444')
-                .attr('font-size', 12)
-                .text('Precipitation [mm]');
+        // Draw previous forecasts into the clipped plot group (they will be clipped at the left/right of the x domain)
+        if (options.previousForecasts && pastForecasts && Array.isArray(pastForecasts) && pastForecasts.length) {
+            const HIST_ALPHA = 0.35;
+            const HIST_WIDTH = 1.25;
+            const mainPcts = [20, 60, 90];
+            pastForecasts.forEach(pf => {
+                const pd = pf.dates || [];
+                if (!pd.length) return;
+                mainPcts.forEach(pct => {
+                    const arr = pf.percentiles && pf.percentiles[pct];
+                    if (!arr || !Array.isArray(arr)) return;
+                    const lineFn = d3.line()
+                        .defined((d,i) => typeof arr[i] === 'number')
+                        .x((d,i) => xScale(pd[i]))
+                        .y((d,i) => yScale(arr[i]));
+                    const color = pct === 90 ? COLORS.p90 : (pct === 60 ? COLORS.p60 : COLORS.p20);
+                    plotG.append('path').datum(pd).attr('fill', 'none')
+                        .attr('stroke', color)
+                        .attr('stroke-width', HIST_WIDTH)
+                        .attr('stroke-opacity', HIST_ALPHA)
+                        .attr('d', lineFn);
+                });
+            });
         }
 
-        const xTicksTarget = Math.min(dates.length, Math.max(3, Math.floor(innerW / 120)));
-        const xAxis = d3.axisBottom(xScale).ticks(xTicksTarget).tickFormat(d3.timeFormat('%-d/%-m'));
-        g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
-
-        // Draw shaded bands between adjacent percentiles (light to darker towards center)
+        // Draw shaded bands between adjacent percentiles (light to darker towards center) into clipped plot area
         if (pctList.length > 3) {
-            // compute max distance from 50 for normalization
             const minP = pctList[0];
             const maxP = pctList[pctList.length - 1];
             const maxDist = Math.max(Math.abs(50 - minP), Math.abs(maxP - 50), 1);
-            // build band descriptors
             const bands = [];
             for (let i = 0; i < pctList.length - 1; i++) {
                 const lowP = pctList[i];
@@ -336,7 +356,6 @@ export default function ForecastSeriesModal() {
                 const dist = Math.abs(mid - 50);
                 bands.push({lowP, highP, dist, lowArr: percentilesMap[lowP] || [], highArr: percentilesMap[highP] || []});
             }
-            // draw from farthest (light) to nearest (dark) so inner bands are on top
             bands.sort((a,b) => b.dist - a.dist);
             const minOpacity = 0.05;
             const maxOpacity = 0.70;
@@ -349,7 +368,7 @@ export default function ForecastSeriesModal() {
                     .y1((d,i) => yScale(highArr[i]));
                 const normalized = Math.min(1, Math.max(0, dist / maxDist));
                 const opacity = minOpacity + (1 - normalized) * (maxOpacity - minOpacity);
-                g.append('path')
+                plotG.append('path')
                     .datum(dates)
                     .attr('fill', '#777')
                     .attr('fill-opacity', Math.max(minOpacity, Math.min(maxOpacity, opacity)))
@@ -362,7 +381,7 @@ export default function ForecastSeriesModal() {
         const MEDIAN_COLOR = '#222';
         if (pctList.includes(50)) {
             const arr = percentilesMap[50];
-            g.append('path').datum(arr.map((v,i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN})))
+            plotG.append('path').datum(arr.map((v,i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN})))
                 .attr('fill', 'none')
                 .attr('stroke', MEDIAN_COLOR)
                 .attr('stroke-width', 2)
@@ -372,12 +391,10 @@ export default function ForecastSeriesModal() {
         }
 
         // Draw colored quantile lines if present (90/60/20) and if the option is enabled
-        const COLORS = {p90: '#0b2e8a', p60: '#1d53d2', p20: '#04b4e6'};
-        const TENYR_COLOR = '#d00000';
         const drawLineIf = (pct, color, widthPx=3, opts = {}) => {
             const arr = percentilesMap[pct];
             if (!arr) return;
-            const path = g.append('path').datum(arr.map((v,i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN})))
+            const path = plotG.append('path').datum(arr.map((v,i) => ({date: dates[i], value: typeof v === 'number' ? v : NaN})))
                 .attr('fill', 'none').attr('stroke', color).attr('stroke-width', widthPx)
                 .attr('d', d3.line().defined(d => typeof d.value === 'number').x(d => xScale(d.date)).y(d => yScale(d.value)));
             if (opts.dashed) path.attr('stroke-dasharray', opts.dashPattern || '6 4');
@@ -404,7 +421,7 @@ export default function ForecastSeriesModal() {
                             if (typeof v !== 'number' || !isFinite(v)) return;
                             const cx = xScale(analogDates[i]);
                             const cy = yScale(v);
-                            g.append('circle')
+                            plotG.append('circle')
                                 .attr('cx', cx)
                                 .attr('cy', cy)
                                 .attr('r', 5)
@@ -419,7 +436,7 @@ export default function ForecastSeriesModal() {
                         if (maxIdx >= 0 && analogDates[maxIdx]) {
                             const cx = xScale(analogDates[maxIdx]);
                             const cy = yScale(maxV);
-                            g.append('circle')
+                            plotG.append('circle')
                                 .attr('cx', cx)
                                 .attr('cy', cy)
                                 .attr('r', 4)
@@ -435,7 +452,7 @@ export default function ForecastSeriesModal() {
 
         // Draw reference lines: 10-year (prominent) and optionally all return periods (subtle)
         if (options.tenYearReturn && typeof tenYearVal === 'number' && isFinite(tenYearVal)) {
-            g.append('line')
+            plotG.append('line')
                 .attr('x1', 0)
                 .attr('x2', innerW)
                 .attr('y1', yScale(tenYearVal))
@@ -450,7 +467,7 @@ export default function ForecastSeriesModal() {
                 const ratio = n > 1 ? (i / (n - 1)) : 0;
                 const gVal = Math.round(255 - ratio * 255);
                 const clr = `rgb(255, ${gVal}, 0)`;
-                g.append('line')
+                plotG.append('line')
                     .attr('x1', 0)
                     .attr('x2', innerW)
                     .attr('y1', yScale(p.val))
@@ -460,6 +477,62 @@ export default function ForecastSeriesModal() {
                     .attr('stroke-opacity', 0.95);
             });
         }
+
+        // Draw vertical line at the active forecast date (prominent gray line) in the clipped plot area
+        if (activeDateObj) {
+            try {
+                const xPos = xScale(activeDateObj);
+                if (typeof xPos === 'number' && isFinite(xPos)) {
+                    plotG.append('line')
+                        .attr('class', 'forecast-date-line')
+                        .attr('x1', xPos)
+                        .attr('x2', xPos)
+                        .attr('y1', 0)
+                        .attr('y2', innerH)
+                        .attr('stroke', '#888')
+                        .attr('stroke-width', 5)
+                        .attr('stroke-opacity', 0.4)
+                        .append('title').text((activeDateObj && typeof activeDateObj.toISOString === 'function') ? activeDateObj.toISOString() : String(activeDateObj));
+                }
+            } catch (e) {
+                // defensively ignore if xScale or activeDateObj cause issues
+            }
+        }
+
+        // Create and render y/x axes (outside the clipped plot group so labels/gridlines remain visible)
+        const yAxis = d3.axisLeft(yScale).ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55)))).tickSize(-innerW).tickPadding(8);
+        const yAxisG = g.append('g').attr('class', 'y-axis').call(yAxis);
+        yAxisG.selectAll('line').attr('stroke', '#ccc').attr('stroke-opacity', 0.9); // grid lines
+        yAxisG.selectAll('path.domain').remove(); // remove domain line
+        g.selectAll('.y-axis text').attr('fill', '#555').attr('font-size', 11);
+        if (innerH > 120) {
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -innerH / 2)
+                .attr('y', -margin.left + 14)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#444')
+                .attr('font-size', 12)
+                .text('Precipitation [mm]');
+        }
+
+        // Force ticks at every lead time (use tickValues) and format so the first tick per day shows the date and subsequent ticks show the time
+        const tickValues = dates.slice(); // tick at every lead time
+        // Compute first tick of each day
+        const firstOfDaySet = new Set();
+        const firstTimestamps = new Set();
+        for (let i = 0; i < tickValues.length; i++) {
+            const d = tickValues[i];
+            const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+            if (!firstOfDaySet.has(key)) {
+                firstOfDaySet.add(key);
+                firstTimestamps.add(+d);
+            }
+        }
+        const dateFmt = d3.timeFormat('%-d/%-m');
+        const timeFmt = d3.timeFormat('%H:%M');
+        const xAxis = d3.axisBottom(xScale).tickValues(tickValues).tickFormat(d => (firstTimestamps.has(+d) ? dateFmt(d) : timeFmt(d)));
+        g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
         // Build legend after knowing rpPairs size so it rescales correctly
         const legendWidth = 150;
@@ -477,7 +550,7 @@ export default function ForecastSeriesModal() {
         // add median legend entry when 50% was returned
         const legendItems = [];
         if (pctList.includes(50)) {
-            legendItems.push({label: 'Median 50', color: MEDIAN_COLOR, dashed: true});
+            legendItems.push({label: 'Median', color: MEDIAN_COLOR, dashed: true});
         }
         // follow with quantile legend entries if enabled
         legendItems.push(...quantileLegendItems);
@@ -534,7 +607,7 @@ export default function ForecastSeriesModal() {
             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text('P10');
         }
 
-    }, [series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs]);
+    }, [series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs, pastForecasts, options.previousForecasts, activeForecastDate]);
 
     const handleClose = () => setSelectedEntityId(null);
 
@@ -673,11 +746,75 @@ export default function ForecastSeriesModal() {
         return () => { cancelled = true; };
     }, [options.bestAnalogs, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
 
+    // Fetch previous forecasts history when option enabled
+    useEffect(() => {
+        if (!options.previousForecasts) {
+            setPastForecasts(null);
+            setPastLoading(false);
+            setPastError(null);
+            return;
+        }
+        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
+        const key = `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
+        if (pastForecastsCache.current.has(key)) {
+            setPastForecasts(pastForecastsCache.current.get(key));
+            return;
+        }
+        let cancelled = false;
+        setPastLoading(true);
+        setPastError(null);
+        setPastForecasts(null);
+        (async () => {
+            try {
+                const resp = await getSeriesValuesPercentilesHistory(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+                if (cancelled) return;
+                console.debug('[History] raw response:', resp);
+                // resp.past_forecasts is an array; normalize each element to {forecastDate, dates: Date[], percentiles: {p: values}}
+                const raw = resp?.past_forecasts;
+                if (!Array.isArray(raw)) {
+                    if (!cancelled) setPastError(new Error('unexpected history response'));
+                    return;
+                }
+                const parsedList = raw.map(item => {
+                    const forecastDate = parseForecastDate(item.forecast_date) || new Date(item.forecast_date);
+                    const dates = (Array.isArray(item.target_dates) ? item.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d)) : []);
+                    const pctMap = {};
+                    // Support two common shapes: array of {percentile, series_values} or object mapping '20'|'p20'->array
+                    if (Array.isArray(item.series_percentiles)) {
+                        item.series_percentiles.forEach(sp => {
+                            // percentile may be number or string like 'p20'
+                            let rawP = sp.percentile ?? sp.p ?? sp.name ?? '';
+                            let pNum = (typeof rawP === 'number') ? rawP : (typeof rawP === 'string' ? (rawP.match(/-?\d+/)?.[0] ? Number(rawP.match(/-?\d+/)[0]) : NaN) : NaN);
+                            if (!Number.isFinite(pNum)) return; // skip unparseable
+                            pctMap[pNum] = Array.isArray(sp.series_values) ? sp.series_values.map(v => (typeof v === 'number' ? v : (v == null ? null : Number(v)))) : [];
+                        });
+                    } else if (item.series_percentiles && typeof item.series_percentiles === 'object') {
+                        Object.keys(item.series_percentiles).forEach(k => {
+                            const kNum = (typeof k === 'string' && k.match(/-?\d+/)) ? Number(k.match(/-?\d+/)[0]) : (Number(k) || NaN);
+                            if (!Number.isFinite(kNum)) return;
+                            const arr = item.series_percentiles[k];
+                            pctMap[kNum] = Array.isArray(arr) ? arr.map(v => (typeof v === 'number' ? v : (v == null ? null : Number(v)))) : [];
+                        });
+                    }
+                    return {forecastDate, dates, percentiles: pctMap};
+                }).filter(p => p.dates && p.dates.length);
+                console.debug('[History] parsedList:', parsedList);
+                pastForecastsCache.current.set(key, parsedList);
+                setPastForecasts(parsedList);
+            } catch (e) {
+                if (!cancelled) setPastError(e);
+            } finally {
+                if (!cancelled) setPastLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [options.previousForecasts, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+
     return (
         <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
                 sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
             <DialogTitle sx={{pr: 5}}>
-                Forecast percentiles{stationName ? ` - ${stationName}` : ''}
+                {stationName ? `${stationName}` : ''}
                 <IconButton aria-label="close" onClick={handleClose} size="small"
                             sx={{position: 'absolute', right: 8, top: 8}}>
                     <CloseIcon fontSize="small"/>
@@ -692,25 +829,8 @@ export default function ForecastSeriesModal() {
                             <FormControlLabel control={<Checkbox size="small" checked={options.bestAnalogs} onChange={handleOptionChange('bestAnalogs')} />} label={<Typography variant="body2">Best analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
-                            <Divider sx={{my:1}} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts} onChange={handleOptionChange('previousForecasts')} />} label={<Typography variant="body2">Previous forecasts</Typography>} />
                         </FormGroup>
-                        {options.previousForecasts && (
-                            <Box sx={{mt: 1, maxHeight: 180, overflowY: 'auto', border: '1px solid #eee', p: 1}}>
-                                <Typography variant="caption" sx={{display: 'block', mb: 0.5}}>Forecast cycles (placeholder)</Typography>
-                                {previousForecastCandidates.map(d => {
-                                    const key = d.toISOString();
-                                    const label = d.toLocaleString(undefined, {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}).replace(',', '');
-                                    const checked = selectedPreviousForecasts.includes(key);
-                                    return (
-                                        <FormControlLabel key={key} sx={{m: 0}} control={<Checkbox size="small" checked={checked} onChange={(e) => {
-                                            setSelectedPreviousForecasts(prev => e.target.checked ? [...prev, key] : prev.filter(k => k !== key));
-                                        }} disabled />} label={<Typography variant="caption">{label}</Typography>} />
-                                    );
-                                })}
-                                <Typography variant="caption" sx={{color: '#888'}}>Selection disabled (not implemented yet)</Typography>
-                            </Box>
-                        )}
                     </Box>
                 )}
                 <Box sx={{flex:1, minWidth:0, display:'flex', position:'relative', alignItems:'center', justifyContent:'center'}}>
@@ -739,6 +859,22 @@ export default function ForecastSeriesModal() {
                     )}
                     {selectedEntityId && options.bestAnalogs && !_analogsLoading && _analogsError && (
                         <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>No best analogs</div>
+                    )}
+                    {/* Previous forecasts status messages */}
+                    {selectedEntityId && options.previousForecasts && !resolvedConfigId && resolvingConfig && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Resolving configuration for history…</div>
+                    )}
+                    {selectedEntityId && options.previousForecasts && !resolvedConfigId && !resolvingConfig && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Configuration not resolved — cannot fetch previous forecasts</div>
+                    )}
+                    {selectedEntityId && options.previousForecasts && _pastLoading && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Loading previous forecasts…</div>
+                    )}
+                    {selectedEntityId && options.previousForecasts && !_pastLoading && _pastError && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Error loading previous forecasts</div>
+                    )}
+                    {selectedEntityId && options.previousForecasts && !_pastLoading && !_pastError && (!pastForecasts || (Array.isArray(pastForecasts) && pastForecasts.length === 0)) && resolvedConfigId && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#666'}}>No previous forecasts available</div>
                     )}
                 </Box>
             </DialogContent>
