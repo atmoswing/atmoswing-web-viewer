@@ -9,15 +9,17 @@ import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '..
 import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs, getSeriesValuesPercentilesHistory} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
+import { useTranslation } from 'react-i18next';
 
 // Local cache to avoid refetching same series repeatedly during session
 const seriesCache = new Map();
 
 export default function ForecastSeriesModal() {
-    const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
-    const {selectedMethodConfig, methodConfigTree} = useMethods();
-    const {workspace, activeForecastDate} = useForecastSession();
-    const {entities} = useEntities();
+     const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
+     const {selectedMethodConfig, methodConfigTree} = useMethods();
+     const {workspace, activeForecastDate} = useForecastSession();
+     const {entities} = useEntities();
+     const { t } = useTranslation();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -292,7 +294,7 @@ export default function ForecastSeriesModal() {
             .attr('width', dynamicWidth)
             .attr('height', dynamicHeight)
             .attr('role', 'img')
-            .attr('aria-label', 'Forecast percentiles time series');
+            .attr('aria-label', t('seriesModal.seriesAriaLabel'));
 
         svg.append('rect').attr('x',0).attr('y',0).attr('width',dynamicWidth).attr('height',dynamicHeight).attr('fill','#fff');
 
@@ -428,8 +430,8 @@ export default function ForecastSeriesModal() {
                                 .attr('stroke', MARKER_COLOR)
                                 .attr('stroke-width', 1)
                                 .attr('fill-opacity', 0)
-                                .append('title').text(`${a.label || 'A'}: ${v}`);
-                        });
+                                .append('title').text(`${a.label || t('seriesModal.analog')}: ${v}`);
+                    });
                     } else if (vals.length) {
                         let maxV = -Infinity, maxIdx = -1;
                         vals.forEach((v, i) => { if (typeof v === 'number' && isFinite(v) && v > maxV) { maxV = v; maxIdx = i; } });
@@ -443,7 +445,7 @@ export default function ForecastSeriesModal() {
                                 .attr('fill', MARKER_COLOR)
                                 .attr('stroke', '#fff')
                                 .attr('stroke-width', 0.6)
-                                .append('title').text(`${a.label || 'A'}: ${maxV}`);
+                                .append('title').text(`${a.label || t('seriesModal.analog')}: ${maxV}`);
                         }
                     }
                 });
@@ -494,7 +496,7 @@ export default function ForecastSeriesModal() {
                         .attr('stroke-opacity', 0.4)
                         .append('title').text((activeDateObj && typeof activeDateObj.toISOString === 'function') ? activeDateObj.toISOString() : String(activeDateObj));
                 }
-            } catch (e) {
+            } catch {
                 // defensively ignore if xScale or activeDateObj cause issues
             }
         }
@@ -513,7 +515,7 @@ export default function ForecastSeriesModal() {
                 .attr('text-anchor', 'middle')
                 .attr('fill', '#444')
                 .attr('font-size', 12)
-                .text('Precipitation [mm]');
+                .text(t('seriesModal.precipitation'));
         }
 
         // Force ticks at every lead time (use tickValues) and format so the first tick per day shows the date and subsequent ticks show the time
@@ -535,29 +537,29 @@ export default function ForecastSeriesModal() {
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
         // Build legend after knowing rpPairs size so it rescales correctly
-        const legendWidth = 150;
-        const rpCount = rpPairs.length || 0;
+         const legendWidth = 150;
+         const rpCount = rpPairs.length || 0;
         // If allReturnPeriods is on, show all RP entries; otherwise, if tenYearReturn is on and a tenYearVal exists, reserve one slot for P10
         const showAllRPs = options.allReturnPeriods && rpCount > 0;
         const showP10Only = !showAllRPs && options.tenYearReturn && (typeof tenYearVal === 'number' && isFinite(tenYearVal));
         // Build legend items first so we can calculate height including the median entry when present
         const quantileLegendItems = [];
         if (options.mainQuantiles) {
-            quantileLegendItems.push({label: 'Quantile 90', color: COLORS.p90});
-            quantileLegendItems.push({label: 'Quantile 60', color: COLORS.p60});
-            quantileLegendItems.push({label: 'Quantile 20', color: COLORS.p20});
+            quantileLegendItems.push({label: t('seriesModal.quantile90'), color: COLORS.p90});
+            quantileLegendItems.push({label: t('seriesModal.quantile60'), color: COLORS.p60});
+            quantileLegendItems.push({label: t('seriesModal.quantile20'), color: COLORS.p20});
         }
         // add median legend entry when 50% was returned
         const legendItems = [];
         if (pctList.includes(50)) {
-            legendItems.push({label: 'Median', color: MEDIAN_COLOR, dashed: true});
+            legendItems.push({label: t('seriesModal.median'), color: MEDIAN_COLOR, dashed: true});
         }
         // follow with quantile legend entries if enabled
         legendItems.push(...quantileLegendItems);
         // add best-analogs legend entries (one per returned analog) when enabled
         const ANALOG_COLOR = '#ff6600';
         if (options.bestAnalogs) {
-            legendItems.push({label: 'Best analogs', color: ANALOG_COLOR, marker: true});
+            legendItems.push({label: t('seriesModal.bestAnalogs'), color: ANALOG_COLOR, marker: true});
         }
 
         // now compute total legend item count including RP entries that will be listed below
@@ -587,27 +589,27 @@ export default function ForecastSeriesModal() {
         // RP legend entries
         const baseY = 18 + 14 * legendItems.length;
         if (showAllRPs) {
-            const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
-            const rpPairsDesc = rpPairsAsc.slice().reverse();
-            rpPairsDesc.forEach((p, i) => {
-                const y = baseY + i * 14;
-                const idxAsc = rpPairsAsc.findIndex(r => r.rp === p.rp);
-                const n = rpPairsAsc.length;
-                const ratio = n > 1 ? (idxAsc / (n - 1)) : 0;
-                const gVal = Math.round(255 - ratio * 255);
-                const clr = `rgb(255, ${gVal}, 0)`;
-                legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
+             const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
+             const rpPairsDesc = rpPairsAsc.slice().reverse();
+             rpPairsDesc.forEach((p, i) => {
+                 const y = baseY + i * 14;
+                 const idxAsc = rpPairsAsc.findIndex(r => r.rp === p.rp);
+                 const n = rpPairsAsc.length;
+                 const ratio = n > 1 ? (idxAsc / (n - 1)) : 0;
+                 const gVal = Math.round(255 - ratio * 255);
+                 const clr = `rgb(255, ${gVal}, 0)`;
+                 legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
                 const label = `P${Number.isInteger(p.rp) ? p.rp : p.rp}`;
-                legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(label);
-            });
-        } else if (showP10Only) {
-            let clr = TENYR_COLOR;
-            const y = baseY;
-            legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
-            legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text('P10');
-        }
+                 legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(label);
+             });
+         } else if (showP10Only) {
+             let clr = TENYR_COLOR;
+             const y = baseY;
+             legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
+             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(t('seriesModal.p10'));
+         }
 
-    }, [series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs, pastForecasts, options.previousForecasts, activeForecastDate]);
+    }, [t, series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs, pastForecasts, options.previousForecasts, activeForecastDate]);
 
     const handleClose = () => setSelectedEntityId(null);
 
@@ -673,7 +675,8 @@ export default function ForecastSeriesModal() {
                     referenceCache.current.set(key, parsed);
                     setReferenceValues(parsed);
                 } else {
-                    setRefError(new Error('reference values not found'));
+                    // surface a translated error for diagnostics
+                    setRefError(new Error(t('seriesModal.noReferenceValues')));
                 }
             } catch (e) {
                 if (!cancelled) setRefError(e);
@@ -724,7 +727,8 @@ export default function ForecastSeriesModal() {
                             const v = (Array.isArray(row) && row.length > c) ? row[c] : null;
                             values.push(typeof v === 'number' ? v : (v == null ? null : Number(v)));
                         }
-                        items.push({label: `Analog ${c+1}`, values});
+                        // Use translation for generated analog labels (e.g. "Analog 1")
+                        items.push({label: t('seriesModal.analogWithIndex', {index: c+1}), values});
                     }
                     parsed = {items, dates: parsedDates};
                 } else {
@@ -735,7 +739,8 @@ export default function ForecastSeriesModal() {
                     bestAnalogsCache.current.set(key, parsed);
                     setBestAnalogs(parsed);
                 } else {
-                    setAnalogsError(new Error('no best analogs'));
+                    // store a translated error message for diagnostics
+                    setAnalogsError(new Error(t('seriesModal.noBestAnalogs')));
                 }
             } catch (e) {
                 if (!cancelled) setAnalogsError(e);
@@ -772,8 +777,8 @@ export default function ForecastSeriesModal() {
                 // resp.past_forecasts is an array; normalize each element to {forecastDate, dates: Date[], percentiles: {p: values}}
                 const raw = resp?.past_forecasts;
                 if (!Array.isArray(raw)) {
-                    if (!cancelled) setPastError(new Error('unexpected history response'));
-                    return;
+                    if (!cancelled) setPastError(new Error(t('seriesModal.unexpectedHistoryResponse')));
+                     return;
                 }
                 const parsedList = raw.map(item => {
                     const forecastDate = parseForecastDate(item.forecast_date) || new Date(item.forecast_date);
@@ -815,7 +820,7 @@ export default function ForecastSeriesModal() {
                 sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
             <DialogTitle sx={{pr: 5}}>
                 {stationName ? `${stationName}` : ''}
-                <IconButton aria-label="close" onClick={handleClose} size="small"
+                <IconButton aria-label={t('seriesModal.close')} onClick={handleClose} size="small"
                             sx={{position: 'absolute', right: 8, top: 8}}>
                     <CloseIcon fontSize="small"/>
                 </IconButton>
@@ -824,57 +829,57 @@ export default function ForecastSeriesModal() {
                 {selectedEntityId && (
                     <Box sx={{width: 220, flexShrink:0, borderRight:'1px solid #e0e0e0', pr:1, overflowY:'auto'}}>
                         <FormGroup>
-                            <FormControlLabel control={<Checkbox size="small" checked={options.mainQuantiles} onChange={handleOptionChange('mainQuantiles')} />} label={<Typography variant="body2">Main quantiles</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">All quantiles</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.bestAnalogs} onChange={handleOptionChange('bestAnalogs')} />} label={<Typography variant="body2">Best analogs</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts} onChange={handleOptionChange('previousForecasts')} />} label={<Typography variant="body2">Previous forecasts</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.mainQuantiles} onChange={handleOptionChange('mainQuantiles')} />} label={<Typography variant="body2">{t('seriesModal.mainQuantiles')}</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">{t('seriesModal.allQuantiles')}</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.bestAnalogs} onChange={handleOptionChange('bestAnalogs')} />} label={<Typography variant="body2">{t('seriesModal.bestAnalogs')}</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">{t('seriesModal.tenYearReturn')}</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">{t('seriesModal.allReturnPeriods')}</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts} onChange={handleOptionChange('previousForecasts')} />} label={<Typography variant="body2">{t('seriesModal.previousForecasts')}</Typography>} />
                         </FormGroup>
-                    </Box>
-                )}
+                     </Box>
+                 )}
                 <Box sx={{flex:1, minWidth:0, display:'flex', position:'relative', alignItems:'center', justifyContent:'center'}}>
-                    {!selectedEntityId && <div style={{fontSize:13}}>Select a station to view the forecast series.</div>}
+                    {!selectedEntityId && <div style={{fontSize:13}}>{t('seriesModal.selectStation')}</div>}
                     {selectedEntityId && (loading || resolvingConfig) && (
                         <Box sx={{display:'flex', flexDirection:'column', alignItems:'center', gap:1}}>
                             <CircularProgress size={28} />
-                            <Typography variant="caption" sx={{color:'#555'}}>{resolvingConfig ? 'Resolving configuration…' : 'Loading series…'}</Typography>
+                            <Typography variant="caption" sx={{color:'#555'}}>{resolvingConfig ? t('seriesModal.resolvingConfig') : t('seriesModal.loadingSeries')}</Typography>
                         </Box>
                     )}
-                    {selectedEntityId && error && !loading && !resolvingConfig && <div style={{fontSize:13, color:'#b00020'}}>Error loading series.</div>}
+                    {selectedEntityId && error && !loading && !resolvingConfig && <div style={{fontSize:13, color:'#b00020'}}>{t('seriesModal.errorLoadingSeries')}</div>}
                     {selectedEntityId && !loading && !resolvingConfig && !error && (series || (options.bestAnalogs && bestAnalogs)) && (
                         <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
                     )}
-                    {selectedEntityId && !loading && !resolvingConfig && !error && !series && !(options.bestAnalogs && bestAnalogs) && resolvedConfigId && <div style={{fontSize:13}}>No data available for this station.</div>}
+                    {selectedEntityId && !loading && !resolvingConfig && !error && !series && !(options.bestAnalogs && bestAnalogs) && resolvedConfigId && <div style={{fontSize:13}}>{t('seriesModal.noDataForStation')}</div>}
                     {/* Reference values status messages (used to show refLoading/refError) */}
                     {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && _refLoading && (
-                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>Loading reference values…</div>
+                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.loadingReference')}</div>
                     )}
                     {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && !_refLoading && _refError && (
-                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>No reference values</div>
+                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.noReferenceValues')}</div>
                     )}
                     {/* Best analogs status messages */}
                     {selectedEntityId && options.bestAnalogs && _analogsLoading && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>Loading best analogs…</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>{t('seriesModal.loadingBestAnalogs')}</div>
                     )}
                     {selectedEntityId && options.bestAnalogs && !_analogsLoading && _analogsError && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>No best analogs</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>{t('seriesModal.noBestAnalogs')}</div>
                     )}
                     {/* Previous forecasts status messages */}
                     {selectedEntityId && options.previousForecasts && !resolvedConfigId && resolvingConfig && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Resolving configuration for history…</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.resolvingConfig')}</div>
                     )}
                     {selectedEntityId && options.previousForecasts && !resolvedConfigId && !resolvingConfig && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Configuration not resolved — cannot fetch previous forecasts</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.noPreviousForecastsAvailable')}</div>
                     )}
                     {selectedEntityId && options.previousForecasts && _pastLoading && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Loading previous forecasts…</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.loadingPreviousForecasts')}</div>
                     )}
                     {selectedEntityId && options.previousForecasts && !_pastLoading && _pastError && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>Error loading previous forecasts</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.errorLoadingPreviousForecasts')}</div>
                     )}
                     {selectedEntityId && options.previousForecasts && !_pastLoading && !_pastError && (!pastForecasts || (Array.isArray(pastForecasts) && pastForecasts.length === 0)) && resolvedConfigId && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#666'}}>No previous forecasts available</div>
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#666'}}>{t('seriesModal.noPreviousForecastsAvailable')}</div>
                     )}
                 </Box>
             </DialogContent>

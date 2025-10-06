@@ -70,6 +70,37 @@ const resources = {
                     "noForecastAvailable": "No forecast available for the selected method and lead time",
                     "noForecastFoundSearch": "No forecast found within the searched time range"
                 }
+            },
+            "seriesModal": {
+                "selectStation": "Select a station to view the forecast series.",
+                "seriesAriaLabel": "Forecast percentiles time series",
+                "loadingPreviousForecasts": "Loading previous forecasts…",
+                "errorLoadingPreviousForecasts": "Error loading previous forecasts",
+                "loadingSeries": "Loading series…",
+                "resolvingConfig": "Resolving configuration…",
+                "errorLoadingSeries": "Error loading series.",
+                "noDataForStation": "No data available for this station.",
+                "mainQuantiles": "Main quantiles",
+                "allQuantiles": "All quantiles",
+                "bestAnalogs": "Best analogs",
+                "tenYearReturn": "10 year return period",
+                "allReturnPeriods": "All return periods",
+                "previousForecasts": "Previous forecasts",
+                "precipitation": "Precipitation [mm]",
+                "quantile90": "Quantile 90",
+                "quantile60": "Quantile 60",
+                "quantile20": "Quantile 20",
+                "median": "Median",
+                "analog": "Analog",
+                "analogWithIndex": "Analog {{index}}",
+                "p10": "P10",
+                "unexpectedHistoryResponse": "Unexpected history response",
+                "close": "Close",
+                "loadingBestAnalogs": "Loading best analogs…",
+                "noBestAnalogs": "No best analogs",
+                "loadingReference": "Loading reference values…",
+                "noReferenceValues": "No reference values",
+                "noPreviousForecastsAvailable": "No previous forecasts available"
             }
         }
     },
@@ -141,6 +172,37 @@ const resources = {
                     "noForecastAvailable": "Aucune prévision disponible pour la méthode et l'échéance sélectionnées",
                     "noForecastFoundSearch": "Aucune prévision trouvée dans l'intervalle de recherche"
                 }
+            },
+            "seriesModal": {
+                "selectStation": "Sélectionnez une station pour afficher les séries de prévision.",
+                "seriesAriaLabel": "Séries de pourcentiles de prévision",
+                "loadingPreviousForecasts": "Chargement des prévisions précédentes…",
+                "errorLoadingPreviousForecasts": "Erreur lors du chargement des prévisions précédentes",
+                "loadingSeries": "Chargement des séries…",
+                "resolvingConfig": "Résolution de la configuration…",
+                "errorLoadingSeries": "Erreur lors du chargement des séries.",
+                "noDataForStation": "Aucune donnée disponible pour cette station.",
+                "mainQuantiles": "Quantiles principaux",
+                "allQuantiles": "Tous les quantiles",
+                "bestAnalogs": "Meilleurs analogues",
+                "tenYearReturn": "Période de retour 10 ans",
+                "allReturnPeriods": "Toutes les périodes de retour",
+                "previousForecasts": "Prévisions précédentes",
+                "precipitation": "Précipitation [mm]",
+                "quantile90": "Quantile 90",
+                "quantile60": "Quantile 60",
+                "quantile20": "Quantile 20",
+                "median": "Médiane",
+                "analog": "Analogique",
+                "analogWithIndex": "Analogue {{index}}",
+                "p10": "P10",
+                "unexpectedHistoryResponse": "Réponse d'historique inattendue",
+                "close": "Fermer",
+                "loadingBestAnalogs": "Chargement des meilleurs analogues…",
+                "noBestAnalogs": "Aucun meilleur analogue",
+                "loadingReference": "Chargement des valeurs de référence…",
+                "noReferenceValues": "Aucune valeur de référence",
+                "noPreviousForecastsAvailable": "Aucune prévision précédente disponible"
             }
         }
     }
