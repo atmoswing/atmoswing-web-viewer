@@ -6,7 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import {Box, Checkbox, CircularProgress, Divider, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
-import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues} from '../services/api.js';
+import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
 
@@ -24,9 +24,14 @@ export default function ForecastSeriesModal() {
     const [series, setSeries] = useState(null);
     // referenceValues stores { axis: number[], values: number[] } or null
     const [referenceValues, setReferenceValues] = useState(null);
+    // bestAnalogs: { items: Array<{label, values: number[]}>, dates?: Date[] }
+    const [bestAnalogs, setBestAnalogs] = useState(null);
+    const bestAnalogsCache = useRef(new Map());
     const referenceCache = useRef(new Map()); // key: workspace|methodId|configId|entity -> value
     const [_refLoading, setRefLoading] = useState(false);
     const [_refError, setRefError] = useState(null);
+    const [_analogsLoading, setAnalogsLoading] = useState(false);
+    const [_analogsError, setAnalogsError] = useState(null);
     // Ensure these refs are referenced for static analysis (used in JSX below)
     // (no-op uses to avoid unused-variable warnings from static checker)
     void _refLoading;
@@ -36,7 +41,7 @@ export default function ForecastSeriesModal() {
     const [options, setOptions] = useState({
         mainQuantiles: true,
         allQuantiles: false,
-        tenBestAnalogs: false,
+        bestAnalogs: false,
         tenYearReturn: true,
         allReturnPeriods: false,
         previousForecasts: false,
@@ -219,7 +224,12 @@ export default function ForecastSeriesModal() {
         const container = chartRef.current;
         if (!container) return;
         d3.select(container).selectAll('*').remove();
-        if (!series || !series.dates?.length) return;
+
+        // Determine dates from series (preferred) or bestAnalogs (fallback)
+        const dates = (series && Array.isArray(series.dates) && series.dates.length) ? series.dates
+            : (bestAnalogs && Array.isArray(bestAnalogs.dates) && bestAnalogs.dates.length) ? bestAnalogs.dates
+            : null;
+        if (!dates || !dates.length) return; // nothing to plot along x-axis
 
         let {width, height} = chartSize;
         // Fallbacks in case ResizeObserver reports 0 (initial layout) or element not sized yet
@@ -230,10 +240,9 @@ export default function ForecastSeriesModal() {
             height = (parentH && parentH > 200) ? parentH : 420;
         }
 
-        const {dates} = series;
-        // Build array of percentile series (sorted)
-        const pctList = series.pctList || [];
-        const percentilesMap = series.percentiles || {};
+        // Build array of percentile series (sorted) from series if available
+        const pctList = (series && Array.isArray(series.pctList)) ? series.pctList : [];
+        const percentilesMap = (series && series.percentiles) ? series.percentiles : {};
 
         // build list of all numeric values for y-scaling
         const allValues = [];
@@ -241,6 +250,14 @@ export default function ForecastSeriesModal() {
             const arr = percentilesMap[p] || [];
             arr.forEach(v => { if (typeof v === 'number' && isFinite(v)) allValues.push(v); });
         });
+        // also include best-analogs values so markers are within y-scale
+        if (options.bestAnalogs && bestAnalogs && Array.isArray(bestAnalogs.items)) {
+            bestAnalogs.items.forEach(it => {
+                if (Array.isArray(it.values)) {
+                    it.values.forEach(v => { if (typeof v === 'number' && isFinite(v)) allValues.push(v); });
+                }
+            });
+        }
         // Derive tenYearVal and include if requested
         let tenYearVal = null;
         if (referenceValues) {
@@ -259,7 +276,8 @@ export default function ForecastSeriesModal() {
                 rpPairs.forEach(p => allValues.push(p.val));
             }
         }
-        if (!allValues.length) return;
+        // Ensure y-scale has at least one value; fallback to 1
+        const yMax = allValues.length ? Math.max(...allValues) * 1.08 : 1;
 
         const dynamicWidth = Math.max(420, width);
         const dynamicHeight = Math.max(300, height);
@@ -278,7 +296,6 @@ export default function ForecastSeriesModal() {
         svg.append('rect').attr('x',0).attr('y',0).attr('width',dynamicWidth).attr('height',dynamicHeight).attr('fill','#fff');
 
         const xScale = d3.scaleTime().domain(d3.extent(dates)).range([0, innerW]);
-        const yMax = Math.max(...allValues) * 1.08 || 1;
         const yScale = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0]);
 
         const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
@@ -371,6 +388,51 @@ export default function ForecastSeriesModal() {
             drawLineIf(20, COLORS.p20, 3);
         }
 
+        // Draw markers for best analogs (if present)
+        if (options.bestAnalogs && bestAnalogs && Array.isArray(bestAnalogs.items) && bestAnalogs.items.length) {
+            const analogsArr = bestAnalogs.items;
+            const analogDates = Array.isArray(bestAnalogs.dates) && bestAnalogs.dates.length ? bestAnalogs.dates : dates;
+            if (!Array.isArray(analogDates) || !analogDates.length) {
+                // nothing to align to
+            } else {
+                const MARKER_COLOR = '#ff6600';
+                const maxToShow = Math.min(10, analogsArr.length);
+                analogsArr.slice(0, maxToShow).forEach((a) => {
+                     const vals = a.values || [];
+                    if (vals.length === dates.length) {
+                        vals.forEach((v, i) => {
+                            if (typeof v !== 'number' || !isFinite(v)) return;
+                            const cx = xScale(analogDates[i]);
+                            const cy = yScale(v);
+                            g.append('circle')
+                                .attr('cx', cx)
+                                .attr('cy', cy)
+                                .attr('r', 5)
+                                .attr('stroke', MARKER_COLOR)
+                                .attr('stroke-width', 1)
+                                .attr('fill-opacity', 0)
+                                .append('title').text(`${a.label || 'A'}: ${v}`);
+                        });
+                    } else if (vals.length) {
+                        let maxV = -Infinity, maxIdx = -1;
+                        vals.forEach((v, i) => { if (typeof v === 'number' && isFinite(v) && v > maxV) { maxV = v; maxIdx = i; } });
+                        if (maxIdx >= 0 && analogDates[maxIdx]) {
+                            const cx = xScale(analogDates[maxIdx]);
+                            const cy = yScale(maxV);
+                            g.append('circle')
+                                .attr('cx', cx)
+                                .attr('cy', cy)
+                                .attr('r', 4)
+                                .attr('fill', MARKER_COLOR)
+                                .attr('stroke', '#fff')
+                                .attr('stroke-width', 0.6)
+                                .append('title').text(`${a.label || 'A'}: ${maxV}`);
+                        }
+                    }
+                });
+            }
+         }
+
         // Draw reference lines: 10-year (prominent) and optionally all return periods (subtle)
         if (options.tenYearReturn && typeof tenYearVal === 'number' && isFinite(tenYearVal)) {
             g.append('line')
@@ -419,6 +481,11 @@ export default function ForecastSeriesModal() {
         }
         // follow with quantile legend entries if enabled
         legendItems.push(...quantileLegendItems);
+        // add best-analogs legend entries (one per returned analog) when enabled
+        const ANALOG_COLOR = '#ff6600';
+        if (options.bestAnalogs) {
+            legendItems.push({label: 'Best analogs', color: ANALOG_COLOR, marker: true});
+        }
 
         // now compute total legend item count including RP entries that will be listed below
         const legendItemCount = legendItems.length + (showAllRPs ? rpCount : (showP10Only ? 1 : 0));
@@ -428,11 +495,22 @@ export default function ForecastSeriesModal() {
         const legend = svg.append('g').attr('transform', `translate(${legendX},${legendY})`);
         legend.append('rect').attr('width', legendWidth).attr('height', legendHeight).attr('fill', '#fafafa').attr('stroke', '#ddd');
         legendItems.forEach((item, idx) => {
-             const y = 18 + idx * 14;
-             const lineEl = legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', item.color).attr('stroke-width', 3);
-             if (item.dashed) lineEl.attr('stroke-dasharray', '6 4');
-             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
-         });
+            const y = 18 + idx * 14;
+            if (item.marker) {
+                // draw a hollow stroked circle to match analog markers in the plot
+                legend.append('circle')
+                    .attr('cx', 30)
+                    .attr('cy', y)
+                    .attr('r', 5)
+                    .attr('fill-opacity', 0)
+                    .attr('stroke', item.color)
+                    .attr('stroke-width', 1);
+            } else {
+                const lineEl = legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', item.color).attr('stroke-width', 3);
+                if (item.dashed) lineEl.attr('stroke-dasharray', '6 4');
+            }
+            legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
+        });
         // RP legend entries
         const baseY = 18 + 14 * legendItems.length;
         if (showAllRPs) {
@@ -456,7 +534,7 @@ export default function ForecastSeriesModal() {
             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text('P10');
         }
 
-    }, [series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles]);
+    }, [series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs]);
 
     const handleClose = () => setSelectedEntityId(null);
 
@@ -495,7 +573,7 @@ export default function ForecastSeriesModal() {
                 const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
                 if (cancelled) return;
                 // Attempt to parse response into {axis: number[], values: number[]}
-                let parsed = null;
+                let parsed;
                 if (resp && Array.isArray(resp.reference_axis) && Array.isArray(resp.reference_values) && resp.reference_axis.length === resp.reference_values.length) {
                     parsed = {axis: resp.reference_axis.map(a => Number(a)), values: resp.reference_values.map(v => Number(v))};
                 } else if (resp && Array.isArray(resp.reference_values) && resp.reference_values.length && typeof resp.reference_values[0] === 'object') {
@@ -533,6 +611,68 @@ export default function ForecastSeriesModal() {
         return () => { cancelled = true; };
     }, [options.tenYearReturn, options.allReturnPeriods, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
 
+    // Fetch best analogs when option enabled
+    useEffect(() => {
+        if (!options.bestAnalogs) {
+            setBestAnalogs(null);
+            setAnalogsLoading(false);
+            setAnalogsError(null);
+            return;
+        }
+        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
+        const key = `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
+        if (bestAnalogsCache.current.has(key)) {
+            setBestAnalogs(bestAnalogsCache.current.get(key));
+            return;
+        }
+        let cancelled = false;
+        setAnalogsLoading(true);
+        setAnalogsError(null);
+        setBestAnalogs(null);
+        (async () => {
+            try {
+                const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+                if (cancelled) return;
+                // Normalize response into { items: [{label, values: number[]}, ...], dates?: Date[] }
+                let parsed;
+                if (!resp) parsed = null;
+                else if (Array.isArray(resp.series_values) && Array.isArray(resp.target_dates) && resp.series_values.length) {
+                    // Server returned a matrix: series_values[row=date][col=analog]
+                    // transpose matrix into per-analog items
+                    const rows = resp.series_values;
+                    const parsedDates = resp.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d));
+                    // determine number of analogs (max columns)
+                    const nAnalogs = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+                    const items = [];
+                    for (let c = 0; c < nAnalogs; c++) {
+                        const values = [];
+                        for (let r = 0; r < rows.length; r++) {
+                            const row = rows[r];
+                            const v = (Array.isArray(row) && row.length > c) ? row[c] : null;
+                            values.push(typeof v === 'number' ? v : (v == null ? null : Number(v)));
+                        }
+                        items.push({label: `Analog ${c+1}`, values});
+                    }
+                    parsed = {items, dates: parsedDates};
+                } else {
+                    parsed = null;
+                }
+
+                if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
+                    bestAnalogsCache.current.set(key, parsed);
+                    setBestAnalogs(parsed);
+                } else {
+                    setAnalogsError(new Error('no best analogs'));
+                }
+            } catch (e) {
+                if (!cancelled) setAnalogsError(e);
+            } finally {
+                if (!cancelled) setAnalogsLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [options.bestAnalogs, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+
     return (
         <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
                 sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
@@ -549,7 +689,7 @@ export default function ForecastSeriesModal() {
                         <FormGroup>
                             <FormControlLabel control={<Checkbox size="small" checked={options.mainQuantiles} onChange={handleOptionChange('mainQuantiles')} />} label={<Typography variant="body2">Main quantiles</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles} onChange={handleOptionChange('allQuantiles')} />} label={<Typography variant="body2">All quantiles</Typography>} />
-                            <FormControlLabel control={<Checkbox size="small" checked={options.tenBestAnalogs} disabled onChange={handleOptionChange('tenBestAnalogs')} />} label={<Typography variant="body2">10 best analogs</Typography>} />
+                            <FormControlLabel control={<Checkbox size="small" checked={options.bestAnalogs} onChange={handleOptionChange('bestAnalogs')} />} label={<Typography variant="body2">Best analogs</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')} />} label={<Typography variant="body2">10 year return period</Typography>} />
                             <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods} onChange={handleOptionChange('allReturnPeriods')} />} label={<Typography variant="body2">All return periods</Typography>} />
                             <Divider sx={{my:1}} />
@@ -582,16 +722,23 @@ export default function ForecastSeriesModal() {
                         </Box>
                     )}
                     {selectedEntityId && error && !loading && !resolvingConfig && <div style={{fontSize:13, color:'#b00020'}}>Error loading series.</div>}
-                    {selectedEntityId && !loading && !resolvingConfig && !error && series && (
+                    {selectedEntityId && !loading && !resolvingConfig && !error && (series || (options.bestAnalogs && bestAnalogs)) && (
                         <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
                     )}
-                    {selectedEntityId && !loading && !resolvingConfig && !error && !series && resolvedConfigId && <div style={{fontSize:13}}>No data available for this station.</div>}
+                    {selectedEntityId && !loading && !resolvingConfig && !error && !series && !(options.bestAnalogs && bestAnalogs) && resolvedConfigId && <div style={{fontSize:13}}>No data available for this station.</div>}
                     {/* Reference values status messages (used to show refLoading/refError) */}
                     {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && _refLoading && (
                         <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>Loading reference values…</div>
                     )}
                     {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && !_refLoading && _refError && (
                         <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>No reference values</div>
+                    )}
+                    {/* Best analogs status messages */}
+                    {selectedEntityId && options.bestAnalogs && _analogsLoading && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>Loading best analogs…</div>
+                    )}
+                    {selectedEntityId && options.bestAnalogs && !_analogsLoading && _analogsError && (
+                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>No best analogs</div>
                     )}
                 </Box>
             </DialogContent>
