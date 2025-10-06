@@ -32,17 +32,9 @@ export default function ForecastSeriesModal() {
     // previous forecasts history
     const [pastForecasts, setPastForecasts] = useState(null);
     const pastForecastsCache = useRef(new Map());
-    const [_pastLoading, setPastLoading] = useState(false);
-    const [_pastError, setPastError] = useState(null);
     const referenceCache = useRef(new Map()); // key: workspace|methodId|configId|entity -> value
-    const [_refLoading, setRefLoading] = useState(false);
-    const [_refError, setRefError] = useState(null);
-    const [_analogsLoading, setAnalogsLoading] = useState(false);
-    const [_analogsError, setAnalogsError] = useState(null);
     // Ensure these refs are referenced for static analysis (used in JSX below)
     // (no-op uses to avoid unused-variable warnings from static checker)
-    void _refLoading;
-    void _refError;
 
     // Sidebar state
     const [options, setOptions] = useState({
@@ -640,8 +632,6 @@ export default function ForecastSeriesModal() {
             return;
         }
         let cancelled = false;
-        setRefLoading(true);
-        setRefError(null);
         setReferenceValues(null);
         (async () => {
             try {
@@ -675,13 +665,10 @@ export default function ForecastSeriesModal() {
                     referenceCache.current.set(key, parsed);
                     setReferenceValues(parsed);
                 } else {
-                    // surface a translated error for diagnostics
-                    setRefError(new Error(t('seriesModal.noReferenceValues')));
+                    console.log(t('seriesModal.noReferenceValues'));
                 }
             } catch (e) {
-                if (!cancelled) setRefError(e);
-            } finally {
-                if (!cancelled) setRefLoading(false);
+                if (!cancelled) console.log(e);
             }
         })();
         return () => { cancelled = true; };
@@ -691,8 +678,6 @@ export default function ForecastSeriesModal() {
     useEffect(() => {
         if (!options.bestAnalogs) {
             setBestAnalogs(null);
-            setAnalogsLoading(false);
-            setAnalogsError(null);
             return;
         }
         if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
@@ -702,8 +687,6 @@ export default function ForecastSeriesModal() {
             return;
         }
         let cancelled = false;
-        setAnalogsLoading(true);
-        setAnalogsError(null);
         setBestAnalogs(null);
         (async () => {
             try {
@@ -740,12 +723,10 @@ export default function ForecastSeriesModal() {
                     setBestAnalogs(parsed);
                 } else {
                     // store a translated error message for diagnostics
-                    setAnalogsError(new Error(t('seriesModal.noBestAnalogs')));
+                    console.log(t('seriesModal.noBestAnalogs'));
                 }
             } catch (e) {
-                if (!cancelled) setAnalogsError(e);
-            } finally {
-                if (!cancelled) setAnalogsLoading(false);
+                if (!cancelled) console.log(e);
             }
         })();
         return () => { cancelled = true; };
@@ -755,8 +736,6 @@ export default function ForecastSeriesModal() {
     useEffect(() => {
         if (!options.previousForecasts) {
             setPastForecasts(null);
-            setPastLoading(false);
-            setPastError(null);
             return;
         }
         if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
@@ -766,8 +745,6 @@ export default function ForecastSeriesModal() {
             return;
         }
         let cancelled = false;
-        setPastLoading(true);
-        setPastError(null);
         setPastForecasts(null);
         (async () => {
             try {
@@ -777,7 +754,7 @@ export default function ForecastSeriesModal() {
                 // resp.past_forecasts is an array; normalize each element to {forecastDate, dates: Date[], percentiles: {p: values}}
                 const raw = resp?.past_forecasts;
                 if (!Array.isArray(raw)) {
-                    if (!cancelled) setPastError(new Error(t('seriesModal.unexpectedHistoryResponse')));
+                    if (!cancelled) console.log(t('seriesModal.unexpectedHistoryResponse'));
                      return;
                 }
                 const parsedList = raw.map(item => {
@@ -807,9 +784,7 @@ export default function ForecastSeriesModal() {
                 pastForecastsCache.current.set(key, parsedList);
                 setPastForecasts(parsedList);
             } catch (e) {
-                if (!cancelled) setPastError(e);
-            } finally {
-                if (!cancelled) setPastLoading(false);
+                if (!cancelled) console.log(e);
             }
         })();
         return () => { cancelled = true; };
@@ -851,36 +826,6 @@ export default function ForecastSeriesModal() {
                         <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
                     )}
                     {selectedEntityId && !loading && !resolvingConfig && !error && !series && !(options.bestAnalogs && bestAnalogs) && resolvedConfigId && <div style={{fontSize:13}}>{t('seriesModal.noDataForStation')}</div>}
-                    {/* Reference values status messages (used to show refLoading/refError) */}
-                    {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && _refLoading && (
-                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.loadingReference')}</div>
-                    )}
-                    {selectedEntityId && (options.tenYearReturn || options.allReturnPeriods) && !_refLoading && _refError && (
-                        <div style={{position:'absolute', top: 8, right: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.noReferenceValues')}</div>
-                    )}
-                    {/* Best analogs status messages */}
-                    {selectedEntityId && options.bestAnalogs && _analogsLoading && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>{t('seriesModal.loadingBestAnalogs')}</div>
-                    )}
-                    {selectedEntityId && options.bestAnalogs && !_analogsLoading && _analogsError && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#ff6600'}}>{t('seriesModal.noBestAnalogs')}</div>
-                    )}
-                    {/* Previous forecasts status messages */}
-                    {selectedEntityId && options.previousForecasts && !resolvedConfigId && resolvingConfig && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.resolvingConfig')}</div>
-                    )}
-                    {selectedEntityId && options.previousForecasts && !resolvedConfigId && !resolvingConfig && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.noPreviousForecastsAvailable')}</div>
-                    )}
-                    {selectedEntityId && options.previousForecasts && _pastLoading && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.loadingPreviousForecasts')}</div>
-                    )}
-                    {selectedEntityId && options.previousForecasts && !_pastLoading && _pastError && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#d00000'}}>{t('seriesModal.errorLoadingPreviousForecasts')}</div>
-                    )}
-                    {selectedEntityId && options.previousForecasts && !_pastLoading && !_pastError && (!pastForecasts || (Array.isArray(pastForecasts) && pastForecasts.length === 0)) && resolvedConfigId && (
-                        <div style={{position:'absolute', top: 8, left: 12, fontSize:11, color:'#666'}}>{t('seriesModal.noPreviousForecastsAvailable')}</div>
-                    )}
                 </Box>
             </DialogContent>
         </Dialog>
