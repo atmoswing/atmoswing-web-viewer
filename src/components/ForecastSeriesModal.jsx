@@ -335,9 +335,11 @@ export default function ForecastSeriesModal() {
             const HIST_ALPHA = 0.35;
             const HIST_WIDTH = 1.25;
             const mainPcts = [20, 60, 90];
+            const fmtRunDate = d3.timeFormat('%d.%m');
             pastForecasts.forEach(pf => {
                 const pd = pf.dates || [];
                 if (!pd.length) return;
+                const runDateStr = pf.forecastDate && !isNaN(pf.forecastDate) ? fmtRunDate(pf.forecastDate) : '';
                 mainPcts.forEach(pct => {
                     const arr = pf.percentiles && pf.percentiles[pct];
                     if (!arr || !Array.isArray(arr)) return;
@@ -346,11 +348,35 @@ export default function ForecastSeriesModal() {
                         .x((d,i) => xScale(pd[i]))
                         .y((d,i) => yScale(arr[i]));
                     const color = pct === 90 ? COLORS.p90 : (pct === 60 ? COLORS.p60 : COLORS.p20);
-                    plotG.append('path').datum(pd).attr('fill', 'none')
+                    const qLabel = (pct === 90) ? t('seriesModal.quantile90') : (pct === 60) ? t('seriesModal.quantile60') : (pct === 20) ? t('seriesModal.quantile20') : `Q${pct}`;
+                    const titleText = runDateStr ? `Run ${runDateStr} — ${qLabel}` : qLabel;
+
+                    // Visible historical line
+                    plotG.append('path')
+                        .datum(pd)
+                        .attr('fill', 'none')
                         .attr('stroke', color)
                         .attr('stroke-width', HIST_WIDTH)
                         .attr('stroke-opacity', HIST_ALPHA)
-                        .attr('d', lineFn);
+                        .attr('d', lineFn)
+                        .style('pointer-events', 'stroke')
+                        .on('mouseenter', function() {
+                            setAnalogTooltip({ open: true, anchorEl: this, title: titleText });
+                        })
+                        .on('mouseleave', () => setAnalogTooltip(prev => ({ ...prev, open: false })));
+
+                    // Invisible, thicker hit area for better hover target
+                    plotG.append('path')
+                        .datum(pd)
+                        .attr('fill', 'none')
+                        .attr('stroke', 'transparent')
+                        .attr('stroke-width', 10)
+                        .attr('d', lineFn)
+                        .style('pointer-events', 'stroke')
+                        .on('mouseenter', function() {
+                            setAnalogTooltip({ open: true, anchorEl: this, title: titleText });
+                        })
+                        .on('mouseleave', () => setAnalogTooltip(prev => ({ ...prev, open: false })));
                 });
             });
         }
