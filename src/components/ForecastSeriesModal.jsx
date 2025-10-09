@@ -541,7 +541,7 @@ export default function ForecastSeriesModal() {
             }
         }
         const dateFmt = d3.timeFormat('%-d/%-m');
-        const timeFmt = d3.timeFormat('%H:%M');
+        const timeFmt = d3.timeFormat(''); // d3.timeFormat('%Hh');
         const xAxis = d3.axisBottom(xScale).tickValues(tickValues).tickFormat(d => (firstTimestamps.has(+d) ? dateFmt(d) : timeFmt(d)));
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
