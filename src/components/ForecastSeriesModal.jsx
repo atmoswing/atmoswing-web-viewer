@@ -426,6 +426,9 @@ export default function ForecastSeriesModal() {
             } else {
                 const MARKER_COLOR = '#ff6600';
                 const maxToShow = Math.min(10, analogsArr.length);
+                const fmtDaily = d3.timeFormat('%d.%m.%Y');
+                const fmtHourly = d3.timeFormat('%d.%m.%Y %Hh');
+                const useHourlyFmt = !!bestAnalogs.hasAnalogHours;
                 analogsArr.slice(0, maxToShow).forEach((a) => {
                      const vals = a.values || [];
                     if (vals.length === dates.length) {
@@ -440,35 +443,19 @@ export default function ForecastSeriesModal() {
                                 .attr('stroke', MARKER_COLOR)
                                 .attr('stroke-width', 1)
                                 .attr('fill-opacity', 0);
+                            const dt = Array.isArray(a.datesByAnalog) ? a.datesByAnalog[i] : null;
+                            const dateText = (dt && !isNaN(dt)) ? (useHourlyFmt ? fmtHourly(dt) : fmtDaily(dt)) : '';
                             // Use MUI Popper tooltip instead of native <title>
                             circle
                                 .on('mouseenter', function() {
                                     const valText = (typeof v === 'number' && isFinite(v)) ? String(v) : '';
-                                    setAnalogTooltip({ open: true, anchorEl: this, title: `${a.label || t('seriesModal.analog')}: ${valText}` });
+                                    const parts = [a.label || t('seriesModal.analog')];
+                                    if (dateText) parts.push(dateText);
+                                    if (valText) parts.push(`${valText} mm`);
+                                    setAnalogTooltip({open: true, anchorEl: this, title: parts.join('\n')});
                                 })
-                                .on('mouseleave', () => setAnalogTooltip(prev => ({ ...prev, open: false })));
-                    });
-                    } else if (vals.length) {
-                        let maxV = -Infinity, maxIdx = -1;
-                        vals.forEach((v, i) => { if (typeof v === 'number' && isFinite(v) && v > maxV) { maxV = v; maxIdx = i; } });
-                        if (maxIdx >= 0 && analogDates[maxIdx]) {
-                            const cx = xScale(analogDates[maxIdx]);
-                            const cy = yScale(maxV);
-                            const circle = plotG.append('circle')
-                                .attr('cx', cx)
-                                .attr('cy', cy)
-                                .attr('r', 4)
-                                .attr('fill', MARKER_COLOR)
-                                .attr('stroke', '#fff')
-                                .attr('stroke-width', 0.6);
-                            // Use MUI Popper tooltip instead of native <title>
-                            circle
-                                .on('mouseenter', function() {
-                                    const valText = (typeof maxV === 'number' && isFinite(maxV)) ? String(maxV) : '';
-                                    setAnalogTooltip({ open: true, anchorEl: this, title: `${a.label || t('seriesModal.analog')}: ${valText}` });
-                                })
-                                .on('mouseleave', () => setAnalogTooltip(prev => ({ ...prev, open: false })));
-                        }
+                                .on('mouseleave', () => setAnalogTooltip(prev => ({...prev, open: false})));
+                        });
                     }
                 });
             }
@@ -742,28 +729,48 @@ export default function ForecastSeriesModal() {
             try {
                 const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
                 if (cancelled) return;
-                // Normalize response into { items: [{label, values: number[]}, ...], dates?: Date[] }
+                // Normalize response into { items: [{label, values: number[], datesByAnalog?: Date[]}], dates?: Date[], hasAnalogHours?: boolean }
                 let parsed;
                 if (!resp) parsed = null;
-                else if (Array.isArray(resp.series_values) && Array.isArray(resp.target_dates) && resp.series_values.length) {
-                    // Server returned a matrix: series_values[row=date][col=analog]
-                    // transpose matrix into per-analog items
-                    const rows = resp.series_values;
-                    const parsedDates = resp.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d));
-                    // determine number of analogs (max columns)
-                    const nAnalogs = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+                else if (Array.isArray(resp.series_values) && resp.series_values.length) {
+                    // Prefer target_dates for x-axis if present
+                    const parsedTargetDates = Array.isArray(resp.target_dates)
+                        ? resp.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d))
+                        : null;
+
+                    // rows = lead times, columns = analogs
+                    const rowsValues = resp.series_values;
+                    const nRows = rowsValues.length;
+                    const nAnalogs = rowsValues.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+
+                    // Optional series_dates matrix with same shape as series_values
+                    const rowsDates = Array.isArray(resp.series_dates) ? resp.series_dates : null;
+
                     const items = [];
+                    let hasAnalogHours = false;
+
                     for (let c = 0; c < nAnalogs; c++) {
                         const values = [];
-                        for (let r = 0; r < rows.length; r++) {
-                            const row = rows[r];
-                            const v = (Array.isArray(row) && row.length > c) ? row[c] : null;
+                        const analogDates = [];
+                        for (let r = 0; r < nRows; r++) {
+                            const rowVals = rowsValues[r];
+                            const v = (Array.isArray(rowVals) && rowVals.length > c) ? rowVals[c] : null;
                             values.push(typeof v === 'number' ? v : (v == null ? null : Number(v)));
+
+                            if (rowsDates && Array.isArray(rowsDates[r])) {
+                                const rawDate = rowsDates[r].length > c ? rowsDates[r][c] : null;
+                                const dt = rawDate ? (parseForecastDate(rawDate) || new Date(rawDate)) : null;
+                                analogDates.push(dt && !isNaN(dt) ? dt : null);
+                                if (dt && (dt.getHours() !== 0 || dt.getMinutes() !== 0 || dt.getSeconds() !== 0)) {
+                                    hasAnalogHours = true;
+                                }
+                            } else {
+                                analogDates.push(null);
+                            }
                         }
-                        // Use translation for generated analog labels (e.g. "Analog 1")
-                        items.push({label: t('seriesModal.analogWithIndex', {index: c+1}), values});
+                        items.push({ label: t('seriesModal.analogWithIndex', {index: c+1}), values, datesByAnalog: analogDates });
                     }
-                    parsed = {items, dates: parsedDates};
+                    parsed = { items, dates: parsedTargetDates || undefined, hasAnalogHours };
                 } else {
                     parsed = null;
                 }
@@ -1137,7 +1144,8 @@ export default function ForecastSeriesModal() {
                     borderRadius: 1,
                     boxShadow: 3,
                     fontSize: 12,
-                    maxWidth: 320
+                    maxWidth: 320,
+                    whiteSpace: 'pre-line'
                 }}>
                     {analogTooltip.title}
                 </Box>
