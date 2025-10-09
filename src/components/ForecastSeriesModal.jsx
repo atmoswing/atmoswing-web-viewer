@@ -311,6 +311,18 @@ export default function ForecastSeriesModal() {
         // Create a clip path so anything outside the plotting area (e.g. prior forecasts before the x-domain start) is hidden
         const clipId = `plot-clip-${Math.random().toString(36).slice(2,9)}`;
         svg.append('defs').append('clipPath').attr('id', clipId).append('rect').attr('x', 0).attr('y', 0).attr('width', innerW).attr('height', innerH);
+
+        // Create y-axis grid (lines only) BEFORE the clipped plot group so horizontal grid lines render underneath plotted content
+        const yAxisGrid = d3.axisLeft(yScale)
+            .ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55))))
+            .tickSize(-innerW)
+            .tickFormat('')
+            .tickPadding(8);
+        const yAxisGridG = g.append('g').attr('class', 'y-axis-grid').call(yAxisGrid);
+        yAxisGridG.selectAll('line').attr('stroke', '#ccc').attr('stroke-opacity', 0.9);
+        yAxisGridG.selectAll('path.domain').remove(); // remove domain line if present
+
+        // Create the clipped plot group; drawables inside here will appear above the grid lines
         const plotG = g.append('g').attr('class', 'plot-area').attr('clip-path', `url(#${clipId})`);
 
         // Draw previous forecasts into the clipped plot group (they will be clipped at the left/right of the x domain)
@@ -494,10 +506,10 @@ export default function ForecastSeriesModal() {
             }
         }
 
-        // Create and render y/x axes (outside the clipped plot group so labels/gridlines remain visible)
-        const yAxis = d3.axisLeft(yScale).ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55)))).tickSize(-innerW).tickPadding(8);
-        const yAxisG = g.append('g').attr('class', 'y-axis').call(yAxis);
-        yAxisG.selectAll('line').attr('stroke', '#ccc').attr('stroke-opacity', 0.9); // grid lines
+        // Create and render y/x axes (labels only) so tick text remains visible above the plot
+        // Render y-axis labels (no grid lines) after the plot so text is not occluded
+        const yAxisLabels = d3.axisLeft(yScale).ticks(Math.min(10, Math.max(3, Math.floor(innerH / 55)))).tickSize(0).tickPadding(8);
+        const yAxisG = g.append('g').attr('class', 'y-axis').call(yAxisLabels);
         yAxisG.selectAll('path.domain').remove(); // remove domain line
         g.selectAll('.y-axis text').attr('fill', '#555').attr('font-size', 11);
         if (innerH > 120) {
