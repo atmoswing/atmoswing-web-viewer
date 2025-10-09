@@ -278,7 +278,7 @@ export default function ForecastSeriesModal() {
         const dynamicWidth = Math.max(420, width);
         const dynamicHeight = Math.max(300, height);
 
-        const margin = {top: 12, right: 12, bottom: 34, left: 56};
+        const margin = {top: 36, right: 12, bottom: 34, left: 56};
         const innerW = Math.max(10, dynamicWidth - margin.left - margin.right);
         const innerH = Math.max(10, dynamicHeight - margin.top - margin.bottom);
 
@@ -614,6 +614,26 @@ export default function ForecastSeriesModal() {
              legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(t('seriesModal.p10'));
          }
 
+        // place title centered above the plot area
+        // Build title text from entity name, method name and run date
+        const methodName = (selectedMethodConfig && selectedMethodConfig.method && (selectedMethodConfig.method.name || selectedMethodConfig.method.id)) ? (selectedMethodConfig.method.name || selectedMethodConfig.method.id) : '';
+        const runDateObjForTitle = activeForecastDate ? (parseForecastDate(activeForecastDate) || new Date(activeForecastDate)) : null;
+        const runDateForTitle = runDateObjForTitle ? d3.timeFormat('%Y-%m-%d')(runDateObjForTitle) : '';
+        const titleParts = [];
+        if (stationName) titleParts.push(stationName);
+        if (methodName) titleParts.push(methodName);
+        if (runDateForTitle) titleParts.push(runDateForTitle);
+        const titleText = titleParts.join(' — ');
+        const titleGap = 12; // pixels between title baseline and top of plot area
+        const titleY = Math.max(12, margin.top - titleGap);
+        svg.append('text')
+            .attr('x', margin.left + innerW / 2)
+            .attr('y', titleY)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#222')
+            .attr('font-size', 14)
+            .attr('font-weight', 600)
+            .text(titleText);
     }, [t, series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs, pastForecasts, options.previousForecasts, activeForecastDate]);
 
     const handleClose = () => setSelectedEntityId(null);
@@ -815,6 +835,33 @@ export default function ForecastSeriesModal() {
         return el.querySelector('svg');
     };
 
+    // Make a string safe for use as a filename: remove/replace characters disallowed in filenames
+    const safeForFilename = (s) => {
+        if (!s) return 'unknown';
+        return String(s)
+            .normalize('NFKD')
+            .replace(' - ', '_')
+            .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    };
+
+    // Build export filename prefix like YYYY-MM-DD_Entity_MethodId
+    const buildExportFilenamePrefix = () => {
+        let datePart = '';
+        if (activeForecastDate) {
+            try {
+                const d = parseForecastDate(activeForecastDate) || new Date(activeForecastDate);
+                if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
+            } catch (e) { /* ignore */ }
+        }
+        const entityPart = safeForFilename(stationName || selectedEntityId || 'entity');
+        const methodIdPart = selectedMethodConfig && selectedMethodConfig.method ? String(selectedMethodConfig.method.id || selectedMethodConfig.method.name || 'method') : 'method';
+        const safeMethod = safeForFilename(methodIdPart);
+        return [datePart, entityPart, safeMethod].filter(p => p).join('_');
+    };
+
     const downloadBlob = (blob, filename) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -828,7 +875,6 @@ export default function ForecastSeriesModal() {
 
     // Inline computed styles into a cloned SVG so exported SVG/PDF matches on-screen appearance
     const inlineAllStyles = (svg) => {
-        // Walk elements and copy computed styles as style attributes for relevant properties
         const recurse = (el) => {
             if (!(el instanceof Element)) return;
             try {
@@ -880,7 +926,6 @@ export default function ForecastSeriesModal() {
         container.appendChild(clone);
         document.body.appendChild(container);
         try {
-            // Now inline styles with the clone in the DOM so getComputedStyle works
             try { inlineAllStyles(clone); } catch (e) { /* ignore */ }
             return cb && cb();
         } finally {
@@ -898,7 +943,8 @@ export default function ForecastSeriesModal() {
         withTemporaryContainer(clone, () => {
             const svgStr = serializer.serializeToString(clone);
             const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
-            const filename = `${stationName || 'series'}-plot.svg`;
+            const prefix = buildExportFilenamePrefix() || 'series';
+            const filename = `${prefix}.svg`;
             downloadBlob(blob, filename);
         });
         closeExportMenu();
@@ -912,7 +958,6 @@ export default function ForecastSeriesModal() {
         clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         const {width, height} = getSVGSize(clone);
         const serializer = new XMLSerializer();
-        // Ensure computed styles are inlined by using temporary container
         let svgStr;
         withTemporaryContainer(clone, () => {
             svgStr = serializer.serializeToString(clone);
@@ -927,19 +972,17 @@ export default function ForecastSeriesModal() {
                 img.onerror = reject;
                 img.src = url;
             });
-            // Use a higher scale factor for much higher resolution PNG (3x)
             const scale = 3;
             const canvas = document.createElement('canvas');
             canvas.width = Math.max(1, Math.round(width * scale));
             canvas.height = Math.max(1, Math.round(height * scale));
             const ctx = canvas.getContext('2d');
-            // white background to avoid transparency issues
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // draw the rasterized SVG scaled to canvas size
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const filename = `${stationName || 'series'}-plot.png`;
+            const prefix = buildExportFilenamePrefix() || 'series';
+            const filename = `${prefix}.png`;
             downloadBlob(blob, filename);
         } catch (e) {
             console.error('Export PNG failed', e);
@@ -953,7 +996,6 @@ export default function ForecastSeriesModal() {
     const exportPDF = async () => {
         const svg = findChartSVG();
         if (!svg) return;
-        // dynamic imports
         let jsPDFLib, svg2pdfModule;
         try {
             jsPDFLib = await import('jspdf');
@@ -972,7 +1014,6 @@ export default function ForecastSeriesModal() {
         }
         const clone = svg.cloneNode(true);
         clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        // Use temporary container to ensure getComputedStyle works, then compute content bbox
         const container = document.createElement('div');
         container.style.position = 'fixed';
         container.style.left = '-9999px';
@@ -981,36 +1022,28 @@ export default function ForecastSeriesModal() {
         document.body.appendChild(container);
         try {
             try { inlineAllStyles(clone); } catch (e) { /* ignore */ }
-            // Determine logical size: prefer explicit width/height or viewBox, fallback to bbox of content
             let {width: svgW, height: svgH} = getSVGSize(clone);
-            // Attempt to compute tight bbox of content to avoid clipping (requires the clone to be in the DOM)
             try {
                 const bbox = clone.getBBox();
                 if (bbox && Number.isFinite(bbox.width) && Number.isFinite(bbox.height) && bbox.width > 0 && bbox.height > 0) {
-                    // expand bbox slightly to include strokes
                     const pad = 2;
                     svgW = bbox.width + pad * 2;
                     svgH = bbox.height + pad * 2;
-                    // reposition contents if bbox.x/y not zero: set viewBox to bbox
                     clone.setAttribute('viewBox', `${bbox.x - pad} ${bbox.y - pad} ${svgW} ${svgH}`);
                 } else {
-                    // ensure viewBox exists matching current size
                     clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
                 }
             } catch (e) {
-                // getBBox might fail for some SVGs; fallback to viewBox or existing dimensions
                 clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
             }
-            // also set explicit width/height attributes in px so svg2pdf maps coordinates predictably
             clone.setAttribute('width', String(Math.round(svgW)));
             clone.setAttribute('height', String(Math.round(svgH)));
-
-            // Use pixels as unit for jsPDF and svg2pdf so coordinates map 1:1
             const pdfWidth = Math.round(svgW);
             const pdfHeight = Math.round(svgH);
             const pdf = new jsPDF({unit: 'px', format: [pdfWidth, pdfHeight], orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait'});
             await svg2pdf(clone, pdf, {x:0, y:0, width: pdfWidth, height: pdfHeight});
-            const filename = `${stationName || 'series'}-plot.pdf`;
+            const prefix = buildExportFilenamePrefix() || 'series';
+            const filename = `${prefix}.pdf`;
             pdf.save(filename);
         } catch (e) {
             console.error('Export PDF (vector) failed', e);
