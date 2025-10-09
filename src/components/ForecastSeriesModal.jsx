@@ -5,6 +5,7 @@ import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography, Button, Menu, MenuItem} from '@mui/material';
+import Popper from '@mui/material/Popper';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
 import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs, getSeriesValuesPercentilesHistory} from '../services/api.js';
@@ -71,6 +72,9 @@ export default function ForecastSeriesModal() {
     const chartRef = useRef(null);
     // Replace previous width-only state with width+height
     const [chartSize, setChartSize] = useState({width: 0, height: 0});
+    // Tooltip state for best analogs (MUI Popper anchored to hovered D3 circle)
+    const [analogTooltip, setAnalogTooltip] = useState({ open: false, anchorEl: null, title: '' });
+
     const [autoConfigId, setAutoConfigId] = useState(null);
     const [resolvingConfig, setResolvingConfig] = useState(false);
     const autoConfigCache = useRef(new Map()); // key: workspace|date|methodId|entityId -> configId
@@ -203,10 +207,11 @@ export default function ForecastSeriesModal() {
         return match?.name || match?.id || selectedEntityId;
     }, [selectedEntityId, entities]);
 
-    // D3 drawing effect (clean implementation)
     useEffect(() => {
         const container = chartRef.current;
         if (!container) return;
+        // hide tooltip when redrawing chart to avoid stale anchors
+        setAnalogTooltip(prev => (prev.open ? { open: false, anchorEl: null, title: '' } : prev));
         d3.select(container).selectAll('*').remove();
 
         // Determine dates from series (preferred), then bestAnalogs, then fall back to union of pastForecasts dates
@@ -428,14 +433,20 @@ export default function ForecastSeriesModal() {
                             if (typeof v !== 'number' || !isFinite(v)) return;
                             const cx = xScale(analogDates[i]);
                             const cy = yScale(v);
-                            plotG.append('circle')
+                            const circle = plotG.append('circle')
                                 .attr('cx', cx)
                                 .attr('cy', cy)
                                 .attr('r', 5)
                                 .attr('stroke', MARKER_COLOR)
                                 .attr('stroke-width', 1)
-                                .attr('fill-opacity', 0)
-                                .append('title').text(`${a.label || t('seriesModal.analog')}: ${v}`);
+                                .attr('fill-opacity', 0);
+                            // Use MUI Popper tooltip instead of native <title>
+                            circle
+                                .on('mouseenter', function() {
+                                    const valText = (typeof v === 'number' && isFinite(v)) ? String(v) : '';
+                                    setAnalogTooltip({ open: true, anchorEl: this, title: `${a.label || t('seriesModal.analog')}: ${valText}` });
+                                })
+                                .on('mouseleave', () => setAnalogTooltip(prev => ({ ...prev, open: false })));
                     });
                     } else if (vals.length) {
                         let maxV = -Infinity, maxIdx = -1;
@@ -443,14 +454,20 @@ export default function ForecastSeriesModal() {
                         if (maxIdx >= 0 && analogDates[maxIdx]) {
                             const cx = xScale(analogDates[maxIdx]);
                             const cy = yScale(maxV);
-                            plotG.append('circle')
+                            const circle = plotG.append('circle')
                                 .attr('cx', cx)
                                 .attr('cy', cy)
                                 .attr('r', 4)
                                 .attr('fill', MARKER_COLOR)
                                 .attr('stroke', '#fff')
-                                .attr('stroke-width', 0.6)
-                                .append('title').text(`${a.label || t('seriesModal.analog')}: ${maxV}`);
+                                .attr('stroke-width', 0.6);
+                            // Use MUI Popper tooltip instead of native <title>
+                            circle
+                                .on('mouseenter', function() {
+                                    const valText = (typeof maxV === 'number' && isFinite(maxV)) ? String(maxV) : '';
+                                    setAnalogTooltip({ open: true, anchorEl: this, title: `${a.label || t('seriesModal.analog')}: ${valText}` });
+                                })
+                                .on('mouseleave', () => setAnalogTooltip(prev => ({ ...prev, open: false })));
                         }
                     }
                 });
@@ -542,7 +559,7 @@ export default function ForecastSeriesModal() {
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
         // Build legend after knowing rpPairs size so it rescales correctly
-         const legendWidth = 150;
+         const legendWidth = 170;
          const rpCount = rpPairs.length || 0;
         // If allReturnPeriods is on, show all RP entries; otherwise, if tenYearReturn is on and a tenYearVal exists, reserve one slot for P10
         const showAllRPs = options.allReturnPeriods && rpCount > 0;
@@ -838,13 +855,15 @@ export default function ForecastSeriesModal() {
     // Make a string safe for use as a filename: remove/replace characters disallowed in filenames
     const safeForFilename = (s) => {
         if (!s) return 'unknown';
-        return String(s)
+        let out = String(s)
             .normalize('NFKD')
             .replace(' - ', '_')
-            .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+            .replace(/[<>:"/\\|?*]/g, '_')
             .replace(/\s+/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_+|_+$/g, '');
+            .replace(/_+/g, '_');
+        // Replace control characters (char codes < 32) without using control-char regex
+        out = Array.from(out).map(ch => (ch.charCodeAt(0) < 32 ? '_' : ch)).join('');
+        return out.replace(/^_+|_+$/g, '');
     };
 
     // Build export filename prefix like YYYY-MM-DD_Entity_MethodId
@@ -889,7 +908,7 @@ export default function ForecastSeriesModal() {
                     const prev = el.getAttribute('style') || '';
                     el.setAttribute('style', prev + inline);
                 }
-            } catch (e) {
+            } catch {
                 // ignore cross-origin or other issues
             }
             for (let i = 0; i < el.children.length; i++) recurse(el.children[i]);
@@ -926,7 +945,7 @@ export default function ForecastSeriesModal() {
         container.appendChild(clone);
         document.body.appendChild(container);
         try {
-            try { inlineAllStyles(clone); } catch (e) { /* ignore */ }
+            try { inlineAllStyles(clone); } catch { /* ignore */ }
             return cb && cb();
         } finally {
             document.body.removeChild(container);
@@ -1021,7 +1040,7 @@ export default function ForecastSeriesModal() {
         container.appendChild(clone);
         document.body.appendChild(container);
         try {
-            try { inlineAllStyles(clone); } catch (e) { /* ignore */ }
+            try { inlineAllStyles(clone); } catch { /* ignore */ }
             let {width: svgW, height: svgH} = getSVGSize(clone);
             try {
                 const bbox = clone.getBBox();
@@ -1033,7 +1052,7 @@ export default function ForecastSeriesModal() {
                 } else {
                     clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
                 }
-            } catch (e) {
+            } catch {
                 clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
             }
             clone.setAttribute('width', String(Math.round(svgW)));
@@ -1102,6 +1121,27 @@ export default function ForecastSeriesModal() {
                     {selectedEntityId && !loading && !resolvingConfig && !error && !series && !(options.bestAnalogs && bestAnalogs) && resolvedConfigId && <div style={{fontSize:13}}>{t('seriesModal.noDataForStation')}</div>}
                 </Box>
             </DialogContent>
+            {/* MUI Popper tooltip for best analogs */}
+            <Popper
+                open={analogTooltip.open}
+                anchorEl={analogTooltip.anchorEl}
+                placement="top"
+                modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
+                sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
+            >
+                <Box sx={{
+                    bgcolor: 'grey.900',
+                    color: 'grey.100',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    boxShadow: 3,
+                    fontSize: 12,
+                    maxWidth: 320
+                }}>
+                    {analogTooltip.title}
+                </Box>
+            </Popper>
         </Dialog>
     );
 }

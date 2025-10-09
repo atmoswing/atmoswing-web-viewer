@@ -100,7 +100,8 @@ const resources = {
                 "noBestAnalogs": "No best analogs",
                 "loadingReference": "Loading reference values…",
                 "noReferenceValues": "No reference values",
-                "noPreviousForecastsAvailable": "No previous forecasts available"
+                "noPreviousForecastsAvailable": "No previous forecasts available",
+                "export": "Export"
             }
         }
     },
@@ -202,7 +203,8 @@ const resources = {
                 "noBestAnalogs": "Aucun meilleur analogue",
                 "loadingReference": "Chargement des valeurs de référence…",
                 "noReferenceValues": "Aucune valeur de référence",
-                "noPreviousForecastsAvailable": "Aucune prévision précédente disponible"
+                "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
+                "export": "Exporter"
             }
         }
     }
