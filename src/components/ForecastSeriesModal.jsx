@@ -281,7 +281,31 @@ export default function ForecastSeriesModal() {
         const minX = d3.min(dates);
         const startDomain = (twoDaysBefore && minX) ? (twoDaysBefore < minX ? twoDaysBefore : minX) : (twoDaysBefore || minX);
 
-        const xScale = d3.scaleTime().domain([startDomain, maxX || d3.max(dates)]).range([0, innerW]);
+        // Add a small right-side margin so last markers/points are not clipped by the plot edge
+        let stepMs = 0;
+        if (dates && dates.length >= 2) {
+            const diffs = [];
+            for (let i = 1; i < dates.length; i++) {
+                const a = dates[i - 1];
+                const b = dates[i];
+                if (a && b && !isNaN(a) && !isNaN(b)) {
+                    const d = +b - +a;
+                    if (d > 0) diffs.push(d);
+                }
+            }
+            if (diffs.length) {
+                diffs.sort((a,b) => a - b);
+                stepMs = diffs[Math.floor(diffs.length / 2)]; // median step
+            }
+        }
+        if (!stepMs) {
+            // Default to 6h if sub-daily likely; otherwise 24h. Use conservative 12h as a safe small margin.
+            stepMs = 12 * 3600 * 1000;
+        }
+        const rightPadMs = Math.max(stepMs * 0.1, 1 * 3600 * 1000);
+        const domainMax = (maxX || d3.max(dates)) ? new Date((maxX || d3.max(dates)).getTime() + rightPadMs) : maxX;
+
+        const xScale = d3.scaleTime().domain([startDomain, domainMax]).range([0, innerW]);
         const yScale = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0]);
 
         // Quantile colors used for main and historical traces
@@ -531,20 +555,18 @@ export default function ForecastSeriesModal() {
         }
 
         // Force ticks at every lead time (use tickValues) and format so the first tick per day shows the date and subsequent ticks show the time
-        const tickValues = dates.slice(); // tick at every lead time
-        // Compute first tick of each day
-        const firstOfDaySet = new Set();
-        const firstTimestamps = new Set();
-        for (let i = 0; i < tickValues.length; i++) {
-            const d = tickValues[i];
-            const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-            if (!firstOfDaySet.has(key)) {
-                firstOfDaySet.add(key);
-                firstTimestamps.add(+d);
-            }
-        }
+        // Build daily ticks spanning from the (possibly extended) domain start to the end, to include days before the run date
+        const domainStartDay = d3.timeDay.floor(startDomain);
+        const domainEndDay = d3.timeDay.ceil(domainMax);
+        const dayTicks = d3.timeDay.range(domainStartDay, d3.timeDay.offset(domainEndDay, 1));
+
+        // Keep ticks for each forecast lead time too
+        const tickValues = Array.from(new Set([...dates, ...dayTicks].map(d => +d))).sort((a,b) => a - b).map(ts => new Date(ts));
+
+        // Mark the first tick of each day for labeling with the date
+        const firstTimestamps = new Set(dayTicks.map(d => +d));
         const dateFmt = d3.timeFormat('%-d/%-m');
-        const timeFmt = d3.timeFormat(''); // d3.timeFormat('%Hh');
+        const timeFmt = d3.timeFormat(''); // keep time labels hidden for intermediate ticks
         const xAxis = d3.axisBottom(xScale).tickValues(tickValues).tickFormat(d => (firstTimestamps.has(+d) ? dateFmt(d) : timeFmt(d)));
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
