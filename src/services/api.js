@@ -83,8 +83,14 @@ export const getEntitiesValuesPercentile = (region, date, methodId, configId, le
 };
 export const getReferenceValues = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/reference-values`);
 export const getSeriesBestAnalogs = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-best-analogs`);
-export const getSeriesValuesPercentiles = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles`);
-export const getSeriesValuesPercentilesHistory = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history`);
+export const getSeriesValuesPercentiles = (region, date, methodId, configId, entity, percentiles) => {
+    const qs = (percentiles && percentiles.length) ? `?${percentiles.map(p => `percentiles=${encodeURIComponent(p)}`).join('&')}` : '';
+    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles${qs}`);
+};
+export const getSeriesValuesPercentilesHistory = (region, date, methodId, configId, entity, number = 3) => {
+    const qs = number ? `?number=${encodeURIComponent(number)}` : '';
+    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history${qs}`);
+};
 export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analogs`);
 export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
 export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`);

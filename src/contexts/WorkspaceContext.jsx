@@ -45,7 +45,7 @@ export function WorkspaceProvider({ children }) {
                     const methodsAndConfigs = await getMethodsAndConfigs(workspace, date.last_forecast_date);
                     if (cancelled || currentId !== requestIdRef.current || methodsId !== methodsReqIdRef.current) return;
                     setWorkspaceData(prev => (prev && prev.date === date ? { ...prev, methodsAndConfigs } : prev));
-                } catch (e2) {
+                } catch {
                     // Non-fatal; MethodsProvider will attempt its own fetch
                 }
             } catch (e) {

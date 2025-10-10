@@ -69,6 +69,7 @@ export default function MapViewer() {
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);
     const [tooltip, setTooltip] = useState(null); // {x, y, name, value}
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     // Clear features when projection changes so they reproject cleanly
     useEffect(() => {
@@ -95,6 +96,14 @@ export default function MapViewer() {
         try { register(proj4); } catch (_) {}
         lastRegisteredProjRef.current = ENTITIES_SOURCE_EPSG;
     }, [ENTITIES_SOURCE_EPSG]);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        setIsDarkMode(mediaQuery.matches);
+        const handler = (e) => setIsDarkMode(e.matches);
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -437,7 +446,8 @@ export default function MapViewer() {
                     position: 'absolute',
                     bottom: 10,
                     left: 10,
-                    background: 'rgba(255,255,255,0.9)',
+                    background: isDarkMode ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)',
+                    color: isDarkMode ? '#fff' : '#000',
                     padding: '8px 10px',
                     borderRadius: 4,
                     fontSize: 12,
@@ -445,7 +455,7 @@ export default function MapViewer() {
                 }}>
                     <div style={{fontSize: 14, marginBottom: 2}}>{t('map.legend.title')} (P/P{normalizationRef}, q{percentile})</div>
                     <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                        <div style={{flex: 1, height: 14, background: gradientCSS, border: '1px solid #333'}}/>
+                        <div style={{flex: 1, height: 14, background: gradientCSS, border: `1px solid ${isDarkMode ? '#fff' : '#333'}`}}/>
                     </div>
                     <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 2}}>
                         <span>0</span>
