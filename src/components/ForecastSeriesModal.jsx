@@ -35,8 +35,6 @@ export default function ForecastSeriesModal() {
     const [pastForecasts, setPastForecasts] = useState(null);
     const pastForecastsCache = useRef(new Map());
     const referenceCache = useRef(new Map()); // key: workspace|methodId|configId|entity -> value
-    // Ensure these refs are referenced for static analysis (used in JSX below)
-    // (no-op uses to avoid unused-variable warnings from static checker)
 
     // Sidebar state
     const [options, setOptions] = useState({
@@ -167,24 +165,16 @@ export default function ForecastSeriesModal() {
             try {
                 const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId, requestedPercentiles);
                 if (cancelled || reqId !== reqIdRef.current) return;
-                // Parse response
-                const targetDates = (resp?.series_values?.target_dates || []).map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d));
+                // Parse response (expected shape)
+                const targetDates = (resp?.series_values?.target_dates || []).map(d => parseForecastDate(d) || new Date(d));
                 const percentilesArr = resp?.series_values?.series_percentiles || [];
-                // Build map of percentile -> series values
                 const pctMap = {};
                 percentilesArr.forEach(sp => {
                     const p = Number(sp.percentile);
                     pctMap[p] = sp.series_values || [];
                 });
                 const pctList = Object.keys(pctMap).map(Number).sort((a,b) => a - b);
-
-                // Normalize series lengths to targetDates
-                const normLen = targetDates.length;
-                const normArr = arr => (Array.isArray(arr) && arr.length === normLen) ? arr : targetDates.map((_, i) => (Array.isArray(arr) && typeof arr[i] === 'number' ? arr[i] : null));
-                const normalizedMap = {};
-                pctList.forEach(p => { normalizedMap[p] = normArr(pctMap[p]); });
-
-                const data = {dates: targetDates, percentiles: normalizedMap, pctList};
+                const data = {dates: targetDates, percentiles: pctMap, pctList};
                 seriesCache.set(cacheKey, data);
                 setSeries(data);
             } catch (e) {
@@ -214,29 +204,16 @@ export default function ForecastSeriesModal() {
         setAnalogTooltip(prev => (prev.open ? { open: false, anchorEl: null, title: '' } : prev));
         d3.select(container).selectAll('*').remove();
 
-        // Determine dates from series (preferred), then bestAnalogs, then fall back to union of pastForecasts dates
+        // Determine dates from series
         let dates = null;
         if (series && Array.isArray(series.dates) && series.dates.length) {
             dates = series.dates;
-        } else if (bestAnalogs && Array.isArray(bestAnalogs.dates) && bestAnalogs.dates.length) {
-            dates = bestAnalogs.dates;
-        } else if (pastForecasts && Array.isArray(pastForecasts) && pastForecasts.length) {
-            // union all past forecast dates and sort
-            const all = [];
-            pastForecasts.forEach(pf => {
-                if (Array.isArray(pf.dates)) all.push(...pf.dates);
-            });
-            if (all.length) {
-                dates = Array.from(new Set(all.map(d => (+d)))).map(t => new Date(t)).sort((a,b)=>a-b);
-            }
         }
         if (!dates || !dates.length) return; // nothing to plot along x-axis
 
         let {width, height} = chartSize;
-        // Fallbacks in case ResizeObserver reports 0 (initial layout) or element not sized yet
         if (!width || width < 10) width = container.clientWidth || 600;
         if (!height || height < 50) {
-            // Try parent height first; if still small use default 420
             const parentH = container.parentElement?.clientHeight;
             height = (parentH && parentH > 200) ? parentH : 420;
         }
@@ -532,7 +509,7 @@ export default function ForecastSeriesModal() {
                         .append('title').text((activeDateObj && typeof activeDateObj.toISOString === 'function') ? activeDateObj.toISOString() : String(activeDateObj));
                 }
             } catch {
-                // defensively ignore if xScale or activeDateObj cause issues
+                // ignore
             }
         }
 
@@ -700,31 +677,12 @@ export default function ForecastSeriesModal() {
             try {
                 const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
                 if (cancelled) return;
-                // Attempt to parse response into {axis: number[], values: number[]}
-                let parsed;
+                // Expected: { reference_axis: number[], reference_values: number[] }
+                let parsed = null;
                 if (resp && Array.isArray(resp.reference_axis) && Array.isArray(resp.reference_values) && resp.reference_axis.length === resp.reference_values.length) {
-                    parsed = {axis: resp.reference_axis.map(a => Number(a)), values: resp.reference_values.map(v => Number(v))};
-                } else if (resp && Array.isArray(resp.reference_values) && resp.reference_values.length && typeof resp.reference_values[0] === 'object') {
-                    // array of objects with return_period and value
-                    const axis = [];
-                    const values = [];
-                    resp.reference_values.forEach(o => {
-                        const rp = o.return_period ?? o.returnPeriod ?? o.period ?? o.p;
-                        const v = o.value ?? o.val ?? o.v;
-                        if (rp != null && v != null) { axis.push(Number(rp)); values.push(Number(v)); }
-                    });
-                    if (axis.length) parsed = {axis, values};
-                } else if (resp && typeof resp === 'object' && resp.reference_values && typeof resp.reference_values === 'object') {
-                    // object mapping like { '10': val, '20': val }
-                    const axis = Object.keys(resp.reference_values).map(k => Number(k)).sort((a,b)=>a-b);
-                    const values = axis.map(k => Number(resp.reference_values[String(k)]));
-                    if (axis.length) parsed = {axis, values};
-                } else {
-                    // No longer accept single numeric fallback – require axis+values or structured mapping
-                    parsed = null;
+                    parsed = {axis: resp.reference_axis.map(Number), values: resp.reference_values.map(Number)};
                 }
-
-                if (parsed && parsed.axis && parsed.values && parsed.axis.length === parsed.values.length) {
+                if (parsed) {
                     referenceCache.current.set(key, parsed);
                     setReferenceValues(parsed);
                 } else {
@@ -755,21 +713,17 @@ export default function ForecastSeriesModal() {
             try {
                 const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
                 if (cancelled) return;
-                // Normalize response into { items: [{label, values: number[], datesByAnalog?: Date[]}], dates?: Date[], hasAnalogHours?: boolean }
-                let parsed;
-                if (!resp) parsed = null;
-                else if (Array.isArray(resp.series_values) && resp.series_values.length) {
-                    // Prefer target_dates for x-axis if present
+                // Expected minimal shape: { target_dates?: [], series_values: number[][], series_dates?: (string|Date)[][] }
+                let parsed = null;
+                if (resp && Array.isArray(resp.series_values) && resp.series_values.length) {
                     const parsedTargetDates = Array.isArray(resp.target_dates)
-                        ? resp.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d))
+                        ? resp.target_dates.map(d => parseForecastDate(d) || new Date(d))
                         : null;
 
-                    // rows = lead times, columns = analogs
                     const rowsValues = resp.series_values;
                     const nRows = rowsValues.length;
                     const nAnalogs = rowsValues.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
 
-                    // Optional series_dates matrix with same shape as series_values
                     const rowsDates = Array.isArray(resp.series_dates) ? resp.series_dates : null;
 
                     const items = [];
@@ -797,15 +751,12 @@ export default function ForecastSeriesModal() {
                         items.push({ label: t('seriesModal.analogWithIndex', {index: c+1}), values, datesByAnalog: analogDates });
                     }
                     parsed = { items, dates: parsedTargetDates || undefined, hasAnalogHours };
-                } else {
-                    parsed = null;
                 }
 
                 if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
                     bestAnalogsCache.current.set(key, parsed);
                     setBestAnalogs(parsed);
                 } else {
-                    // store a translated error message for diagnostics
                     console.log(t('seriesModal.noBestAnalogs'));
                 }
             } catch (e) {
@@ -833,37 +784,24 @@ export default function ForecastSeriesModal() {
             try {
                 const resp = await getSeriesValuesPercentilesHistory(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
                 if (cancelled) return;
-                console.debug('[History] raw response:', resp);
-                // resp.past_forecasts is an array; normalize each element to {forecastDate, dates: Date[], percentiles: {p: values}}
+                // Expected: { past_forecasts: [{ forecast_date, target_dates, series_percentiles: [{percentile, series_values}] }] }
                 const raw = resp?.past_forecasts;
                 if (!Array.isArray(raw)) {
-                    if (!cancelled) console.log(t('seriesModal.unexpectedHistoryResponse'));
                      return;
                 }
                 const parsedList = raw.map(item => {
                     const forecastDate = parseForecastDate(item.forecast_date) || new Date(item.forecast_date);
                     const dates = (Array.isArray(item.target_dates) ? item.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d)) : []);
                     const pctMap = {};
-                    // Support two common shapes: array of {percentile, series_values} or object mapping '20'|'p20'->array
                     if (Array.isArray(item.series_percentiles)) {
                         item.series_percentiles.forEach(sp => {
-                            // percentile may be number or string like 'p20'
-                            let rawP = sp.percentile ?? sp.p ?? sp.name ?? '';
-                            let pNum = (typeof rawP === 'number') ? rawP : (typeof rawP === 'string' ? (rawP.match(/-?\d+/)?.[0] ? Number(rawP.match(/-?\d+/)[0]) : NaN) : NaN);
-                            if (!Number.isFinite(pNum)) return; // skip unparseable
+                            const pNum = Number(sp.percentile);
+                            if (!Number.isFinite(pNum)) return;
                             pctMap[pNum] = Array.isArray(sp.series_values) ? sp.series_values.map(v => (typeof v === 'number' ? v : (v == null ? null : Number(v)))) : [];
-                        });
-                    } else if (item.series_percentiles && typeof item.series_percentiles === 'object') {
-                        Object.keys(item.series_percentiles).forEach(k => {
-                            const kNum = (typeof k === 'string' && k.match(/-?\d+/)) ? Number(k.match(/-?\d+/)[0]) : (Number(k) || NaN);
-                            if (!Number.isFinite(kNum)) return;
-                            const arr = item.series_percentiles[k];
-                            pctMap[kNum] = Array.isArray(arr) ? arr.map(v => (typeof v === 'number' ? v : (v == null ? null : Number(v)))) : [];
                         });
                     }
                     return {forecastDate, dates, percentiles: pctMap};
                 }).filter(p => p.dates && p.dates.length);
-                console.debug('[History] parsedList:', parsedList);
                 pastForecastsCache.current.set(key, parsedList);
                 setPastForecasts(parsedList);
             } catch (e) {
@@ -906,7 +844,7 @@ export default function ForecastSeriesModal() {
             try {
                 const d = parseForecastDate(activeForecastDate) || new Date(activeForecastDate);
                 if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         }
         const entityPart = safeForFilename(stationName || selectedEntityId || 'entity');
         const methodIdPart = selectedMethodConfig && selectedMethodConfig.method ? String(selectedMethodConfig.method.id || selectedMethodConfig.method.name || 'method') : 'method';
@@ -942,7 +880,7 @@ export default function ForecastSeriesModal() {
                     el.setAttribute('style', prev + inline);
                 }
             } catch {
-                // ignore cross-origin or other issues
+                // ignore
             }
             for (let i = 0; i < el.children.length; i++) recurse(el.children[i]);
         };
