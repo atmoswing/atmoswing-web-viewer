@@ -32,6 +32,9 @@ const resources = {
             },
             "toolbar": {
                 "forecastOf": "Forecast of {{date}}",
+                "pickDateTime": "Pick forecast date and hour",
+                "date": "Date",
+                "hour": "Hour",
                 "loading": "Loading...",
                 "searching": "Searching...",
                 "restoreLastForecast": "Restore last forecast"
@@ -102,7 +105,9 @@ const resources = {
                 "noReferenceValues": "No reference values",
                 "noPreviousForecastsAvailable": "No previous forecasts available",
                 "export": "Export"
-            }
+            },
+            "cancel": "Cancel",
+            "ok": "OK"
         }
     },
     fr: {
@@ -135,6 +140,9 @@ const resources = {
             },
             "toolbar": {
                 "forecastOf": "Prévision du {{date}}",
+                "pickDateTime": "Choisir la date et l'heure de la prévision",
+                "date": "Date",
+                "hour": "Heure",
                 "loading": "Chargement...",
                 "searching": "Recherche...",
                 "restoreLastForecast": "Restaurer la dernière prévision"
@@ -205,9 +213,11 @@ const resources = {
                 "noReferenceValues": "Aucune valeur de référence",
                 "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
                 "export": "Exporter"
-            }
+            },
+            "cancel": "Annuler",
+            "ok": "OK"
         }
-    }
+    },
 };
 
 i18n
