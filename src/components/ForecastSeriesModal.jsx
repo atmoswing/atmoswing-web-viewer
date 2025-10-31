@@ -260,18 +260,30 @@ export default function ForecastSeriesModal() {
         const dynamicWidth = Math.max(420, width);
         const dynamicHeight = Math.max(300, height);
 
-        const margin = {top: 36, right: 12, bottom: 34, left: 56};
+        const margin = {top: 25, right: 40, bottom: 20, left: 56};
+        // Reserve space for horizontal legend that will be drawn below the axis
+        const legendReserve = 20 + 8; // legend height + gap
+        // Prefer to fit SVG into the chart container's clientHeight to avoid scrollbars
+        const containerH = container.clientHeight || dynamicHeight + legendReserve + margin.top + margin.bottom;
+        // Compute svgHeight so it does not exceed container height; allow minimal plot area when container is small
+        const svgHeight = Math.max(300, Math.min(dynamicHeight + legendReserve, containerH));
+        // Compute inner plot height available after reserving margins and legend area
+        const innerH = Math.max(60, svgHeight - margin.top - margin.bottom - legendReserve);
         const innerW = Math.max(10, dynamicWidth - margin.left - margin.right);
-        const innerH = Math.max(10, dynamicHeight - margin.top - margin.bottom);
+
+        // Reserve a small area on the right so RP labels (e.g. P10) can be drawn without being clipped.
+        const rightLabelReserve = 40;
+        const containerW = container.clientWidth || dynamicWidth + rightLabelReserve;
+        const svgWidth = Math.max(420, Math.min(dynamicWidth + rightLabelReserve, containerW));
 
         const svg = d3.select(container)
             .append('svg')
-            .attr('width', dynamicWidth)
-            .attr('height', dynamicHeight)
+            .attr('width', svgWidth)
+            .attr('height', svgHeight)
             .attr('role', 'img')
             .attr('aria-label', t('seriesModal.seriesAriaLabel'));
 
-        svg.append('rect').attr('x',0).attr('y',0).attr('width',dynamicWidth).attr('height',dynamicHeight).attr('fill','#fff');
+        svg.append('rect').attr('x',0).attr('y',0).attr('width',svgWidth).attr('height',svgHeight).attr('fill','#fff');
 
         // Compute x-domain from the primary dates only (series or bestAnalogs). Do NOT include pastForecasts
         const maxX = d3.max(dates);
@@ -489,6 +501,7 @@ export default function ForecastSeriesModal() {
          }
 
         // Draw reference lines: 10-year (prominent) and optionally all return periods (subtle)
+        // Draw return-period lines and label them on the right edge (outside the clipped plot) so labels are always visible
         if (options.tenYearReturn && typeof tenYearVal === 'number' && isFinite(tenYearVal)) {
             plotG.append('line')
                 .attr('x1', 0)
@@ -497,22 +510,46 @@ export default function ForecastSeriesModal() {
                 .attr('y2', yScale(tenYearVal))
                 .attr('stroke', TENYR_COLOR)
                 .attr('stroke-width', 2);
+            // label P10 on the right of the plot (use non-clipped group so text isn't clipped)
+            g.append('text')
+                .attr('x', innerW + 8)
+                .attr('y', yScale(tenYearVal))
+                .attr('font-size', 11)
+                .attr('fill', TENYR_COLOR)
+                .attr('dominant-baseline', 'middle')
+                .attr('text-anchor', 'start')
+                .text('P10');
         }
+        const SELECTED_RPS = [100, 50, 20, 10, 5, 2];
         if (options.allReturnPeriods && rpPairs.length) {
-            const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
-            rpPairsAsc.forEach((p, i) => {
-                const n = rpPairsAsc.length;
-                const ratio = n > 1 ? (i / (n - 1)) : 0;
+            const rpMap = new Map();
+            rpPairs.forEach(p => rpMap.set(Number(p.rp), p.val));
+            const rpsToDraw = SELECTED_RPS.filter(rp => rpMap.has(rp)).slice();
+            const rpsAsc = rpsToDraw.slice().sort((a,b) => a - b);
+            const n = rpsAsc.length;
+            rpsAsc.forEach((rp, idx) => {
+                const val = rpMap.has(rp) ? rpMap.get(rp) : null;
+                if (val == null || !isFinite(val)) return;
+                const ratio = n > 1 ? (idx / (n - 1)) : 0;
                 const gVal = Math.round(255 - ratio * 255);
                 const clr = `rgb(255, ${gVal}, 0)`;
                 plotG.append('line')
                     .attr('x1', 0)
                     .attr('x2', innerW)
-                    .attr('y1', yScale(p.val))
-                    .attr('y2', yScale(p.val))
+                    .attr('y1', yScale(val))
+                    .attr('y2', yScale(val))
                     .attr('stroke', clr)
                     .attr('stroke-width', 2)
                     .attr('stroke-opacity', 0.95);
+                // label RP at the right edge (outside clipped plot)
+                g.append('text')
+                    .attr('x', innerW + 8)
+                    .attr('y', yScale(val))
+                    .attr('font-size', 11)
+                    .attr('fill', clr)
+                    .attr('dominant-baseline', 'middle')
+                    .attr('text-anchor', 'start')
+                    .text(`P${rp}`);
             });
         }
 
@@ -570,78 +607,41 @@ export default function ForecastSeriesModal() {
         const xAxis = d3.axisBottom(xScale).tickValues(tickValues).tickFormat(d => (firstTimestamps.has(+d) ? dateFmt(d) : timeFmt(d)));
         g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
-        // Build legend after knowing rpPairs size so it rescales correctly
-         const legendWidth = 170;
-         const rpCount = rpPairs.length || 0;
-        // If allReturnPeriods is on, show all RP entries; otherwise, if tenYearReturn is on and a tenYearVal exists, reserve one slot for P10
-        const showAllRPs = options.allReturnPeriods && rpCount > 0;
-        const showP10Only = !showAllRPs && options.tenYearReturn && (typeof tenYearVal === 'number' && isFinite(tenYearVal));
-        // Build legend items first so we can calculate height including the median entry when present
-        const quantileLegendItems = [];
-        if (options.mainQuantiles) {
-            quantileLegendItems.push({label: t('seriesModal.quantile90'), color: COLORS.p90});
-            quantileLegendItems.push({label: t('seriesModal.quantile60'), color: COLORS.p60});
-            quantileLegendItems.push({label: t('seriesModal.quantile20'), color: COLORS.p20});
-        }
-        // add median legend entry when 50% was returned
+        // Horizontal, boxless legend rendered inside the SVG below the axis (no RP entries here).
+        // Move it further down so it doesn't overlap the x-axis tick labels (dates).
         const legendItems = [];
-        if (pctList.includes(50)) {
-            legendItems.push({label: t('seriesModal.median'), color: MEDIAN_COLOR, dashed: true});
+        if (pctList.includes(50)) legendItems.push({label: t('seriesModal.median'), color: MEDIAN_COLOR, dashed: true});
+        if (options.mainQuantiles) {
+            legendItems.push({label: t('seriesModal.quantile90'), color: COLORS.p90});
+            legendItems.push({label: t('seriesModal.quantile60'), color: COLORS.p60});
+            legendItems.push({label: t('seriesModal.quantile20'), color: COLORS.p20});
         }
-        // follow with quantile legend entries if enabled
-        legendItems.push(...quantileLegendItems);
-        // add best-analogs legend entries (one per returned analog) when enabled
-        const ANALOG_COLOR = '#ff6600';
-        if (options.bestAnalogs) {
-            legendItems.push({label: t('seriesModal.bestAnalogs'), color: ANALOG_COLOR, marker: true});
-        }
+        if (options.bestAnalogs) legendItems.push({label: t('seriesModal.bestAnalogs'), color: '#ff6600', marker: true});
 
-        // now compute total legend item count including RP entries that will be listed below
-        const legendItemCount = legendItems.length + (showAllRPs ? rpCount : (showP10Only ? 1 : 0));
-        const legendHeight = 14 * legendItemCount + 16;
-        const legendX = margin.left + innerW - legendWidth - 4;
-        const legendY = margin.top + 4;
-        const legend = svg.append('g').attr('transform', `translate(${legendX},${legendY})`);
-        legend.append('rect').attr('width', legendWidth).attr('height', legendHeight).attr('fill', '#fafafa').attr('stroke', '#ddd');
-        legendItems.forEach((item, idx) => {
-            const y = 18 + idx * 14;
-            if (item.marker) {
-                // draw a hollow stroked circle to match analog markers in the plot
-                legend.append('circle')
-                    .attr('cx', 30)
-                    .attr('cy', y)
-                    .attr('r', 5)
-                    .attr('fill-opacity', 0)
-                    .attr('stroke', item.color)
-                    .attr('stroke-width', 1);
+        // Layout parameters
+        const extraLegendGap = 40; // vertical offset from axis to legend to avoid overlapping dates
+        const legendY = margin.top + innerH + extraLegendGap;
+        const legendG = svg.append('g').attr('transform', `translate(${margin.left},${legendY})`);
+        let curX = 0;
+        const gapBetweenItems = 15;
+        const approxCharWidth = 7; // crude estimate for label width in px
+        legendItems.forEach((item) => {
+            const isMarker = !!item.marker;
+            const color = item.color || '#000';
+            const label = String(item.label || '');
+            const displayLabel = label;
+
+            if (isMarker) {
+                legendG.append('circle').attr('cx', curX + 8).attr('cy', 0).attr('r', 5).attr('fill', 'transparent').attr('stroke', color).attr('stroke-width', 1);
             } else {
-                const lineEl = legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', item.color).attr('stroke-width', 3);
+                const strokeW = item.small ? 2 : 3;
+                const lineEl = legendG.append('line').attr('x1', curX).attr('y1', 0).attr('x2', curX + 30).attr('y2', 0).attr('stroke', color).attr('stroke-width', strokeW).attr('stroke-linecap', 'round');
                 if (item.dashed) lineEl.attr('stroke-dasharray', '6 4');
             }
-            legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', item.color).text(item.label);
+            legendG.append('text').attr('x', curX + 36).attr('y', 0).attr('font-size', 12).attr('fill', '#333').attr('dominant-baseline', 'middle').text(displayLabel);
+            const textWidth = Math.min(200, displayLabel.length * approxCharWidth);
+            curX += 36 + textWidth + gapBetweenItems;
         });
-        // RP legend entries
-        const baseY = 18 + 14 * legendItems.length;
-        if (showAllRPs) {
-             const rpPairsAsc = rpPairs.slice().sort((a, b) => a.rp - b.rp);
-             const rpPairsDesc = rpPairsAsc.slice().reverse();
-             rpPairsDesc.forEach((p, i) => {
-                 const y = baseY + i * 14;
-                 const idxAsc = rpPairsAsc.findIndex(r => r.rp === p.rp);
-                 const n = rpPairsAsc.length;
-                 const ratio = n > 1 ? (idxAsc / (n - 1)) : 0;
-                 const gVal = Math.round(255 - ratio * 255);
-                 const clr = `rgb(255, ${gVal}, 0)`;
-                 legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
-                const label = `P${Number.isInteger(p.rp) ? p.rp : p.rp}`;
-                 legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(label);
-             });
-         } else if (showP10Only) {
-             let clr = TENYR_COLOR;
-             const y = baseY;
-             legend.append('line').attr('x1', 10).attr('x2', 50).attr('y1', y).attr('y2', y).attr('stroke', clr).attr('stroke-width', 2);
-             legend.append('text').attr('x', 56).attr('y', y + 4).attr('font-size', 12).attr('fill', '#555').text(t('seriesModal.p10'));
-         }
 
         // place title centered above the plot area
         // Build title text from entity name, method name and run date
@@ -1139,3 +1139,4 @@ export default function ForecastSeriesModal() {
         </Dialog>
     );
 }
+
