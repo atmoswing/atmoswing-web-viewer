@@ -25,6 +25,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import AnalogsModal from './AnalogsModal.jsx';
 
 function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useSynthesis();
@@ -237,14 +238,30 @@ function ToolbarCenter() {
 }
 
 export default function ToolBar() {
+    // Local state for the Analogs modal (navigation inside modal remains local)
+    const [analogsModalOpen, setAnalogsModalOpen] = React.useState(false);
+
+    const handleAnalogsModalClose = (result) => {
+        // close modal first
+        setAnalogsModalOpen(false);
+        // If modal returned a selection object, log it for now.
+        // We intentionally do NOT sync these selections with global app state here.
+        if (result && typeof result === 'object') {
+            console.log('Analogs modal selection:', result);
+        }
+    };
+
     return (
+        <>
         <header className="toolbar">
             <ToolbarSquares/>
             <ToolbarCenter/>
             <div className="toolbar-right">
                 <button className="toolbar-icon-btn"><FrameDistributionsIcon/></button>
-                <button className="toolbar-icon-btn"><FrameAnalogsIcon/></button>
+                <button className="toolbar-icon-btn" onClick={() => setAnalogsModalOpen(true)}><FrameAnalogsIcon/></button>
             </div>
         </header>
+        <AnalogsModal open={analogsModalOpen} onClose={handleAnalogsModalClose} />
+        </>
     );
 }
