@@ -106,7 +106,7 @@ const resources = {
                 "noPreviousForecastsAvailable": "No previous forecasts available",
                 "export": "Export"
             },
-            "analogsModal": {
+            "modalAnalogs": {
                 "title": "Analogs details",
                 "close": "Close",
                 "entity": "Entity",
@@ -242,7 +242,7 @@ const resources = {
                 "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
                 "export": "Exporter"
             },
-            "analogsModal": {
+            "modalAnalogs": {
                 "title": "Détails des analogues",
                 "close": "Fermer",
                 "entity": "Entité",

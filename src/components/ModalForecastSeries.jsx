@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 // Local cache to avoid refetching same series repeatedly during session
 const seriesCache = new Map();
 
-export default function ForecastSeriesModal() {
+export default function ModalForecastSeries() {
      const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
      const {selectedMethodConfig, methodConfigTree} = useMethods();
      const {workspace, activeForecastDate} = useForecastSession();

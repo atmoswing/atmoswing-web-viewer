@@ -7,7 +7,7 @@ import ToolBar from "./components/ToolBar.jsx";
 import MapViewer from "./components/MapViewer.jsx";
 import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
 import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
-import ForecastSeriesModal from './components/ForecastSeriesModal.jsx';
+import ModalForecastSeries from './components/ModalForecastSeries.jsx';
 
 function MapArea() {
     return (
@@ -26,7 +26,7 @@ export default function App() {
                     <div className="main-content">
                         <ToolBar />
                         <MapArea />
-                        <ForecastSeriesModal />
+                        <ModalForecastSeries />
                     </div>
                 </ForecastsProvider>
             </WorkspaceProvider>
