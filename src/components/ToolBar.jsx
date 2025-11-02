@@ -26,6 +26,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import ModalAnalogs from './ModalAnalogs.jsx';
+import ModalDistributions from './ModalDistributions.jsx';
 
 function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useSynthesis();
@@ -240,6 +241,8 @@ function ToolbarCenter() {
 export default function ToolBar() {
     // Local state for the Analogs modal (navigation inside modal remains local)
     const [modalAnalogsOpen, setModalAnalogsOpen] = React.useState(false);
+    // Local state for the Distributions modal
+    const [modalDistributionsOpen, setModalDistributionsOpen] = React.useState(false);
 
     const handleModalAnalogsClose = (result) => {
         // close modal first
@@ -251,17 +254,26 @@ export default function ToolBar() {
         }
     };
 
+    const handleModalDistributionsClose = (result) => {
+        // close modal
+        setModalDistributionsOpen(false);
+        if (result && typeof result === 'object') {
+            console.log('Distributions modal selection:', result);
+        }
+    };
+
     return (
         <>
         <header className="toolbar">
             <ToolbarSquares/>
             <ToolbarCenter/>
             <div className="toolbar-right">
-                <button className="toolbar-icon-btn"><FrameDistributionsIcon/></button>
+                <button className="toolbar-icon-btn" onClick={() => setModalDistributionsOpen(true)}><FrameDistributionsIcon/></button>
                 <button className="toolbar-icon-btn" onClick={() => setModalAnalogsOpen(true)}><FrameAnalogsIcon/></button>
             </div>
         </header>
         <ModalAnalogs open={modalAnalogsOpen} onClose={handleModalAnalogsClose} />
+        <ModalDistributions open={modalDistributionsOpen} onClose={handleModalDistributionsClose} />
         </>
     );
 }
