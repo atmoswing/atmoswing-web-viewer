@@ -4,7 +4,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {Box, CircularProgress, FormControl, InputLabel, Select, MenuItem, Typography, ListItemText} from '@mui/material';
+import {
+    Box,
+    CircularProgress,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Typography,
+    ListItemText
+} from '@mui/material';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -13,12 +22,18 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import {useForecastSession} from '../contexts/ForecastSessionContext.jsx';
-import {getMethodsAndConfigs, getEntities, getRelevantEntities, getAnalogs, getSeriesValuesPercentiles} from '../services/api.js';
+import {
+    getMethodsAndConfigs,
+    getEntities,
+    getRelevantEntities,
+    getAnalogs,
+    getSeriesValuesPercentiles
+} from '../services/api.js';
 import {useTranslation} from 'react-i18next';
 
 export default function AnalogsModal({open, onClose}) {
-    const { workspace, activeForecastDate, forecastBaseDate } = useForecastSession();
-    const { t } = useTranslation();
+    const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();
+    const {t} = useTranslation();
 
     const [methodsLoading, setMethodsLoading] = useState(false);
     const [methodsError, setMethodsError] = useState(null);
@@ -50,6 +65,7 @@ export default function AnalogsModal({open, onClose}) {
     // Load methods & configs when modal opens (or workspace/date changes)
     useEffect(() => {
         let cancelled = false;
+
         async function run() {
             if (!open) return;
             if (!workspace || !activeForecastDate) return;
@@ -71,8 +87,11 @@ export default function AnalogsModal({open, onClose}) {
                 if (!cancelled && reqId === methodsReqRef.current) setMethodsLoading(false);
             }
         }
+
         run();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [open, workspace, activeForecastDate]);
 
     // If user picks a method but no explicit config, default to the first config of that method
@@ -87,6 +106,7 @@ export default function AnalogsModal({open, onClose}) {
     // When method or config changes, fetch entities for that method/config (local only)
     useEffect(() => {
         let cancelled = false;
+
         async function run() {
             const fetchWorkspace = workspace;
             const date = activeForecastDate;
@@ -96,17 +116,23 @@ export default function AnalogsModal({open, onClose}) {
             }
             // Determine config to use: explicit selection or first config of method
             const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-            if (!methodNode) { setStations([]); return; }
+            if (!methodNode) {
+                setStations([]);
+                return;
+            }
             const cfgId = selectedConfigId || (methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
             const reqId = ++stationsReqRef.current;
             setStationsLoading(true);
             try {
-                if (!cfgId) { setStations([]); return; }
+                if (!cfgId) {
+                    setStations([]);
+                    return;
+                }
                 const resp = await getEntities(fetchWorkspace, date, selectedMethodId, cfgId);
                 if (cancelled || reqId !== stationsReqRef.current) return;
                 const list = resp?.entities || resp || [];
                 // sort alphabetically by name (fallback to id), case-insensitive
-                const sorted = Array.isArray(list) ? [...list].sort((a,b) => {
+                const sorted = Array.isArray(list) ? [...list].sort((a, b) => {
                     const aName = String(a?.name ?? a?.id ?? '').toLowerCase();
                     const bName = String(b?.name ?? b?.id ?? '').toLowerCase();
                     if (aName < bName) return -1;
@@ -130,14 +156,18 @@ export default function AnalogsModal({open, onClose}) {
                 if (!cancelled && reqId === stationsReqRef.current) setStationsLoading(false);
             }
         }
+
         run();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, methodsData]);
 
     // When station changes, compute which configs for the selected method are relevant to that station.
     // We'll call getRelevantEntities for each config and mark those that include the station.
     useEffect(() => {
         let cancelled = false;
+
         async function run() {
             if (!open || !workspace || !activeForecastDate || !selectedMethodId || selectedStationId == null) {
                 relevantRef.current.clear();
@@ -167,14 +197,19 @@ export default function AnalogsModal({open, onClose}) {
                 if (!cancelled && reqId === relevanceReqRef.current) setRelevantMapVersion(v => v + 1);
             }
         }
+
         // debounce slightly to avoid hammering API while user navigates quickly
         const timer = setTimeout(run, 120);
-        return () => { clearTimeout(timer); cancelled = true; };
+        return () => {
+            clearTimeout(timer);
+            cancelled = true;
+        };
     }, [open, workspace, activeForecastDate, selectedMethodId, selectedStationId, methodsData]);
 
     // Fetch analogs when selection (method, config, station, lead) changes
     useEffect(() => {
         let cancelled = false;
+
         async function run() {
             if (!open || !workspace || !activeForecastDate || !selectedMethodId || !selectedStationId) {
                 setAnalogs(null);
@@ -198,7 +233,7 @@ export default function AnalogsModal({open, onClose}) {
                 // normalize response: expect array of analogs with fields rank/index/date/value/criteria
                 const items = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.analogs) ? resp.analogs : []);
                 setAnalogs(items.map((it, i) => ({
-                    rank: it.rank ?? it.analog ?? (i+1),
+                    rank: it.rank ?? it.analog ?? (i + 1),
                     date: it.date ?? it.analog_date ?? it.analog_date_str ?? it.dt ?? it.date_str ?? null,
                     value: (it.value != null) ? it.value : (it.precip_value != null ? it.precip_value : it.value_mm ?? null),
                     criteria: it.criteria ?? it.score ?? it.criterion ?? null
@@ -210,27 +245,37 @@ export default function AnalogsModal({open, onClose}) {
                 if (!cancelled) setAnalogsLoading(false);
             }
         }
+
         run();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, selectedStationId, selectedLead, methodsData]);
 
     // Fetch available leads by requesting series percentiles for the selected entity and extracting target_dates
     useEffect(() => {
         let cancelled = false;
+
         async function run() {
             if (!open) return;
-            if (!workspace || !activeForecastDate || !selectedMethodId || !selectedStationId) { setLeads([]); return; }
+            if (!workspace || !activeForecastDate || !selectedMethodId || !selectedStationId) {
+                setLeads([]);
+                return;
+            }
             const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
             const cfgId = selectedConfigId || (methodNode && methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
-            if (!cfgId) { setLeads([]); return; }
+            if (!cfgId) {
+                setLeads([]);
+                return;
+            }
             setLeadsLoading(true);
             try {
                 // Request series percentiles for this entity — percentiles parameter can be omitted
                 const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodId, cfgId, selectedStationId);
                 if (cancelled) return;
-                
+
                 // Try to extract an array of date strings from common response shapes; prefer series_values.target_dates
-                const rawDates = (function() {
+                const rawDates = (function () {
                     if (!resp) return [];
                     if (resp.series_values && Array.isArray(resp.series_values.target_dates)) return resp.series_values.target_dates;
                     if (Array.isArray(resp.target_dates)) return resp.target_dates;
@@ -248,10 +293,15 @@ export default function AnalogsModal({open, onClose}) {
 
                 const arr = rawDates.map(s => {
                     let d = null;
-                    try { d = s ? new Date(s) : null; if (d && isNaN(d)) d = null; } catch { d = null; }
-                    const label = d ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}${(d.getHours() || d.getMinutes()) ? ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') : ''}` : String(s);
-                    const leadNum = (d && baseDate && !isNaN(baseDate.getTime())) ? Math.round((d.getTime() - baseDate.getTime())/3600000) : null;
-                    return { lead: leadNum, date: d, label };
+                    try {
+                        d = s ? new Date(s) : null;
+                        if (d && isNaN(d)) d = null;
+                    } catch {
+                        d = null;
+                    }
+                    const label = d ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}${(d.getHours() || d.getMinutes()) ? ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : ''}` : String(s);
+                    const leadNum = (d && baseDate && !isNaN(baseDate.getTime())) ? Math.round((d.getTime() - baseDate.getTime()) / 3600000) : null;
+                    return {lead: leadNum, date: d, label};
                 }).filter(x => x.lead != null && !isNaN(x.lead));
 
                 if (!arr.length) {
@@ -266,8 +316,11 @@ export default function AnalogsModal({open, onClose}) {
                 if (!cancelled) setLeadsLoading(false);
             }
         }
+
         run();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, methodsData, forecastBaseDate, selectedStationId]);
 
     // Reset local selections when modal closes
@@ -291,133 +344,198 @@ export default function AnalogsModal({open, onClose}) {
         return m?.configurations || [];
     }, [methodOptions, selectedMethodId]);
 
+    // Formatting helpers
+    const formatPrecipitation = (v) => {
+        if (v == null) return '-';
+        const n = Number(v);
+        if (isNaN(n)) return String(v);
+        if (n === 0) return '0';
+        return n.toFixed(1);
+    };
+
+    const formatCriteria = (v) => {
+        if (v == null) return '-';
+        const n = Number(v);
+        if (isNaN(n)) return String(v);
+        return n.toFixed(2);
+    };
+
     // Render helpers
     const renderConfigLabel = (cfg) => {
         const relevant = !!relevantRef.current.get(cfg.id);
         return (
-            <Box sx={{display:'flex', alignItems:'center', gap:1}}>
-                <ListItemText primary={cfg.name || cfg.id}  />
-                {relevant && <Typography variant="caption" sx={{color:'primary.main', fontWeight:600}}>({t('analogsModal.relevant')})</Typography>}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                <ListItemText primary={cfg.name || cfg.id}/>
+                {relevant && <Typography variant="caption" sx={{
+                    color: 'primary.main',
+                    fontWeight: 600
+                }}>({t('analogsModal.relevant')})</Typography>}
             </Box>
         );
     };
 
     return (
         <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="md"
-                sx={{'& .MuiPaper-root': {width:'100%', maxWidth:'920px'}}}>
-            <DialogTitle sx={{pr:5}}>
+                sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '920px'}}}>
+            <DialogTitle sx={{pr: 5}}>
                 {t('analogsModal.title')}
-                <IconButton aria-label={t('analogsModal.close')} onClick={onClose} size="small" sx={{position:'absolute', right:8, top:8}}>
-                    <CloseIcon fontSize="small" />
+                <IconButton aria-label={t('analogsModal.close')} onClick={onClose} size="small"
+                            sx={{position: 'absolute', right: 8, top: 8}}>
+                    <CloseIcon fontSize="small"/>
                 </IconButton>
             </DialogTitle>
             <DialogContent dividers>
-                <Box sx={{display:'grid', gridTemplateColumns: '1fr 2fr', gap:2}}>
-                    <Box sx={{display:'flex', flexDirection:'column', gap:3}}>
+                <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 3}}>
                         <FormControl fullWidth size="small">
-                             <InputLabel id="analogs-method-label">{t('analogsModal.method')}</InputLabel>
-                             <Select
-                                 variant="standard"
-                                 labelId="analogs-method-label"
-                                 value={selectedMethodId ?? ''}
-                                 label={t('analogsModal.method')}
-                                 onChange={(e) => { setSelectedMethodId(e.target.value); setSelectedConfigId(null); relevantRef.current.clear(); setRelevantMapVersion(v=>v+1); }}
-                             >
-                                 {methodsLoading && <MenuItem value=""><em>{t('analogsModal.loading')}</em></MenuItem>}
-                                 {!methodsLoading && methodOptions.length === 0 && <MenuItem value=""><em>{t('analogsModal.noMethods')}</em></MenuItem>}
-                                 {methodOptions.map(m => (
-                                     <MenuItem key={m.id} value={m.id}>{m.name || m.id}</MenuItem>
-                                 ))}
-                             </Select>
-                         </FormControl>
+                            <InputLabel id="analogs-method-label">{t('analogsModal.method')}</InputLabel>
+                            <Select
+                                variant="standard"
+                                labelId="analogs-method-label"
+                                value={selectedMethodId ?? ''}
+                                label={t('analogsModal.method')}
+                                onChange={(e) => {
+                                    setSelectedMethodId(e.target.value);
+                                    setSelectedConfigId(null);
+                                    relevantRef.current.clear();
+                                    setRelevantMapVersion(v => v + 1);
+                                }}
+                            >
+                                {methodsLoading && <MenuItem value=""><em>{t('analogsModal.loading')}</em></MenuItem>}
+                                {!methodsLoading && methodOptions.length === 0 &&
+                                    <MenuItem value=""><em>{t('analogsModal.noMethods')}</em></MenuItem>}
+                                {methodOptions.map(m => (
+                                    <MenuItem key={m.id} value={m.id}>{m.name || m.id}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
                         <FormControl fullWidth size="small">
-                             <InputLabel id="analogs-config-label">{t('analogsModal.config')}</InputLabel>
-                             <Select
-                                 variant="standard"
-                                 labelId="analogs-config-label"
-                                 value={selectedConfigId ?? ''}
-                                 label={t('analogsModal.config')}
-                                 onChange={(e) => { setSelectedConfigId(e.target.value); }}
-                                 renderValue={(v) => {
-                                     const cfg = configsForSelectedMethod.find(c => c.id === v);
-                                     return cfg ? cfg.name || cfg.id : '';
-                                 }}
-                             >
-                                 {configsForSelectedMethod.length === 0 && <MenuItem value=""><em>{t('analogsModal.noConfigs')}</em></MenuItem>}
-                                 {configsForSelectedMethod.map(cfg => (
-                                     <MenuItem key={cfg.id} value={cfg.id}>
-                                         {renderConfigLabel(cfg)}
-                                     </MenuItem>
-                                 ))}
-                             </Select>
-                         </FormControl>
+                            <InputLabel id="analogs-config-label">{t('analogsModal.config')}</InputLabel>
+                            <Select
+                                variant="standard"
+                                labelId="analogs-config-label"
+                                value={selectedConfigId ?? ''}
+                                label={t('analogsModal.config')}
+                                onChange={(e) => {
+                                    setSelectedConfigId(e.target.value);
+                                }}
+                                renderValue={(v) => {
+                                    const cfg = configsForSelectedMethod.find(c => c.id === v);
+                                    return cfg ? cfg.name || cfg.id : '';
+                                }}
+                            >
+                                {configsForSelectedMethod.length === 0 &&
+                                    <MenuItem value=""><em>{t('analogsModal.noConfigs')}</em></MenuItem>}
+                                {configsForSelectedMethod.map(cfg => (
+                                    <MenuItem key={cfg.id} value={cfg.id}>
+                                        {renderConfigLabel(cfg)}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
                         <FormControl fullWidth size="small">
-                             <InputLabel id="analogs-entity-label">{t('analogsModal.entity')}</InputLabel>
-                             <Select
-                                 variant="standard"
-                                 labelId="analogs-entity-label"
-                                 value={selectedStationId ?? ''}
-                                 label={t('analogsModal.entity')}
-                                 onChange={(e) => { setSelectedStationId(e.target.value); setRelevantMapVersion(v=>v+1); }}
-                                 MenuProps={{PaperProps: {style:{maxHeight: 320}}}}
-                             >
-                                 {stationsLoading && <MenuItem value=""><em>{t('analogsModal.loadingEntities')}</em></MenuItem>}
-                                 {!stationsLoading && stations.length === 0 && <MenuItem value=""><em>{t('analogsModal.noEntities')}</em></MenuItem>}
-                                 {stations.map(s => (
-                                     <MenuItem key={s.id} value={s.id}>{s.name || s.id}</MenuItem>
-                                 ))}
-                             </Select>
-                         </FormControl>
+                            <InputLabel id="analogs-entity-label">{t('analogsModal.entity')}</InputLabel>
+                            <Select
+                                variant="standard"
+                                labelId="analogs-entity-label"
+                                value={selectedStationId ?? ''}
+                                label={t('analogsModal.entity')}
+                                onChange={(e) => {
+                                    setSelectedStationId(e.target.value);
+                                    setRelevantMapVersion(v => v + 1);
+                                }}
+                                MenuProps={{PaperProps: {style: {maxHeight: 320}}}}
+                            >
+                                {stationsLoading &&
+                                    <MenuItem value=""><em>{t('analogsModal.loadingEntities')}</em></MenuItem>}
+                                {!stationsLoading && stations.length === 0 &&
+                                    <MenuItem value=""><em>{t('analogsModal.noEntities')}</em></MenuItem>}
+                                {stations.map(s => (
+                                    <MenuItem key={s.id} value={s.id}>{s.name || s.id}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
                         <FormControl fullWidth size="small">
-                             <InputLabel id="analogs-lead-label">{t('analogsModal.lead')}</InputLabel>
-                             <Select
-                                 variant="standard"
-                                 labelId="analogs-lead-label"
-                                 value={selectedLead ?? ''}
-                                 label={t('analogsModal.lead')}
-                                 onChange={(e) => setSelectedLead(e.target.value)}
-                             >
-                                 {leadsLoading && <MenuItem value=""><em>{t('analogsModal.loadingAnalogs')}</em></MenuItem>}
-                                 {!leadsLoading && leads.length === 0 && <MenuItem value=""><em>{t('analogsModal.noLeads') || 'No lead times'}</em></MenuItem>}
-                                 {leads.map(l => (
-                                     <MenuItem key={String(l.lead) + (l.label||'')} value={l.lead}>{l.label || (l.lead != null ? `${l.lead}h` : '')}</MenuItem>
-                                 ))}
-                             </Select>
-                         </FormControl>
-                     </Box>
-                     <Box sx={{borderLeft:'1px dashed #e0e0e0', pl:2, minHeight:360}}>
-                         <Typography variant="subtitle1" sx={{mb:1}}>{t('analogsModal.analogsList') || 'Analogs'}</Typography>
+                            <InputLabel id="analogs-lead-label">{t('analogsModal.lead')}</InputLabel>
+                            <Select
+                                variant="standard"
+                                labelId="analogs-lead-label"
+                                value={selectedLead ?? ''}
+                                label={t('analogsModal.lead')}
+                                onChange={(e) => setSelectedLead(e.target.value)}
+                            >
+                                {leadsLoading &&
+                                    <MenuItem value=""><em>{t('analogsModal.loadingAnalogs')}</em></MenuItem>}
+                                {!leadsLoading && leads.length === 0 && <MenuItem
+                                    value=""><em>{t('analogsModal.noLeads') || 'No lead times'}</em></MenuItem>}
+                                {leads.map(l => (
+                                    <MenuItem key={String(l.lead) + (l.label || '')}
+                                              value={l.lead}>{l.label || (l.lead != null ? `${l.lead}h` : '')}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>
+                        <Typography variant="subtitle1"
+                                    sx={{mb: 1}}>{t('analogsModal.analogsList') || 'Analogs'}</Typography>
 
-                        <Box sx={{mt:2}}>
-                            {methodsError && <Typography variant="caption" sx={{color:'#b00020'}}>{t('analogsModal.errorLoadingMethods')}</Typography>}
-                            {methodsLoading && <Box sx={{display:'flex', alignItems:'center', gap:1}}><CircularProgress size={18} /> <Typography variant="caption">{t('analogsModal.loadingMethods')}</Typography></Box>}
-                            {stationsLoading && <Box sx={{display:'flex', alignItems:'center', gap:1}}><CircularProgress size={18} /> <Typography variant="caption">{t('analogsModal.loadingEntities')}</Typography></Box>}
+                        <Box sx={{mt: 2}}>
+                            {methodsError && <Typography variant="caption"
+                                                         sx={{color: '#b00020'}}>{t('analogsModal.errorLoadingMethods')}</Typography>}
+                            {methodsLoading &&
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={18}/>
+                                    <Typography variant="caption">{t('analogsModal.loadingMethods')}</Typography></Box>}
+                            {stationsLoading &&
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={18}/>
+                                    <Typography
+                                        variant="caption">{t('analogsModal.loadingEntities')}</Typography></Box>}
                         </Box>
 
-                        <Box sx={{mt:2}}>
-                            {analogsLoading && <Box sx={{display:'flex', alignItems:'center', gap:1}}><CircularProgress size={20} /> <Typography variant="caption">{t('analogsModal.loadingAnalogs') || 'Loading...'}</Typography></Box>}
-                            {analogsError && <Typography variant="caption" sx={{color:'#b00020'}}>{t('analogsModal.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
+                        <Box sx={{mt: 2}}>
+                            {analogsLoading &&
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={20}/>
+                                    <Typography
+                                        variant="caption">{t('analogsModal.loadingAnalogs') || 'Loading...'}</Typography></Box>}
+                            {analogsError && <Typography variant="caption"
+                                                         sx={{color: '#b00020'}}>{t('analogsModal.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
                             {!analogsLoading && analogs && (
-                                <TableContainer component={Paper} sx={{maxHeight: 420, mt:1}}>
+                                <TableContainer component={Paper} sx={{maxHeight: 420, mt: 1}}>
                                     <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
                                         <TableHead>
                                             <TableRow>
                                                 <TableCell sx={{width: '6%'}}>#</TableCell>
-                                                <TableCell sx={{width: '34%'}}> {t('analogsModal.colDate') || 'Date'}</TableCell>
-                                                <TableCell sx={{width: '30%', textAlign: 'right'}}>{t('analogsModal.colPrecipitation') || t('analogsModal.precipitation') || 'Precipitation'}</TableCell>
-                                                <TableCell sx={{width: '30%', textAlign: 'right'}}>{t('analogsModal.colCriteria') || 'Criteria'}</TableCell>
+                                                <TableCell
+                                                    sx={{width: '34%'}}> {t('analogsModal.colDate') || 'Date'}</TableCell>
+                                                <TableCell sx={{
+                                                    width: '30%',
+                                                    textAlign: 'right'
+                                                }}>{t('analogsModal.colPrecipitation') || t('analogsModal.precipitation') || 'Precipitation'}</TableCell>
+                                                <TableCell sx={{
+                                                    width: '30%',
+                                                    textAlign: 'right'
+                                                }}>{t('analogsModal.colCriteria') || 'Criteria'}</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {analogs.map((a, idx) => (
                                                 <TableRow key={idx} hover>
-                                                    <TableCell sx={{width: '6%'}}>{a.rank ?? (idx+1)}</TableCell>
-                                                    <TableCell sx={{width: '34%'}}>{(function(d){try{const D=new Date(d); if(isNaN(D)) return d; return `${String(D.getDate()).padStart(2,'0')}.${String(D.getMonth()+1).padStart(2,'0')}.${D.getFullYear()}`;}catch{return d;}})(a.date)}</TableCell>
-                                                    <TableCell sx={{width: '30%'}} align="right">{(a.value != null) ? String(a.value) : '-'}</TableCell>
-                                                    <TableCell sx={{width: '30%'}} align="right">{(a.criteria != null) ? String(a.criteria) : '-'}</TableCell>
+                                                    <TableCell sx={{width: '6%'}}>{a.rank ?? (idx + 1)}</TableCell>
+                                                    <TableCell sx={{width: '34%'}}>{(function (d) {
+                                                        try {
+                                                            const D = new Date(d);
+                                                            if (isNaN(D)) return d;
+                                                            return `${String(D.getDate()).padStart(2, '0')}.${String(D.getMonth() + 1).padStart(2, '0')}.${D.getFullYear()}`;
+                                                        } catch {
+                                                            return d;
+                                                        }
+                                                    })(a.date)}</TableCell>
+                                                    <TableCell sx={{width: '30%'}}
+                                                               align="right">{formatPrecipitation(a.value)}</TableCell>
+                                                    <TableCell sx={{width: '30%'}}
+                                                               align="right">{formatCriteria(a.criteria)}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -425,9 +543,9 @@ export default function AnalogsModal({open, onClose}) {
                                 </TableContainer>
                             )}
                         </Box>
-                     </Box>
-                  </Box>
-             </DialogContent>
-         </Dialog>
-     );
- }
+                    </Box>
+                </Box>
+            </DialogContent>
+        </Dialog>
+    );
+}
