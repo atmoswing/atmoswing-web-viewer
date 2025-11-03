@@ -93,7 +93,12 @@ export const getSeriesValuesPercentilesHistory = (region, date, methodId, config
 };
 export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analogs`);
 export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
-export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`);
+export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead, percentiles) => {
+    const qs = (percentiles && percentiles.length)
+        ? `?${percentiles.map(p => `percentiles=${encodeURIComponent(p)}`).join('&')}`
+        : '';
+    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles${qs}`);
+};
 export const getAnalogValuesBest = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-best`);
 
 // --- Aggregations ---

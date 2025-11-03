@@ -106,6 +106,16 @@ const resources = {
                 "noPreviousForecastsAvailable": "No previous forecasts available",
                 "export": "Export"
             },
+            "distributionPlots": {
+                "title": "Distribution plots",
+                "predist": "Predictands distribution",
+                "critdist": "Criteria distribution",
+                "analogsPrecipTitle": "Analogs precipitation distribution",
+                "cumulativeFrequency": "Cumulative frequency",
+                "noAnalogs": "No analog values for the selected method/config/entity/lead.",
+                "criteriaTitle": "Criteria distribution",
+                "noCriteria": "No criteria values available for the selected selection."
+            },
             "modalAnalogs": {
                 "title": "Analogs details",
                 "close": "Close",
@@ -241,6 +251,16 @@ const resources = {
                 "noReferenceValues": "Aucune valeur de référence",
                 "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
                 "export": "Exporter"
+            },
+            "distributionPlots": {
+                "title": "Graphiques de distribution",
+                "predist": "Distribution des prédictands",
+                "critdist": "Distribution des critères",
+                "analogsPrecipTitle": "Distribution des précipitations des analogues",
+                "cumulativeFrequency": "Fréquence cumulative",
+                "noAnalogs": "Aucune valeur analogue pour la méthode/configuration/entité/échéance sélectionnée.",
+                "criteriaTitle": "Distribution des critères",
+                "noCriteria": "Aucune valeur de critère disponible pour la sélection."
             },
             "modalAnalogs": {
                 "title": "Détails des analogues",
