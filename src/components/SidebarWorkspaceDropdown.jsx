@@ -9,16 +9,11 @@ export function SidebarWorkspaceDropdown({options = []}) {
     const { t } = useTranslation();
     const { workspace, setWorkspace } = useWorkspace();
 
-    React.useEffect(() => {
-        // Only auto-select the first workspace if none selected yet
-        if (!workspace && options.length > 0) {
-            setWorkspace(options[0].key);
-        }
-    }, [options, workspace, setWorkspace]);
-
     const handleChange = (event) => {
         setWorkspace(event.target.value);
     };
+
+    const value = workspace || (options[0]?.key ?? '');
 
     return (
         <FormControl variant="standard" sx={{ m: 0 }}>
@@ -26,7 +21,7 @@ export function SidebarWorkspaceDropdown({options = []}) {
                 variant="standard"
                 className="sidebar-dropdown-input"
                 id="select-workspace"
-                value={workspace}
+                value={value}
                 onChange={handleChange}
                 label={t('workspace.label')}
             >

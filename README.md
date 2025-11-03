@@ -40,5 +40,16 @@ You can change `/config.json` directly on the server (or via a mounted volume) a
 ## Workspaces
 Workspace definitions are part of the same `config.json` under the `workspaces` key. The UI will automatically pick up new keys if referenced in components.
 
+### Selecting a workspace via URL
+You can preselect a workspace by adding a query parameter to the URL: `?workspace=<key>`.
+
+If the key is invalid or missing, the app will fall back to the first workspace from `config.json`.
+
+Examples:
+- `/` → selects the first workspace
+- `/?workspace=zap_v13` → selects the `zap_v13` workspace
+
+Browser navigation (back/forward) stays in sync with the selected workspace, and changing the workspace from the dropdown updates the URL so links are shareable.
+
 ## License
 See `LICENSE`.

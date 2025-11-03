@@ -4,6 +4,32 @@ import {useConfig} from './ConfigContext.jsx';
 
 const WorkspaceContext = createContext();
 
+function getWorkspaceFromUrl() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('workspace') || params.get('ws') || '';
+    } catch {
+        return '';
+    }
+}
+
+function setWorkspaceInUrl(nextWs) {
+    try {
+        const url = new URL(window.location.href);
+        if (nextWs) {
+            url.searchParams.set('workspace', nextWs);
+        } else {
+            url.searchParams.delete('workspace');
+        }
+        // Preserve hash and path, avoid extra history entries for same value
+        if (url.toString() !== window.location.href) {
+            window.history.pushState({}, '', url);
+        }
+    } catch {
+        // no-op
+    }
+}
+
 export function WorkspaceProvider({ children }) {
     const config = useConfig();
     const workspaces = useMemo(() => (config?.workspaces?.map(ws => ({
@@ -11,21 +37,67 @@ export function WorkspaceProvider({ children }) {
         name: ws.name
     })) || []), [config]);
 
-    const [workspace, setWorkspace] = useState(workspaces[0]?.key || '');
+    // Internal state setter is renamed; we'll expose a wrapper that also syncs URL
+    const [workspace, setWorkspaceState] = useState('');
     const [workspaceData, setWorkspaceData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const requestIdRef = useRef(0);
     const methodsReqIdRef = useRef(0); // controls second phase
 
+    // Synchronize initial workspace selection with URL and available workspaces
     useEffect(() => {
-        if (!workspace && workspaces.length > 0) {
-            setWorkspace(workspaces[0].key);
-        } else if (workspace && workspaces.length > 0 && !workspaces.find(w => w.key === workspace)) {
-            setWorkspace(workspaces[0].key);
+        const availableKeys = workspaces.map(w => w.key);
+        if (availableKeys.length === 0) {
+            // No workspaces loaded yet; defer
+            return;
         }
-    }, [workspaces, workspace]);
 
+        const urlWs = getWorkspaceFromUrl();
+        const hasUrlWs = urlWs && availableKeys.includes(urlWs);
+
+        if (hasUrlWs) {
+            if (workspace !== urlWs) {
+                setWorkspaceState(urlWs);
+            }
+        } else {
+            // If current workspace invalid or empty, fallback to first available
+            if (!workspace || !availableKeys.includes(workspace)) {
+                const first = availableKeys[0];
+                if (first) {
+                    setWorkspaceState(first);
+                    setWorkspaceInUrl(first);
+                }
+            }
+        }
+    }, [workspaces]);
+
+    // Keep URL in sync whenever workspace state changes and is valid
+    useEffect(() => {
+        if (!workspace) return;
+        const isValid = workspaces.some(w => w.key === workspace);
+        if (isValid) {
+            const currentParam = getWorkspaceFromUrl();
+            if (currentParam !== workspace) {
+                setWorkspaceInUrl(workspace);
+            }
+        }
+    }, [workspace, workspaces]);
+
+    // React to browser navigation (back/forward) updating workspace from URL
+    useEffect(() => {
+        const onPopState = () => {
+            const urlWs = getWorkspaceFromUrl();
+            const isValid = urlWs && workspaces.some(w => w.key === urlWs);
+            if (isValid && urlWs !== workspace) {
+                setWorkspaceState(urlWs);
+            }
+        };
+        window.addEventListener('popstate', onPopState);
+        return () => window.removeEventListener('popstate', onPopState);
+    }, [workspace, workspaces]);
+
+    // Data loading pipeline bound to workspace
     useEffect(() => {
         let cancelled = false;
         async function load() {
@@ -62,13 +134,22 @@ export function WorkspaceProvider({ children }) {
         return () => { cancelled = true; };
     }, [workspace]);
 
+    // Public setter that also updates URL
+    const setWorkspace = React.useCallback((next) => {
+        if (next === workspace) return;
+        const isValid = workspaces.some(w => w.key === next);
+        if (!isValid) return; // ignore invalid selections
+        setWorkspaceState(next);
+        setWorkspaceInUrl(next);
+    }, [workspace, workspaces]);
+
     const value = useMemo(() => ({
         workspace,
         setWorkspace,
         workspaceData,
         loading,
         error
-    }), [workspace, workspaceData, loading, error]);
+    }), [workspace, setWorkspace, workspaceData, loading, error]);
 
     return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
