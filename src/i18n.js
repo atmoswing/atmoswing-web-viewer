@@ -16,7 +16,8 @@ const resources = {
             },
             "workspace": {
                 "noWorkspaces": "No workspaces available. Please check your configuration.",
-                "label": "Workspace"
+                "label": "Workspace",
+                "invalidFromUrl": "Unknown workspace '{{key}}' from URL. Using default instead."
             },
             "stations": {
                 "loading": "Loading stations…",
@@ -162,7 +163,8 @@ const resources = {
             },
             "workspace": {
                 "noWorkspaces": "Aucun espace de travail disponible. Vérifiez votre configuration.",
-                "label": "Espace de travail"
+                "label": "Espace de travail",
+                "invalidFromUrl": "Espace de travail inconnu '{{key}}' dans l'URL. Utilisation de la valeur par défaut."
             },
             "stations": {
                 "loading": "Chargement des stations…",

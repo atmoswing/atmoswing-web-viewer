@@ -8,6 +8,7 @@ import MapViewer from "./components/MapViewer.jsx";
 import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
 import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
 import ModalForecastSeries from './components/ModalForecastSeries.jsx';
+import AppSnackbars from './components/AppSnackbars.jsx';
 
 function MapArea() {
     return (
@@ -28,6 +29,7 @@ export default function App() {
                         <MapArea />
                         <ModalForecastSeries />
                     </div>
+                    <AppSnackbars />
                 </ForecastsProvider>
             </WorkspaceProvider>
         </div>

@@ -42,6 +42,7 @@ export function WorkspaceProvider({ children }) {
     const [workspaceData, setWorkspaceData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [invalidWorkspaceKey, setInvalidWorkspaceKey] = useState(null);
     const requestIdRef = useRef(0);
     const methodsReqIdRef = useRef(0); // controls second phase
 
@@ -54,14 +55,27 @@ export function WorkspaceProvider({ children }) {
         }
 
         const urlWs = getWorkspaceFromUrl();
-        const hasUrlWs = urlWs && availableKeys.includes(urlWs);
+        const hasUrl = !!urlWs;
+        const hasUrlWs = hasUrl && availableKeys.includes(urlWs);
 
         if (hasUrlWs) {
+            setInvalidWorkspaceKey(null);
             if (workspace !== urlWs) {
                 setWorkspaceState(urlWs);
             }
+        } else if (hasUrl) {
+            // URL provided but invalid -> flag and fallback
+            setInvalidWorkspaceKey(urlWs);
+            if (!workspace || !availableKeys.includes(workspace)) {
+                const first = availableKeys[0];
+                if (first) {
+                    setWorkspaceState(first);
+                    setWorkspaceInUrl(first);
+                }
+            }
         } else {
-            // If current workspace invalid or empty, fallback to first available
+            // No URL -> clear invalid flag; fallback if none selected or invalid
+            setInvalidWorkspaceKey(null);
             if (!workspace || !availableKeys.includes(workspace)) {
                 const first = availableKeys[0];
                 if (first) {
@@ -87,10 +101,22 @@ export function WorkspaceProvider({ children }) {
     // React to browser navigation (back/forward) updating workspace from URL
     useEffect(() => {
         const onPopState = () => {
+            const availableKeys = workspaces.map(w => w.key);
+            if (availableKeys.length === 0) return;
             const urlWs = getWorkspaceFromUrl();
-            const isValid = urlWs && workspaces.some(w => w.key === urlWs);
-            if (isValid && urlWs !== workspace) {
-                setWorkspaceState(urlWs);
+            const hasUrl = !!urlWs;
+            const isValid = hasUrl && availableKeys.includes(urlWs);
+            if (isValid) {
+                setInvalidWorkspaceKey(null);
+                if (urlWs !== workspace) setWorkspaceState(urlWs);
+            } else if (hasUrl) {
+                // Invalid key in URL -> show toast and fallback locally without mutating history
+                setInvalidWorkspaceKey(urlWs);
+                const first = availableKeys[0];
+                if (first && first !== workspace) setWorkspaceState(first);
+            } else {
+                setInvalidWorkspaceKey(null);
+                // No param in URL -> keep current selection
             }
         };
         window.addEventListener('popstate', onPopState);
@@ -139,6 +165,7 @@ export function WorkspaceProvider({ children }) {
         if (next === workspace) return;
         const isValid = workspaces.some(w => w.key === next);
         if (!isValid) return; // ignore invalid selections
+        setInvalidWorkspaceKey(null);
         setWorkspaceState(next);
         setWorkspaceInUrl(next);
     }, [workspace, workspaces]);
@@ -148,8 +175,9 @@ export function WorkspaceProvider({ children }) {
         setWorkspace,
         workspaceData,
         loading,
-        error
-    }), [workspace, setWorkspace, workspaceData, loading, error]);
+        error,
+        invalidWorkspaceKey
+    }), [workspace, setWorkspace, workspaceData, loading, error, invalidWorkspaceKey]);
 
     return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
