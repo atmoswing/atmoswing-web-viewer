@@ -23,7 +23,10 @@ export function normalizeRuntimeConfig(raw = {}) {
         API_BASE_URL: normalizeBase(raw.API_BASE_URL || ''),
         ENTITIES_SOURCE_EPSG: raw.ENTITIES_SOURCE_EPSG || 'EPSG:4326',
         API_DEBUG: toBool(raw.API_DEBUG, false),
-        workspaces: raw.workspaces || []
+        workspaces: raw.workspaces || [],
+        providers: raw.providers || [],
+        baseLayers: raw.baseLayers || [],
+        overlayLayers: raw.overlayLayers || []
     };
 }
 

@@ -26,6 +26,7 @@ import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
 import {valueToColor} from '../utils/colors.js';
 import {useConfig} from '../contexts/ConfigContext.jsx';
+import {useSnackbar} from '../contexts/SnackbarContext.jsx';
 // NEW: formats and shapefile loader
 import GeoJSON from 'ol/format/GeoJSON';
 import shp from 'shpjs';
@@ -213,6 +214,7 @@ export default function MapViewer() {
     const {setSelectedEntityId} = useSelectedEntity();
     const { baseDateSearchFailed, clearBaseDateSearchFailed } = useForecastSession();
     const runtimeConfig = useConfig();
+    const {enqueueSnackbar} = useSnackbar();
     const ENTITIES_SOURCE_EPSG = runtimeConfig?.ENTITIES_SOURCE_EPSG || 'EPSG:4326';
     const lastRegisteredProjRef = useRef(null);
 
@@ -260,6 +262,7 @@ export default function MapViewer() {
     useEffect(() => {
         if (!containerRef.current) return;
         if (mapInstanceRef.current) return; // already created
+        if (!runtimeConfig || !runtimeConfig.__workspacesLoaded) return; // wait for config to be fully loaded
 
         // Safety: remove any leftover children (e.g. from hot reload)
         while (containerRef.current.firstChild) {
@@ -267,116 +270,148 @@ export default function MapViewer() {
         }
 
         (async () => {
-            // Try capabilities
-            let wmtsOptionsCache = {};
-            try {
-                const url = 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetCapabilities';
-                const text = await fetch(url).then(r => r.text());
-                const caps = new WMTSCapabilities().read(text);
-                const desired = [ // List: https://geoservices.ign.fr/services-geoplateforme-diffusion
-                    'GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2',
-                    'ORTHOIMAGERY.ORTHOPHOTOS',
-                    'ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW',
-                    'ADMINEXPRESS-COG.LATEST',
-                    'HYDROGRAPHY.BCAE.LATEST',
-                    'HYDROGRAPHY.HYDROGRAPHY'
-                ];
-                desired.forEach(layerId => {
-                    const opts = optionsFromCapabilities(caps, {
-                        layer: layerId,
-                        matrixSet: 'PM',
-                        style: 'normal'
-                    });
-                    if (opts) wmtsOptionsCache[layerId] = opts;
-                });
-            } catch {
-                // Fallback: manual grid + minimal options
-                const makeManual = (layer, format) => ({
-                    url: 'https://data.geopf.fr/wmts',
-                    layer,
-                    matrixSet: 'PM',
-                    format,
-                    style: 'normal',
-                    projection: 'EPSG:3857',
-                    tileGrid: MANUAL_PM,
-                    attributions: '© IGN, Geoportail'
-                });
-                wmtsOptionsCache = {
-                    'GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2': makeManual('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png'),
-                    'ORTHOIMAGERY.ORTHOPHOTOS': makeManual('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg'),
-                    'ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW': makeManual('ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW', 'image/png'),
-                    'ADMINEXPRESS-COG.LATEST': makeManual('ADMINEXPRESS-COG.LATEST', 'image/png'),
-                    'HYDROGRAPHY.BCAE.LATEST': {
-                        ...makeManual('HYDROGRAPHY.BCAE.LATEST', 'image/png'),
-                        style: 'nolegend'
-                    },
-                    'HYDROGRAPHY.HYDROGRAPHY': {
-                        ...makeManual('HYDROGRAPHY.HYDROGRAPHY', 'image/png'),
-                        style: 'nolegend'
+            // Collect WMTS layers by URL
+            const wmtsRequests = {};
+            const providerMap = {};
+            if (runtimeConfig.providers) {
+                runtimeConfig.providers.forEach(p => providerMap[p.name] = p);
+            }
+            if (runtimeConfig.baseLayers) {
+                runtimeConfig.baseLayers.forEach(item => {
+                    if (item.source === 'wmts' && item.wmtsLayer && item.provider) {
+                        const provider = providerMap[item.provider];
+                        if (provider) {
+                            const url = provider.wmtsUrl;
+                            if (!wmtsRequests[url]) wmtsRequests[url] = [];
+                            wmtsRequests[url].push(item);
+                        }
                     }
-                };
+                });
+            }
+            if (runtimeConfig.overlayLayers) {
+                runtimeConfig.overlayLayers.forEach(item => {
+                    if (item.source === 'wmts' && item.wmtsLayer && item.provider) {
+                        const provider = providerMap[item.provider];
+                        if (provider) {
+                            const url = provider.wmtsUrl;
+                            if (!wmtsRequests[url]) wmtsRequests[url] = [];
+                            wmtsRequests[url].push(item);
+                        }
+                    }
+                });
             }
 
+            // Fetch capabilities for each URL
+            let wmtsOptionsCache = {};
+            for (const [url, items] of Object.entries(wmtsRequests)) {
+                try {
+                    const text = await fetch(url).then(r => r.text());
+                    const caps = new WMTSCapabilities().read(text);
+                    items.forEach(item => {
+                        // Try with specified style first, then fallback to default
+                        let opts = null;
+                        if (item.style) {
+                            try {
+                                opts = optionsFromCapabilities(caps, {
+                                    layer: item.wmtsLayer,
+                                    matrixSet: 'PM',
+                                    style: item.style
+                                });
+                            } catch (e) {
+                                if (config.API_DEBUG) console.warn(`Style "${item.style}" not found for layer ${item.wmtsLayer}, trying default`, e);
+                            }
+                        }
+                        // Fallback to no style parameter (uses default)
+                        if (!opts) {
+                            try {
+                                opts = optionsFromCapabilities(caps, {
+                                    layer: item.wmtsLayer,
+                                    matrixSet: 'PM'
+                                });
+                            } catch (e) {
+                                if (config.API_DEBUG) console.warn(`Failed to get options for layer ${item.wmtsLayer}`, e);
+                            }
+                        }
+                        if (opts) {
+                            wmtsOptionsCache[item.wmtsLayer] = opts;
+                        } else {
+                            enqueueSnackbar(`Failed to load layer ${item.title}: layer not found in capabilities`, { variant: 'warning' });
+                        }
+                    });
+                } catch (error) {
+                    items.forEach(item => {
+                        enqueueSnackbar(`Failed to load layer ${item.title}: ${error.message}`, { variant: 'warning' });
+                    });
+                }
+            }
+
+            // Create base layers: hard-coded Esri and OSM, plus config-driven
+            const baseLayersArray = [
+                new TileLayer({
+                    title: t('map.layers.esri'),
+                    type: 'base',
+                    visible: false,
+                    source: new XYZ({
+                        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                        attributions: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+                    })
+                }),
+                new TileLayer({
+                    title: t('map.layers.osm'),
+                    type: 'base',
+                    visible: false,
+                    source: new OSM()
+                })
+            ];
+            if (runtimeConfig.baseLayers) {
+                runtimeConfig.baseLayers.forEach(item => {
+                    let source;
+                    if (item.source === 'wmts') {
+                        const wmtsOptions = wmtsOptionsCache[item.wmtsLayer];
+                        if (wmtsOptions) {
+                            source = new WMTS(wmtsOptions);
+                        }
+                    }
+                    if (source) {
+                        baseLayersArray.push(new TileLayer({
+                            title: item.title,
+                            type: item.type || 'base',
+                            visible: !!item.visible,
+                            source
+                        }));
+                    }
+                });
+            }
             const baseLayers = new LayerGroup({
                 title: t('map.baseLayers'),
                 fold: 'open',
-                layers: [
-                    new TileLayer({
-                        title: t('map.layers.esri'),
-                        type: 'base',
-                        visible: false,
-                        source: new XYZ({
-                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                            attributions: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-                        })
-                    }),
-                    new TileLayer({
-                        title: t('map.layers.osm'),
-                        type: 'base',
-                        visible: false,
-                        source: new OSM()
-                    }),
-                    new TileLayer({
-                        title: t('map.layers.shadow'),
-                        type: 'base',
-                        visible: false,
-                        source: new WMTS(wmtsOptionsCache['ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'])
-                    }),
-                    new TileLayer({
-                        title: t('map.layers.ortho'),
-                        type: 'base',
-                        visible: false,
-                        source: new WMTS(wmtsOptionsCache['ORTHOIMAGERY.ORTHOPHOTOS'])
-                    }),
-                    new TileLayer({
-                        title: t('map.layers.planIgn'),
-                        type: 'base',
-                        visible: true,
-                        source: new WMTS(wmtsOptionsCache['GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'])
-                    }),
-                ]
+                layers: baseLayersArray
             });
 
+            // Create overlay layers from config
+            const overlayLayersArray = [];
+            if (runtimeConfig.overlayLayers) {
+                runtimeConfig.overlayLayers.forEach(item => {
+                    let source;
+                    if (item.source === 'wmts') {
+                        const wmtsOptions = wmtsOptionsCache[item.wmtsLayer];
+                        if (wmtsOptions) {
+                            source = new WMTS(wmtsOptions);
+                        }
+                    }
+                    if (source) {
+                        overlayLayersArray.push(new TileLayer({
+                            title: item.title,
+                            visible: !!item.visible,
+                            source
+                        }));
+                    }
+                });
+            }
             const overlayLayers = new LayerGroup({
                 title: t('map.overlays'),
                 fold: 'open',
-                layers: [
-                    new TileLayer({
-                        title: t('map.layers.adminIgn'),
-                        visible: false,
-                        source: new WMTS(wmtsOptionsCache['ADMINEXPRESS-COG.LATEST'])
-                    }),
-                    new TileLayer({
-                        title: t('map.layers.bcae'),
-                        visible: false,
-                        source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.BCAE.LATEST'])
-                    }),
-                    new TileLayer({
-                        title: t('map.layers.hydro'),
-                        visible: false,
-                        source: new WMTS(wmtsOptionsCache['HYDROGRAPHY.HYDROGRAPHY'])
-                    })
-                ]
+                layers: overlayLayersArray
             });
             overlayGroupRef.current = overlayLayers; // keep ref for dynamic layers
 
@@ -432,7 +467,8 @@ export default function MapViewer() {
                 mapInstanceRef.current = null;
             }
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [runtimeConfig]);
 
     // Auto-dismiss the temporary overlay after 2 seconds when search failed
     useEffect(() => {
