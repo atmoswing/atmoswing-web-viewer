@@ -28,3 +28,4 @@ dist-ssr
 public/config.json
 lint.json
 lint.txt
+public/gis-layers/

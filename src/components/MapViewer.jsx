@@ -26,11 +26,160 @@ import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
 import {valueToColor} from '../utils/colors.js';
 import {useConfig} from '../contexts/ConfigContext.jsx';
+// NEW: formats and shapefile loader
+import GeoJSON from 'ol/format/GeoJSON';
+import shp from 'shpjs';
 
 // Add projection imports
 import proj4 from 'proj4';
 import {register} from 'ol/proj/proj4';
 import {transform} from 'ol/proj';
+
+function ensureProjDefined(epsg) {
+    if (!epsg || !String(epsg).startsWith('EPSG:')) return;
+    if (proj4.defs[epsg]) return;
+    if (epsg === 'EPSG:2154') {
+        proj4.defs('EPSG:2154', '+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
+    } else if (epsg === 'EPSG:2056') {
+        proj4.defs('EPSG:2056', '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs +type=crs');
+    }
+    try { register(proj4); } catch (_) {}
+}
+
+// Style helpers
+function toRGBA(input, alphaFallback = 1) {
+    if (!input) return `rgba(0,0,0,${alphaFallback})`;
+    if (typeof input === 'string') {
+        const s = input.trim();
+        if (s.startsWith('#')) {
+            const hex = s.slice(1);
+            const bigint = parseInt(hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgba(${r},${g},${b},${alphaFallback})`;
+        }
+        if (s.startsWith('rgb')) return s; // already rgb/rgba
+        // QGIS style color like "r,g,b,a"
+        const parts = s.split(',').map(x => Number(x.trim())).filter(n => !Number.isNaN(n));
+        if (parts.length >= 3) {
+            const [r,g,b,a] = parts;
+            const alpha = (a != null ? (a > 1 ? a/255 : a) : alphaFallback);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+    }
+    if (Array.isArray(input)) {
+        const [r,g,b,a] = input;
+        const alpha = (a != null ? (a > 1 ? a/255 : a) : alphaFallback);
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+    return `rgba(0,0,0,${alphaFallback})`;
+}
+
+function styleFromConfigObj(obj = {}) {
+    // Accept compact or nested definition
+    const line = obj.line || {};
+    const polygon = obj.polygon || {};
+    const point = obj.point || obj.circle || {};
+
+    const lineStroke = line.stroke || {};
+    const polygonStroke = polygon.stroke || {};
+    const polygonFill = polygon.fill || {};
+    const pointCircle = point.circle || point;
+    const pointStroke = pointCircle.stroke || {};
+    const pointFill = pointCircle.fill || {};
+
+    const lineStyle = new Style({ stroke: new Stroke({ color: toRGBA(lineStroke.color || obj.strokeColor || '#0066ff'), width: Number(lineStroke.width || obj.strokeWidth || 2) }) });
+    const polygonStyle = new Style({
+        stroke: new Stroke({ color: toRGBA(polygonStroke.color || obj.strokeColor || '#0066ff'), width: Number(polygonStroke.width || obj.strokeWidth || 2) }),
+        fill: new Fill({ color: toRGBA(polygonFill.color || obj.fillColor || 'rgba(0,102,255,0.15)') })
+    });
+    const pointStyle = new Style({
+        image: new CircleStyle({
+            radius: Number(pointCircle.radius || obj.radius || 5),
+            stroke: new Stroke({ color: toRGBA(pointStroke.color || obj.strokeColor || '#003b8e'), width: Number(pointStroke.width || obj.strokeWidth || 1.5) }),
+            fill: new Fill({ color: toRGBA(pointFill.color || obj.fillColor || 'rgba(0,102,255,0.7)') })
+        })
+    });
+    return (feature) => {
+        const geomType = feature.getGeometry()?.getType?.() || '';
+        if (geomType.includes('Polygon')) return polygonStyle;
+        if (geomType.includes('LineString')) return lineStyle;
+        return pointStyle;
+    };
+}
+
+async function tryLoadQmlStyle(styleUrl) {
+    try {
+        const res = await fetch(styleUrl, { cache: 'no-store' });
+        if (!res.ok) return null;
+        const text = await res.text();
+        const dom = new DOMParser().parseFromString(text, 'application/xml');
+        // Try to read simple symbol layer properties
+        const props = {};
+        dom.querySelectorAll('prop').forEach(p => {
+            const k = p.getAttribute('k');
+            const v = p.getAttribute('v');
+            if (k && v) props[k] = v;
+        });
+        // Derive simple styles
+        const line = {
+            stroke: {
+                color: props.line_color || props.outline_color || '#0066ff',
+                width: Number(props.line_width || props.outline_width || 2)
+            }
+        };
+        const polygon = {
+            stroke: {
+                color: props.outline_color || props.border_color || props.stroke_color || '#0066ff',
+                width: Number(props.outline_width || props.stroke_width || 2)
+            },
+            fill: {
+                color: props.color || props.fill_color || '0,102,255,64'
+            }
+        };
+        const point = {
+            circle: {
+                radius: Number(props.size || 5),
+                stroke: { color: props.outline_color || '#003b8e', width: Number(props.outline_width || 1.5) },
+                fill: { color: props.color || '0,102,255,180' }
+            }
+        };
+        return styleFromConfigObj({ line, polygon, point });
+    } catch (_) {
+        return null;
+    }
+}
+
+function candidateStyleUrlsForDataUrl(dataUrl) {
+    try {
+        const u = new URL(dataUrl, window.location.origin);
+        const path = u.pathname;
+        const base = path.replace(/\.(zip|shp|geojson|json)$/i, '');
+        const qml = `${u.origin}${base}.qml`;
+        const qmd = `${u.origin}${base}.qmd`;
+        return [qml, qmd];
+    } catch {
+        // Fallback for relative URLs
+        const base = dataUrl.replace(/\.(zip|shp|geojson|json)$/i, '');
+        return [`${base}.qml`, `${base}.qmd`];
+    }
+}
+
+async function resolveOverlayStyle(item, defaultsStyleFn) {
+    // 1) style from config
+    if (item && item.style) {
+        try { return styleFromConfigObj(item.style); } catch (_) {}
+    }
+    // 2) look for style definition file (.qml / .qmd)
+    const candidates = candidateStyleUrlsForDataUrl(item?.url || '');
+    for (const url of candidates) {
+        const s = await tryLoadQmlStyle(url);
+        if (s) return s;
+    }
+    // 3) fallback
+    return defaultsStyleFn;
+}
 
 // Define the Pseudo-Mercator (PM) tile grid manually
 const MANUAL_PM = (() => {
@@ -52,6 +201,7 @@ export default function MapViewer() {
     const containerRef = useRef(null);
     const mapInstanceRef = useRef(null); // guard
     const forecastLayerRef = useRef(null);
+    const overlayGroupRef = useRef(null); // NEW: keep a ref to overlays group to add config-driven layers
     const lastFittedWorkspaceRef = useRef(null); // track which workspace we already fitted
     const [mapReady, setMapReady] = useState(false); // NEW: flag when map & forecast layer initialized
 
@@ -226,6 +376,7 @@ export default function MapViewer() {
                     })
                 ]
             });
+            overlayGroupRef.current = overlayLayers; // keep ref for dynamic layers
 
             // Forecast vector layer
             forecastLayerRef.current = new VectorLayer({
@@ -322,6 +473,99 @@ export default function MapViewer() {
             map.un('pointerout', handleOut);
         };
     }, [mapInstanceRef.current]);
+
+    // NEW: Manage overlay layers coming from workspace config
+    useEffect(() => {
+        if (!mapReady) return;
+        const group = overlayGroupRef.current;
+        if (!group) return;
+        const layersCollection = group.getLayers();
+        // Remove previous config-driven layers
+        try {
+            layersCollection.getArray()
+                .filter(l => l && l.get && l.get('__fromWorkspaceConfig'))
+                .forEach(l => layersCollection.remove(l));
+        } catch (_) {}
+        // Resolve selected workspace config
+        const ws = runtimeConfig?.workspaces?.find(w => w.key === workspace);
+        const items = (ws && Array.isArray(ws.shapefiles)) ? ws.shapefiles : [];
+        if (!items.length) return;
+
+        // Basic style helpers
+        const lineStyle = new Style({ stroke: new Stroke({ color: 'rgba(0, 102, 255, 0.9)', width: 2 }) });
+        const polygonStyle = new Style({
+            stroke: new Stroke({ color: 'rgba(0, 102, 255, 0.9)', width: 2 }),
+            fill: new Fill({ color: 'rgba(0, 102, 255, 0.15)' })
+        });
+        const pointStyle = new Style({
+            image: new CircleStyle({ radius: 5, stroke: new Stroke({ color: '#003b8e', width: 1.5 }), fill: new Fill({ color: 'rgba(0, 102, 255, 0.7)' }) })
+        });
+        const styleFn = feature => {
+            const geomType = feature.getGeometry()?.getType?.() || '';
+            if (geomType.includes('Polygon')) return polygonStyle;
+            if (geomType.includes('LineString')) return lineStyle;
+            return pointStyle;
+        };
+
+        const addLayerForItem = (item) => {
+            const title = item.name || 'Layer';
+            const url = item.url;
+            const dataProj = item.projection || item.epsg || 'EPSG:4326';
+            ensureProjDefined(dataProj);
+            const src = new VectorSource();
+            const layer = new VectorLayer({
+                title,
+                visible: !!item.display,
+                source: src,
+                style: styleFn
+            });
+            layer.set('__fromWorkspaceConfig', true);
+
+            // Resolve style asynchronously (config style > .qml > default)
+            resolveOverlayStyle(item, styleFn).then(sfn => {
+                try { layer.setStyle(sfn); } catch (_) {}
+            });
+
+            const lower = String(url).toLowerCase();
+            if (lower.endsWith('.geojson') || lower.endsWith('.json')) {
+                // Load as GeoJSON
+                fetch(url, { cache: 'no-store' })
+                    .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+                    .then(json => {
+                        const fmt = new GeoJSON();
+                        try {
+                            ensureProjDefined(dataProj);
+                            const feats = fmt.readFeatures(json, { dataProjection: dataProj, featureProjection: 'EPSG:3857' });
+                            src.addFeatures(feats);
+                        } catch (e) {
+                            if (config.API_DEBUG) console.warn('Failed to parse GeoJSON for overlay', title, e);
+                        }
+                    })
+                    .catch(e => { if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e); });
+            } else if (lower.endsWith('.zip') || lower.endsWith('.shp')) {
+                // Load as Shapefile via shpjs; if .shp, it will attempt to fetch sidecars (.dbf/.shx/.prj)
+                shp(url)
+                    .then(geojson => {
+                        const fmt = new GeoJSON();
+                        try {
+                            // shpjs typically outputs GeoJSON in WGS84 (EPSG:4326) when .prj is present.
+                            const feats = fmt.readFeatures(geojson, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+                            src.addFeatures(feats);
+                            if (config.API_DEBUG) console.log(`[overlay] Loaded ${feats.length} features for`, title);
+                        } catch (e) {
+                            if (config.API_DEBUG) console.warn('Failed to parse Shapefile (as GeoJSON) for overlay', title, e);
+                        }
+                    })
+                    .catch(e => { if (config.API_DEBUG) console.warn('Failed to load Shapefile overlay', title, e); });
+            } else {
+                if (config.API_DEBUG) console.warn('Unsupported overlay URL (expect .geojson/.json/.shp/.zip):', url);
+            }
+
+            layersCollection.push(layer);
+        };
+
+        items.forEach(addLayerForItem);
+    }, [mapReady, workspace, runtimeConfig]);
 
     // Update forecast points when entities or forecast values change
     useEffect(() => {
@@ -485,3 +729,5 @@ export default function MapViewer() {
         </div>
     );
 }
+
+
