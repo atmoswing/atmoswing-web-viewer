@@ -216,6 +216,8 @@ export default function MapViewer() {
     const ENTITIES_SOURCE_EPSG = runtimeConfig?.ENTITIES_SOURCE_EPSG || 'EPSG:4326';
     const lastRegisteredProjRef = useRef(null);
 
+    const layerSwitcherRef = useRef(null);
+
     const [legendStops, setLegendStops] = useState([]); // array of {color, pct}
     const [legendMax, setLegendMax] = useState(1);
     const [tooltip, setTooltip] = useState(null); // {x, y, name, value}
@@ -396,13 +398,14 @@ export default function MapViewer() {
                 controls: []
             });
 
-            mapInstanceRef.current.addControl(
-                new LayerSwitcher({
-                    tipLabel: t('map.layerSwitcherTip'),
-                    groupSelectStyle: 'children',
-                    reverse: true
-                })
-            );
+            const layerSwitcher = new LayerSwitcher({
+                tipLabel: t('map.layerSwitcherTip'),
+                groupSelectStyle: 'children',
+                reverse: true
+            });
+            layerSwitcherRef.current = layerSwitcher; // NEW: store ref to layer switcher instance
+
+            mapInstanceRef.current.addControl(layerSwitcher);
 
             // single-click handler: log clicked station id (attached at creation so handler is always registered)
             const clickHandler = (evt) => {
@@ -565,6 +568,11 @@ export default function MapViewer() {
         };
 
         items.forEach(addLayerForItem);
+
+        // Refresh the layer switcher panel to reflect newly added layers
+        if (layerSwitcherRef.current) {
+            layerSwitcherRef.current.renderPanel();
+        }
     }, [mapReady, workspace, runtimeConfig]);
 
     // Update forecast points when entities or forecast values change
@@ -729,5 +737,3 @@ export default function MapViewer() {
         </div>
     );
 }
-
-
