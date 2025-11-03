@@ -561,7 +561,19 @@ export default function ModalDistributions({open, onClose}){
 
         const overlayXs = [];
         if (percentileMarkers) [20,60,90].forEach(p => { const v = percentileMarkers[p]; if (Number.isFinite(Number(v))) overlayXs.push(Number(v)); });
-        if (referenceValues && Array.isArray(referenceValues.values)) referenceValues.values.forEach(v => { if (Number.isFinite(Number(v))) overlayXs.push(Number(v)); });
+        // Only include reference values that will actually be drawn
+        if (referenceValues && Array.isArray(referenceValues.axis) && Array.isArray(referenceValues.values)) {
+            const allowed = new Set();
+            if (options.tenYearReturn) allowed.add(10);
+            if (options.allReturnPeriods) SELECTED_RPS.forEach(rp => allowed.add(rp));
+            if (allowed.size > 0) {
+                referenceValues.axis.forEach((rp, i) => {
+                    const rpn = Number(rp);
+                    const val = Number(referenceValues.values[i]);
+                    if (allowed.has(rpn) && Number.isFinite(val)) overlayXs.push(val);
+                });
+            }
+        }
         if (bestAnalogsData && Array.isArray(bestAnalogsData)) bestAnalogsData.forEach(b => { if (Number.isFinite(Number(b?.value))) overlayXs.push(Number(b.value)); });
         const rawMax = Math.max(...values, ...(overlayXs.length ? overlayXs : [0]));
         const xMax = (rawMax != null && rawMax > 0) ? rawMax * 1.05 : 1;
@@ -606,7 +618,14 @@ export default function ModalDistributions({open, onClose}){
                     if (Number.isFinite(val10)) {
                         const xPos = x(Number(val10));
                         g.append('line').attr('x1', xPos).attr('x2', xPos).attr('y1', 0).attr('y2', innerH).attr('stroke', TENYR_COLOR).attr('stroke-width', 2);
-                        g.append('text').attr('x', xPos + 2).attr('y', 12).attr('font-size', 11).attr('fill', TENYR_COLOR).attr('text-anchor', 'left').attr('dominant-baseline', 'middle').text('P10');
+                        g.append('text')
+                            .attr('x', xPos + 2)
+                            .attr('y', innerH - 2)
+                            .attr('font-size', 11)
+                            .attr('fill', TENYR_COLOR)
+                            .attr('text-anchor', 'left')
+                            .attr('dominant-baseline', 'text-after-edge')
+                            .text('P10');
                     }
                 }
             }
@@ -623,7 +642,14 @@ export default function ModalDistributions({open, onClose}){
                     const gVal = Math.round(255 - ratio * 255);
                     const clr = `rgb(255, ${gVal}, 0)`;
                     g.append('line').attr('x1', xPos).attr('x2', xPos).attr('y1', 0).attr('y2', innerH).attr('stroke', clr).attr('stroke-width', 2).attr('stroke-opacity', 0.95);
-                    g.append('text').attr('x', xPos + 2).attr('y', 12).attr('font-size', 11).attr('fill', clr).attr('text-anchor', 'left').attr('dominant-baseline', 'middle').text(`P${rp}`);
+                    g.append('text')
+                        .attr('x', xPos + 2)
+                        .attr('y', innerH - 2)
+                        .attr('font-size', 11)
+                        .attr('fill', clr)
+                        .attr('text-anchor', 'left')
+                        .attr('dominant-baseline', 'text-after-edge')
+                        .text(`P${rp}`);
                 });
             }
         }
