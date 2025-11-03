@@ -32,6 +32,9 @@ const resources = {
             },
             "toolbar": {
                 "forecastOf": "Forecast of {{date}}",
+                "pickDateTime": "Pick forecast date and hour",
+                "date": "Date",
+                "hour": "Hour",
                 "loading": "Loading...",
                 "searching": "Searching...",
                 "restoreLastForecast": "Restore last forecast"
@@ -102,7 +105,47 @@ const resources = {
                 "noReferenceValues": "No reference values",
                 "noPreviousForecastsAvailable": "No previous forecasts available",
                 "export": "Export"
-            }
+            },
+            "distributionPlots": {
+                "title": "Distribution plots",
+                "predist": "Predictands distribution",
+                "critdist": "Criteria distribution",
+                "analogsPrecipTitle": "Analogs precipitation distribution",
+                "cumulativeFrequency": "Cumulative frequency",
+                "noAnalogs": "No analog values for the selected method/config/entity/lead.",
+                "criteriaTitle": "Criteria distribution",
+                "noCriteria": "No criteria values available for the selected selection."
+            },
+            "modalAnalogs": {
+                "title": "Analogs details",
+                "close": "Close",
+                "entity": "Entity",
+                "method": "Method",
+                "config": "Configuration",
+                "station": "Station",
+                "lead": "Lead time",
+                "analogsList": "Analogs",
+                "loading": "Loading...",
+                "noMethods": "No methods",
+                "noConfigs": "No configurations",
+                "loadingMethods": "Loading methods...",
+                "loadingStations": "Loading stations...",
+                "noStations": "No stations",
+                "loadingEntities": "Loading entities...",
+                "noEntities": "No entities",
+                "noLeads": "No lead times",
+                "loadingAnalogs": "Loading analogs...",
+                "errorLoadingMethods": "Error loading methods",
+                "errorLoadingAnalogs": "Error loading analogs",
+                "colDate": "Date",
+                "colValue": "Value",
+                "colPrecipitation": "Precipitation",
+                "precipitation": "Precipitation",
+                "colCriteria": "Criteria",
+                "relevant": "Relevant"
+            },
+            "cancel": "Cancel",
+            "ok": "OK"
         }
     },
     fr: {
@@ -135,6 +178,9 @@ const resources = {
             },
             "toolbar": {
                 "forecastOf": "Prévision du {{date}}",
+                "pickDateTime": "Choisir la date et l'heure de la prévision",
+                "date": "Date",
+                "hour": "Heure",
                 "loading": "Chargement...",
                 "searching": "Recherche...",
                 "restoreLastForecast": "Restaurer la dernière prévision"
@@ -205,9 +251,49 @@ const resources = {
                 "noReferenceValues": "Aucune valeur de référence",
                 "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
                 "export": "Exporter"
-            }
+            },
+            "distributionPlots": {
+                "title": "Graphiques de distribution",
+                "predist": "Distribution des prédictands",
+                "critdist": "Distribution des critères",
+                "analogsPrecipTitle": "Distribution des précipitations des analogues",
+                "cumulativeFrequency": "Fréquence cumulative",
+                "noAnalogs": "Aucune valeur analogue pour la méthode/configuration/entité/échéance sélectionnée.",
+                "criteriaTitle": "Distribution des critères",
+                "noCriteria": "Aucune valeur de critère disponible pour la sélection."
+            },
+            "modalAnalogs": {
+                "title": "Détails des analogues",
+                "close": "Fermer",
+                "entity": "Entité",
+                "method": "Méthode",
+                "config": "Configuration",
+                "station": "Station",
+                "lead": "Échéance",
+                "analogsList": "Analogues",
+                "loading": "Chargement...",
+                "noMethods": "Aucune méthode",
+                "noConfigs": "Aucune configuration",
+                "loadingMethods": "Chargement des méthodes...",
+                "loadingStations": "Chargement des stations...",
+                "noStations": "Aucune station",
+                "loadingEntities": "Chargement des entités...",
+                "noEntities": "Aucune entité",
+                "noLeads": "Aucune échéance",
+                "loadingAnalogs": "Chargement des analogues...",
+                "errorLoadingMethods": "Erreur lors du chargement des méthodes",
+                "errorLoadingAnalogs": "Erreur lors du chargement des analogues",
+                "colDate": "Date",
+                "colValue": "Valeur",
+                "colPrecipitation": "Précipitation",
+                "precipitation": "Précipitation",
+                "colCriteria": "Critère",
+                "relevant": "Pertinent"
+            },
+            "cancel": "Annuler",
+            "ok": "OK"
         }
-    }
+    },
 };
 
 i18n

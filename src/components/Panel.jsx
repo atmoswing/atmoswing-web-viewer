@@ -8,7 +8,7 @@ export default function Panel({title, children, defaultOpen = false}) {
             <div className="panel-header" onClick={() => setOpen(o => !o)}>
                 {title}
             </div>
-            {open && <div className="panel-content">{children}</div>}
+            {open && <div className="panel-content" style={{display: 'flex', flexDirection: 'column', minHeight: 0}}>{children}</div>}
         </div>
     );
 }
