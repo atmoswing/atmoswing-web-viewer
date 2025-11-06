@@ -7,11 +7,13 @@ import { useMethods } from '../contexts/ForecastsContext.jsx';
 import { useForecastSession } from '../contexts/ForecastsContext.jsx';
 import { useEffect, useState } from 'react';
 import { getAnalogDates, getAnalogyCriteria } from '../services/api.js';
+import { useSynthesis } from '../contexts/SynthesisContext.jsx'; // added
 
 export default function PanelAnalogDates(props) {
     const { t } = useTranslation();
     const { selectedMethodConfig } = useMethods();
-    const { workspace, activeForecastDate } = useForecastSession();
+    const { workspace, activeForecastDate, forecastBaseDate } = useForecastSession(); // added forecastBaseDate
+    const { selectedLead, leadResolution, dailyLeads, subDailyLeads, selectedTargetDate } = useSynthesis(); // synthesis selections
 
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -35,12 +37,25 @@ export default function PanelAnalogDates(props) {
                 setRows([]);
                 return;
             }
+            // Compute lead hours analogous to ForecastValuesContext
+            let leadHours = 0;
+            if (forecastBaseDate && selectedTargetDate) {
+                leadHours = Math.max(0, Math.round((selectedTargetDate.getTime() - forecastBaseDate.getTime()) / 3600000));
+            } else {
+                if (leadResolution === 'sub') {
+                    const step = subDailyLeads[selectedLead]?.time_step || (subDailyLeads[0]?.time_step || 0);
+                    leadHours = step * selectedLead;
+                } else {
+                    const step = dailyLeads[selectedLead]?.time_step || (dailyLeads[0]?.time_step || 24);
+                    leadHours = step * selectedLead;
+                }
+            }
             setLoading(true);
             try {
-                // Fetch analog dates (array of ISO strings) and criteria (parallel)
+                // Fetch analog dates (array of ISO strings) and criteria (parallel) using selected leadHours
                 const [datesResp, criteriaResp] = await Promise.allSettled([
-                    getAnalogDates(workspace, activeForecastDate, methodId, configId, 0),
-                    getAnalogyCriteria(workspace, activeForecastDate, methodId, configId, 0)
+                    getAnalogDates(workspace, activeForecastDate, methodId, configId, leadHours),
+                    getAnalogyCriteria(workspace, activeForecastDate, methodId, configId, leadHours)
                 ]);
 
                 if (cancelled) return;
@@ -76,7 +91,7 @@ export default function PanelAnalogDates(props) {
                         const mm = String(D.getMonth() + 1).padStart(2, '0');
                         const yyyy = D.getFullYear();
                         return `${dd}.${mm}.${yyyy}`;
-                    } catch (e) {
+                    } catch {
                         return String(s);
                     }
                 };
@@ -90,7 +105,7 @@ export default function PanelAnalogDates(props) {
                 }));
 
                 setRows(mapped);
-            } catch (e) {
+            } catch {
                 setRows([]);
             } finally {
                 if (!cancelled) setLoading(false);
@@ -98,7 +113,7 @@ export default function PanelAnalogDates(props) {
         }
         run();
         return () => { cancelled = true; };
-    }, [configId, methodId, workspace, activeForecastDate]);
+    }, [configId, methodId, workspace, activeForecastDate, forecastBaseDate, selectedTargetDate, selectedLead, leadResolution, dailyLeads, subDailyLeads]);
 
     // Don't render the panel at all if there's no selected configuration
     if (!configId) return null;
