@@ -399,6 +399,92 @@ export default function MapViewer() {
                             source = new WMTS(wmtsOptions);
                         }
                     }
+                    // NEW: support dynamic GeoJSON overlays with refresh and styling
+                    if (item.source === 'geojson' && item.url) {
+                        const dataProjection = item.epsg || 'EPSG:4326';
+                        ensureProjDefined(dataProjection);
+                        const vectorSource = new VectorSource();
+                        const colorMap = item.colors || {};
+                        const valueAttr = item.valueAttr || 'value';
+                        const cfgLineWidth = Number(item.lineWidth);
+                        const strokeWidthLine = Number.isFinite(cfgLineWidth) ? cfgLineWidth : 2;
+                        const strokeWidthPolygon = Number.isFinite(cfgLineWidth) ? cfgLineWidth : 1.5;
+                        // Cache a style set (point/line/polygon) per color
+                        const styleCache = new globalThis.Map();
+                        const styleSetForColor = (color) => {
+                            if (styleCache.has(color)) return styleCache.get(color);
+                            const point = new Style({
+                                image: new CircleStyle({ radius: 6, stroke: new Stroke({ color: 'rgba(0,0,0,0.6)', width: 1.5 }), fill: new Fill({ color }) })
+                            });
+                            const line = new Style({ stroke: new Stroke({ color, width: strokeWidthLine }) });
+                            const polygon = new Style({
+                                stroke: new Stroke({ color, width: strokeWidthPolygon }),
+                                fill: new Fill({ color: color.includes('rgba(') ? color : `${toRGBA(color, 0.25)}` })
+                            });
+                            const set = { point, line, polygon };
+                            styleCache.set(color, set);
+                            return set;
+                        };
+                        const layer = new VectorLayer({
+                            title: item.title || 'Overlay',
+                            visible: !!item.visible,
+                            source: vectorSource,
+                            style: (feature) => {
+                                const v = feature.get(valueAttr);
+                                const val = v != null && v !== '' ? Number(v) : undefined;
+                                const useVal = Number.isFinite(val) ? val : v;
+                                const color = colorMap[String(useVal)] || '#888888';
+                                const styles = styleSetForColor(color);
+                                const geomType = feature.getGeometry()?.getType?.() || '';
+                                if (geomType.includes('Polygon')) return styles.polygon;
+                                if (geomType.includes('LineString')) return styles.line;
+                                return styles.point;
+                            }
+                        });
+
+                        // Helper to add cache-busting param that changes every hour
+                        const withHourlyBuster = (url) => {
+                            const hourKey = Math.floor(Date.now() / (60 * 60 * 1000));
+                            try {
+                                const u = new URL(url, window.location.origin);
+                                u.searchParams.set('_ts', String(hourKey));
+                                return u.toString();
+                            } catch {
+                                const sep = url.includes('?') ? '&' : '?';
+                                return `${url}${sep}_ts=${hourKey}`;
+                            }
+                        };
+
+                        const loadOnce = () => {
+                            const fetchUrl = withHourlyBuster(item.url);
+                            return fetch(fetchUrl, { cache: 'no-store' })
+                                .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+                                .then(json => {
+                                    const fmt = new GeoJSON();
+                                    let feats = [];
+                                    try {
+                                        feats = fmt.readFeatures(json, { dataProjection, featureProjection: 'EPSG:3857' });
+                                    } catch (e) {
+                                        if (config.API_DEBUG) console.warn('Failed to parse GeoJSON features', e);
+                                    }
+                                    vectorSource.clear(true);
+                                    if (feats && feats.length) vectorSource.addFeatures(feats);
+                                })
+                                .catch(err => {
+                                    if (config.API_DEBUG) console.warn(`Failed to load GeoJSON overlay ${item.title}:`, err);
+                                });
+                        };
+
+                        // Initial load and schedule refresh
+                        loadOnce();
+                        const minutes = Number.isFinite(Number(item.refreshMinutes)) ? Number(item.refreshMinutes) : 60;
+                        const intervalMs = Math.max(1, minutes) * 60 * 1000;
+                        const timer = setInterval(loadOnce, intervalMs);
+                        try { layer.set('__refreshTimer', timer); } catch(_) {}
+
+                        overlayLayersArray.push(layer);
+                    }
+
                     if (source) {
                         overlayLayersArray.push(new TileLayer({
                             title: item.title,
@@ -461,6 +547,16 @@ export default function MapViewer() {
 
         return () => {
             if (mapInstanceRef.current) {
+                // Clear any refresh timers on overlay layers
+                try {
+                    const group = overlayGroupRef.current;
+                    if (group) {
+                        group.getLayers().getArray().forEach(l => {
+                            const timer = l && l.get && l.get('__refreshTimer');
+                            if (timer) clearInterval(timer);
+                        });
+                    }
+                } catch (_) {}
                 // remove click handler if present
                 try { if (mapInstanceRef.current.__singleClickHandler) mapInstanceRef.current.un('singleclick', mapInstanceRef.current.__singleClickHandler); } catch (_) {}
                 mapInstanceRef.current.setTarget(null);
