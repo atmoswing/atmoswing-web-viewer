@@ -12,7 +12,6 @@ import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
 import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
 import WMTSCapabilities from 'ol/format/WMTSCapabilities';
-import WMTSTileGrid from 'ol/tilegrid/WMTS';
 import LayerSwitcher from 'ol-layerswitcher';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -31,171 +30,18 @@ import {useSnackbar} from '../../contexts/SnackbarContext.jsx';
 import GeoJSON from 'ol/format/GeoJSON';
 import shp from 'shpjs';
 
+// Projection / style utils extracted
+import { ensureProjDefined } from '../../utils/olProjectionUtils.js';
+import { toRGBA, resolveOverlayStyle } from '../../utils/olStyleUtils.js';
+
 // Add projection imports
 import proj4 from 'proj4';
 import {register} from 'ol/proj/proj4';
 import {transform} from 'ol/proj';
 
-function ensureProjDefined(epsg) {
-    if (!epsg || !String(epsg).startsWith('EPSG:')) return;
-    if (proj4.defs[epsg]) return;
-    if (epsg === 'EPSG:2154') {
-        proj4.defs('EPSG:2154', '+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
-    } else if (epsg === 'EPSG:2056') {
-        proj4.defs('EPSG:2056', '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs +type=crs');
-    }
-    try { register(proj4); } catch (_) {}
-}
-
-// Style helpers
-function toRGBA(input, alphaFallback = 1) {
-    if (!input) return `rgba(0,0,0,${alphaFallback})`;
-    if (typeof input === 'string') {
-        const s = input.trim();
-        if (s.startsWith('#')) {
-            const hex = s.slice(1);
-            const bigint = parseInt(hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex, 16);
-            const r = (bigint >> 16) & 255;
-            const g = (bigint >> 8) & 255;
-            const b = bigint & 255;
-            return `rgba(${r},${g},${b},${alphaFallback})`;
-        }
-        if (s.startsWith('rgb')) return s; // already rgb/rgba
-        // QGIS style color like "r,g,b,a"
-        const parts = s.split(',').map(x => Number(x.trim())).filter(n => !Number.isNaN(n));
-        if (parts.length >= 3) {
-            const [r,g,b,a] = parts;
-            const alpha = (a != null ? (a > 1 ? a/255 : a) : alphaFallback);
-            return `rgba(${r},${g},${b},${alpha})`;
-        }
-    }
-    if (Array.isArray(input)) {
-        const [r,g,b,a] = input;
-        const alpha = (a != null ? (a > 1 ? a/255 : a) : alphaFallback);
-        return `rgba(${r},${g},${b},${alpha})`;
-    }
-    return `rgba(0,0,0,${alphaFallback})`;
-}
-
-function styleFromConfigObj(obj = {}) {
-    // Accept compact or nested definition
-    const line = obj.line || {};
-    const polygon = obj.polygon || {};
-    const point = obj.point || obj.circle || {};
-
-    const lineStroke = line.stroke || {};
-    const polygonStroke = polygon.stroke || {};
-    const polygonFill = polygon.fill || {};
-    const pointCircle = point.circle || point;
-    const pointStroke = pointCircle.stroke || {};
-    const pointFill = pointCircle.fill || {};
-
-    const lineStyle = new Style({ stroke: new Stroke({ color: toRGBA(lineStroke.color || obj.strokeColor || '#0066ff'), width: Number(lineStroke.width || obj.strokeWidth || 2) }) });
-    const polygonStyle = new Style({
-        stroke: new Stroke({ color: toRGBA(polygonStroke.color || obj.strokeColor || '#0066ff'), width: Number(polygonStroke.width || obj.strokeWidth || 2) }),
-        fill: new Fill({ color: toRGBA(polygonFill.color || obj.fillColor || 'rgba(0,102,255,0.15)') })
-    });
-    const pointStyle = new Style({
-        image: new CircleStyle({
-            radius: Number(pointCircle.radius || obj.radius || 5),
-            stroke: new Stroke({ color: toRGBA(pointStroke.color || obj.strokeColor || '#003b8e'), width: Number(pointStroke.width || obj.strokeWidth || 1.5) }),
-            fill: new Fill({ color: toRGBA(pointFill.color || obj.fillColor || 'rgba(0,102,255,0.7)') })
-        })
-    });
-    return (feature) => {
-        const geomType = feature.getGeometry()?.getType?.() || '';
-        if (geomType.includes('Polygon')) return polygonStyle;
-        if (geomType.includes('LineString')) return lineStyle;
-        return pointStyle;
-    };
-}
-
-async function tryLoadQmlStyle(styleUrl) {
-    try {
-        const res = await fetch(styleUrl, { cache: 'no-store' });
-        if (!res.ok) return null;
-        const text = await res.text();
-        const dom = new DOMParser().parseFromString(text, 'application/xml');
-        // Try to read simple symbol layer properties
-        const props = {};
-        dom.querySelectorAll('prop').forEach(p => {
-            const k = p.getAttribute('k');
-            const v = p.getAttribute('v');
-            if (k && v) props[k] = v;
-        });
-        // Derive simple styles
-        const line = {
-            stroke: {
-                color: props.line_color || props.outline_color || '#0066ff',
-                width: Number(props.line_width || props.outline_width || 2)
-            }
-        };
-        const polygon = {
-            stroke: {
-                color: props.outline_color || props.border_color || props.stroke_color || '#0066ff',
-                width: Number(props.outline_width || props.stroke_width || 2)
-            },
-            fill: {
-                color: props.color || props.fill_color || '0,102,255,64'
-            }
-        };
-        const point = {
-            circle: {
-                radius: Number(props.size || 5),
-                stroke: { color: props.outline_color || '#003b8e', width: Number(props.outline_width || 1.5) },
-                fill: { color: props.color || '0,102,255,180' }
-            }
-        };
-        return styleFromConfigObj({ line, polygon, point });
-    } catch (_) {
-        return null;
-    }
-}
-
-function candidateStyleUrlsForDataUrl(dataUrl) {
-    try {
-        const u = new URL(dataUrl, window.location.origin);
-        const path = u.pathname;
-        const base = path.replace(/\.(zip|shp|geojson|json)$/i, '');
-        const qml = `${u.origin}${base}.qml`;
-        const qmd = `${u.origin}${base}.qmd`;
-        return [qml, qmd];
-    } catch {
-        // Fallback for relative URLs
-        const base = dataUrl.replace(/\.(zip|shp|geojson|json)$/i, '');
-        return [`${base}.qml`, `${base}.qmd`];
-    }
-}
-
-async function resolveOverlayStyle(item, defaultsStyleFn) {
-    // 1) style from config
-    if (item && item.style) {
-        try { return styleFromConfigObj(item.style); } catch (_) {}
-    }
-    // 2) look for style definition file (.qml / .qmd)
-    const candidates = candidateStyleUrlsForDataUrl(item?.url || '');
-    for (const url of candidates) {
-        const s = await tryLoadQmlStyle(url);
-        if (s) return s;
-    }
-    // 3) fallback
-    return defaultsStyleFn;
-}
-
-// Define the Pseudo-Mercator (PM) tile grid manually
-const MANUAL_PM = (() => {
-    const worldExtent = 40075016.68557849;
-    const tileSize = 256;
-    const baseResolution = worldExtent / tileSize;
-    const maxMatrix = 18;
-    const resolutions = Array.from({length: maxMatrix + 1}, (_, z) => baseResolution / 2 ** z);
-    const matrixIds = resolutions.map((_, z) => z.toString());
-    return new WMTSTileGrid({
-        origin: [-20037508, 20037508],
-        resolutions,
-        matrixIds
-    });
-})();
+// Extracted small UI components
+import MapLegend from './MapLegend.jsx';
+import MapTooltip from './MapTooltip.jsx';
 
 export default function MapViewer() {
     const {t} = useTranslation();
@@ -801,9 +647,6 @@ export default function MapViewer() {
         lastFittedWorkspaceRef.current = null;
     }, [workspace]);
 
-    // Build CSS gradient string
-    const gradientCSS = legendStops.length ? `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})` : 'none';
-
     return (
         <div style={{position: 'relative', width: '100%', height: '100%', background: '#fff'}}>
             <div ref={containerRef} style={{width: '100%', height: '100%'}}/>
@@ -825,47 +668,9 @@ export default function MapViewer() {
                 </div>
             )}
             {/* Legend */}
-            {legendStops.length > 0 && (
-                <div style={{
-                    position: 'absolute',
-                    bottom: 10,
-                    left: 10,
-                    background: isDarkMode ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)',
-                    color: isDarkMode ? '#fff' : '#000',
-                    padding: '8px 10px',
-                    borderRadius: 4,
-                    fontSize: 12,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                }}>
-                    <div style={{fontSize: 14, marginBottom: 2}}>{t('map.legend.title')} (P/P{normalizationRef}, q{percentile})</div>
-                    <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                        <div style={{flex: 1, height: 14, background: gradientCSS, border: `1px solid ${isDarkMode ? '#fff' : '#333'}`}}/>
-                    </div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 2}}>
-                        <span>0</span>
-                        <span>{(legendMax * 0.5).toFixed(1)}</span>
-                        <span>{legendMax.toFixed(1)}</span>
-                    </div>
-                </div>
-            )}
+            <MapLegend legendStops={legendStops} legendMax={legendMax} dark={isDarkMode} title={t('map.legend.title') + ` (P/P${normalizationRef}, q${percentile})`} />
             {/* Tooltip */}
-            {tooltip && (
-                <div style={{
-                    position: 'absolute',
-                    top: tooltip.y + 12,
-                    left: tooltip.x + 12,
-                    background: 'rgba(0,0,0,0.75)',
-                    color: '#fff',
-                    padding: '4px 6px',
-                    borderRadius: 4,
-                    fontSize: 12,
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap'
-                }}>
-                    <div>{tooltip.name}</div>
-                    <div>{t('map.tooltip.value')}: {tooltip.valueRaw == null || isNaN(tooltip.valueRaw) ? 'NaN' : tooltip.valueRaw.toFixed(1)} mm</div>
-                </div>
-            )}
+            <MapTooltip tooltip={tooltip} label={t('map.tooltip.value')} />
         </div>
     );
 }
