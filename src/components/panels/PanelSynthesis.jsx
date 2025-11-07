@@ -1,11 +1,11 @@
-import Panel from './Panel';
+import Panel from './Panel.jsx';
 import React, {useMemo, useCallback} from 'react';
-import {useMethods, useSynthesis} from '../contexts/ForecastsContext.jsx';
-import {valueToColorCSS} from '../utils/colorUtils.js';
-import { SUB_HOURS, isSameDay, makeDayKey, parseDayKey } from '../utils/targetDateUtils.js';
-import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
+import {useMethods, useSynthesis} from '../../contexts/ForecastsContext.jsx';
+import {valueToColorCSS} from '../../utils/colorUtils.js';
+import { SUB_HOURS, isSameDay, makeDayKey, parseDayKey } from '../../utils/targetDateUtils.js';
+import { formatDateDDMMYYYY } from '../../utils/formattingUtils.js';
 import { useTranslation } from 'react-i18next';
-import PanelStatus from './common/PanelStatus.jsx';
+import PanelStatus from './PanelStatus.jsx';
 
 // Local small helpers (kept in this file as they are only used here)
 function SelectionMarker({ size = 6, color = '#2a2a2a' }) {

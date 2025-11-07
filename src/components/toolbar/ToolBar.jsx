@@ -1,14 +1,14 @@
 import React from 'react';
 
-import FrameDistributionsIcon from '../assets/toolbar/frame_distributions.svg?react';
-import FrameAnalogsIcon from '../assets/toolbar/frame_analogs.svg?react';
+import FrameDistributionsIcon from '../../assets/toolbar/frame_distributions.svg?react';
+import FrameAnalogsIcon from '../../assets/toolbar/frame_analogs.svg?react';
 
 import Tooltip from '@mui/material/Tooltip';
 import { useTranslation } from 'react-i18next';
-import ModalAnalogs from './ModalAnalogs.jsx';
-import ModalDistributions from './ModalDistributions.jsx';
-import ToolbarSquares from './toolbar/ToolbarSquares.jsx';
-import ToolbarCenter from './toolbar/ToolbarCenter.jsx';
+import ModalAnalogs from '../modals/ModalAnalogs.jsx';
+import ModalDistributions from '../modals/ModalDistributions.jsx';
+import ToolbarSquares from './ToolbarSquares.jsx';
+import ToolbarCenter from './ToolbarCenter.jsx';
 
 export default function ToolBar() {
     const [modalAnalogsOpen, setModalAnalogsOpen] = React.useState(false);

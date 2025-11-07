@@ -1,12 +1,12 @@
 import React from 'react';
 
-import {useConfig} from '../contexts/ConfigContext';
+import {useConfig} from '../../contexts/ConfigContext.jsx';
 import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
-import PanelForecasts from "./PanelForecasts.jsx";
-import PanelDisplay from "./PanelDisplay.jsx";
-import PanelSynthesis from "./PanelSynthesis.jsx";
-import PanelStations from "./PanelStations.jsx";
-import PanelAnalogDates from "./PanelAnalogDates.jsx";
+import PanelForecasts from "../panels/PanelForecasts.jsx";
+import PanelDisplay from "../panels/PanelDisplay.jsx";
+import PanelSynthesis from "../panels/PanelSynthesis.jsx";
+import PanelStations from "../panels/PanelStations.jsx";
+import PanelAnalogDates from "../panels/PanelAnalogDates.jsx";
 
 
 export default function SideBar() {

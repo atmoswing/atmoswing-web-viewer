@@ -1,11 +1,11 @@
-import Panel from './Panel';
+import Panel from './Panel.jsx';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { useForecastParameters } from '../contexts/ForecastsContext.jsx';
+import { useForecastParameters } from '../../contexts/ForecastsContext.jsx';
 
 export default function PanelDisplay(props) {
     const { t } = useTranslation();

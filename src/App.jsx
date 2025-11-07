@@ -2,12 +2,12 @@ import React from 'react';
 
 import './styles/App.css'
 
-import SideBar from "./components/SideBar.jsx";
-import ToolBar from "./components/ToolBar.jsx";
-import MapViewer from "./components/MapViewer.jsx";
+import SideBar from "./components/sidebar/SideBar.jsx";
+import ToolBar from "./components/toolbar/ToolBar.jsx";
+import MapViewer from "./components/map/MapViewer.jsx";
 import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
 import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
-import ModalForecastSeries from './components/ModalForecastSeries.jsx';
+import ModalForecastSeries from './components/modals/ModalForecastSeries.jsx';
 import AppSnackbars from './components/AppSnackbars.jsx';
 import {SnackbarProvider} from './contexts/SnackbarContext.jsx';
 

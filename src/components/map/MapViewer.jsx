@@ -1,6 +1,6 @@
 import 'ol/ol.css';
 import 'ol-layerswitcher/dist/ol-layerswitcher.css';
-import '../styles/map.css';
+import '../../styles/map.css';
 
 import React, {useRef, useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -19,14 +19,14 @@ import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {Style, Fill, Stroke, Circle as CircleStyle} from 'ol/style';
-import {useEntities, useForecastParameters, useForecastValues, useSynthesis, useForecastSession} from '../contexts/ForecastsContext.jsx';
-import {useSelectedEntity} from '../contexts/ForecastsContext.jsx';
+import {useEntities, useForecastParameters, useForecastValues, useSynthesis, useForecastSession} from '../../contexts/ForecastsContext.jsx';
+import {useSelectedEntity} from '../../contexts/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
-import config from '../config.js';
-import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
-import {valueToColor} from '../utils/colorUtils.js';
-import {useConfig} from '../contexts/ConfigContext.jsx';
-import {useSnackbar} from '../contexts/SnackbarContext.jsx';
+import config from '../../config.js';
+import {useWorkspace} from '../../contexts/WorkspaceContext.jsx';
+import {valueToColor} from '../../utils/colorUtils.js';
+import {useConfig} from '../../contexts/ConfigContext.jsx';
+import {useSnackbar} from '../../contexts/SnackbarContext.jsx';
 // NEW: formats and shapefile loader
 import GeoJSON from 'ol/format/GeoJSON';
 import shp from 'shpjs';

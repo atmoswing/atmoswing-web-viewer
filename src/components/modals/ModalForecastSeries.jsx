@@ -7,9 +7,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography, Button, Menu, MenuItem} from '@mui/material';
 import Popper from '@mui/material/Popper';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../contexts/ForecastsContext.jsx';
-import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs, getSeriesValuesPercentilesHistory} from '../services/api.js';
-import {parseForecastDate} from '../utils/forecastDateUtils.js';
+import {useSelectedEntity, useMethods, useForecastSession, useEntities} from '../../contexts/ForecastsContext.jsx';
+import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, getSeriesBestAnalogs, getSeriesValuesPercentilesHistory} from '../../services/api.js';
+import {parseForecastDate} from '../../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 

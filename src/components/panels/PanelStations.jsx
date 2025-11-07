@@ -1,11 +1,11 @@
-import Panel from './Panel';
+import Panel from './Panel.jsx';
 import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { useEntities, useSelectedEntity } from '../contexts/ForecastsContext.jsx';
+import { useEntities, useSelectedEntity } from '../../contexts/ForecastsContext.jsx';
 import { useTranslation } from 'react-i18next';
-import PanelStatus from './common/PanelStatus.jsx';
+import PanelStatus from './PanelStatus.jsx';
 
 export default function PanelStations(props) {
     const { t } = useTranslation();

@@ -21,8 +21,8 @@ import {
     Menu
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import {useForecastSession} from '../contexts/ForecastSessionContext.jsx';
-import {getMethodsAndConfigs, getEntities, getAnalogValues, getAnalogyCriteria, getSeriesValuesPercentiles, getAnalogValuesPercentiles, getReferenceValues, getRelevantEntities} from '../services/api.js';
+import {useForecastSession} from '../../contexts/ForecastSessionContext.jsx';
+import {getMethodsAndConfigs, getEntities, getAnalogValues, getAnalogyCriteria, getSeriesValuesPercentiles, getAnalogValuesPercentiles, getReferenceValues, getRelevantEntities} from '../../services/api.js';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 

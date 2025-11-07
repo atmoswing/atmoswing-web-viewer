@@ -1,15 +1,15 @@
-import Panel from './Panel';
+import Panel from './Panel.jsx';
 import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { useTranslation } from 'react-i18next';
-import { useMethods } from '../contexts/ForecastsContext.jsx';
-import { useForecastSession } from '../contexts/ForecastsContext.jsx';
+import { useMethods } from '../../contexts/ForecastsContext.jsx';
+import { useForecastSession } from '../../contexts/ForecastsContext.jsx';
 import { useEffect, useState } from 'react';
-import { getAnalogDates, getAnalogyCriteria } from '../services/api.js';
-import { useSynthesis } from '../contexts/SynthesisContext.jsx';
-import { computeLeadHours } from '../utils/targetDateUtils.js';
-import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
+import { getAnalogDates, getAnalogyCriteria } from '../../services/api.js';
+import { useSynthesis } from '../../contexts/SynthesisContext.jsx';
+import { computeLeadHours } from '../../utils/targetDateUtils.js';
+import { formatDateDDMMYYYY } from '../../utils/formattingUtils.js';
 
 export default function PanelAnalogDates(props) {
     const { t } = useTranslation();

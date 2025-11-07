@@ -21,14 +21,14 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import {useForecastSession} from '../contexts/ForecastSessionContext.jsx';
+import {useForecastSession} from '../../contexts/ForecastSessionContext.jsx';
 import {
     getMethodsAndConfigs,
     getEntities,
     getRelevantEntities,
     getAnalogs,
     getSeriesValuesPercentiles
-} from '../services/api.js';
+} from '../../services/api.js';
 import {useTranslation} from 'react-i18next';
 
 export default function ModalAnalogs({open, onClose}) {
