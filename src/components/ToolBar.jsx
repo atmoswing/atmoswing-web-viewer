@@ -276,14 +276,30 @@ export default function ToolBar() {
         }
     };
 
+    const { t } = useTranslation();
+
     return (
         <>
         <header className="toolbar">
             <ToolbarSquares/>
             <ToolbarCenter/>
             <div className="toolbar-right">
-                <button className="toolbar-icon-btn" onClick={() => setModalDistributionsOpen(true)}><FrameDistributionsIcon/></button>
-                <button className="toolbar-icon-btn" onClick={() => setModalAnalogsOpen(true)}><FrameAnalogsIcon/></button>
+                <Tooltip title={t('toolbar.openDistributions', { defaultValue: 'Open distribution plots' })} arrow>
+                    <button
+                        className="toolbar-icon-btn"
+                        onClick={() => setModalDistributionsOpen(true)}
+                        type="button"
+                        aria-label={t('toolbar.openDistributions', { defaultValue: 'Open distribution plots' })}
+                    ><FrameDistributionsIcon/></button>
+                </Tooltip>
+                <Tooltip title={t('toolbar.openAnalogs', { defaultValue: 'Open analogs details' })} arrow>
+                    <button
+                        className="toolbar-icon-btn"
+                        onClick={() => setModalAnalogsOpen(true)}
+                        type="button"
+                        aria-label={t('toolbar.openAnalogs', { defaultValue: 'Open analogs details' })}
+                    ><FrameAnalogsIcon/></button>
+                </Tooltip>
             </div>
         </header>
         <ModalAnalogs open={modalAnalogsOpen} onClose={handleModalAnalogsClose} />

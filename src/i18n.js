@@ -40,7 +40,9 @@ const resources = {
                 "searching": "Searching...",
                 "restoreLastForecast": "Restore last forecast",
                 "selectLeadTime": "Select lead time",
-                "colorSynthesis": "Color: synthesis of all methods"
+                "colorSynthesis": "Color: synthesis of all methods",
+                "openDistributions": "Open distribution plots",
+                "openAnalogs": "Open analogs details"
             },
             "forecasts": {
                 "loading": "Loading..."
@@ -189,7 +191,9 @@ const resources = {
                 "searching": "Recherche...",
                 "restoreLastForecast": "Restaurer la dernière prévision",
                 "selectLeadTime": "Sélectionner l'échéance",
-                "colorSynthesis": "Couleur : synthèse de toutes les méthodes"
+                "colorSynthesis": "Couleur : synthèse de toutes les méthodes",
+                "openDistributions": "Ouvrir les graphiques des distributions",
+                "openAnalogs": "Ouvrir les détails des analogues"
             },
             "forecasts": {
                 "loading": "Chargement..."
