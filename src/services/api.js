@@ -1,4 +1,5 @@
 import config from "../config";
+import { buildPercentilesQuery, buildNormalizeQuery, appendQuery } from "./apiHelpers";
 
 // In-flight request de-duplication: endpoint -> Promise
 const inflight = new Map();
@@ -78,36 +79,35 @@ export const getRelevantEntities = (region, date, methodId, configId) => request
 export const getAnalogDates = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/analog-dates`);
 export const getAnalogyCriteria = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/analogy-criteria`);
 export const getEntitiesValuesPercentile = (region, date, methodId, configId, lead, perc, normalize) => {
-    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/entities-values-percentile/${perc}${qs}`);
+    const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/entities-values-percentile/${perc}`;
+    return request(appendQuery(path, buildNormalizeQuery(normalize)));
 };
 export const getReferenceValues = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/reference-values`);
 export const getSeriesBestAnalogs = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-best-analogs`);
 export const getSeriesValuesPercentiles = (region, date, methodId, configId, entity, percentiles) => {
-    const qs = (percentiles && percentiles.length) ? `?${percentiles.map(p => `percentiles=${encodeURIComponent(p)}`).join('&')}` : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles${qs}`);
+    const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles`;
+    return request(appendQuery(path, buildPercentilesQuery(percentiles)));
 };
 export const getSeriesValuesPercentilesHistory = (region, date, methodId, configId, entity, number = 3) => {
-    const qs = number ? `?number=${encodeURIComponent(number)}` : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history${qs}`);
+    const qs = number ? `number=${encodeURIComponent(number)}` : '';
+    const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history`;
+    return request(appendQuery(path, qs));
 };
 export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analogs`);
 export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
 export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead, percentiles) => {
-    const qs = (percentiles && percentiles.length)
-        ? `?${percentiles.map(p => `percentiles=${encodeURIComponent(p)}`).join('&')}`
-        : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles${qs}`);
+    const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`;
+    return request(appendQuery(path, buildPercentilesQuery(percentiles)));
 };
 export const getAnalogValuesBest = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-best`);
 
 // --- Aggregations ---
 export const getAggregatedEntitiesValues = (region, date, methodId, lead, perc, normalize) => {
-    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/aggregations/${region}/${encodeURIComponent(date)}/${methodId}/${lead}/entities-values-percentile/${perc}${qs}`);
+    const path = `/aggregations/${region}/${encodeURIComponent(date)}/${methodId}/${lead}/entities-values-percentile/${perc}`;
+    return request(appendQuery(path, buildNormalizeQuery(normalize)));
 };
 export const getSynthesisPerMethod = (region, date, perc) => request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-per-method/${perc}`);
 export const getSynthesisTotal = (region, date, perc, normalize) => {
-    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-total/${perc}${qs}`);
+    const path = `/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-total/${perc}`;
+    return request(appendQuery(path, buildNormalizeQuery(normalize)));
 };

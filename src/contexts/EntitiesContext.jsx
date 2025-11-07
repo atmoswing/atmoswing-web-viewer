@@ -2,6 +2,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState, 
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {getEntities, getRelevantEntities} from '../services/api.js';
+import { isMethodSelectionValid, methodExists, deriveConfigId, keyForEntities } from '../utils/contextGuards.js';
 
 const EntitiesContext = createContext({});
 
@@ -51,24 +52,14 @@ export function EntitiesProvider({children}) {
         const fetchWorkspace = workspace;
         async function run() {
             if (methodsLoading) return;
-            if (!fetchWorkspace || !activeForecastDate || !selectedMethodConfig?.method) {
-                setEntities([]);
-                return;
-            }
-            // Guard against cross-workspace method selection
-            if (selectedMethodConfig._workspace && selectedMethodConfig._workspace !== fetchWorkspace) {
-                setEntities([]);
-                return;
+            if (!activeForecastDate || !isMethodSelectionValid(selectedMethodConfig, fetchWorkspace)) {
+                setEntities([]); return;
             }
             const methodId = selectedMethodConfig.method.id;
-            if (!methodConfigTree.find(m => m.id === methodId)) { setEntities([]); return; }
-            let configId = selectedMethodConfig.config?.id;
-            if (!configId) {
-                const m = methodConfigTree.find(m => m.id === methodId);
-                configId = m?.children?.[0]?.id;
-                if (!configId) { setEntities([]); return; }
-            }
-            const key = `${fetchWorkspace}|${activeForecastDate}|${methodId}|${configId}`;
+            if (!methodExists(methodConfigTree, methodId)) { setEntities([]); return; }
+            const configId = deriveConfigId(selectedMethodConfig, methodConfigTree);
+            if (!configId) { setEntities([]); return; }
+            const key = keyForEntities(fetchWorkspace, activeForecastDate, methodId, configId);
             const cached = entitiesCacheRef.current.get(key);
             if (cached) { setEntities(cached); return; }
             setEntitiesLoading(true);
@@ -76,8 +67,7 @@ export function EntitiesProvider({children}) {
             try {
                 const resp = await getEntities(fetchWorkspace, activeForecastDate, methodId, configId);
                 if (cancelled || reqId !== entitiesReqIdRef.current) return;
-                // Ignore if workspace changed mid-flight
-                if (fetchWorkspace !== workspace) return;
+                if (fetchWorkspace !== workspace) return; // cross workspace guard
                 const list = resp?.entities || resp || [];
                 setEntities(list);
                 entitiesCacheRef.current.set(key, list);
@@ -100,23 +90,14 @@ export function EntitiesProvider({children}) {
         const reqId = ++relevantReqIdRef.current;
         const fetchWorkspace = workspace;
         async function run() {
-            if (!fetchWorkspace || !activeForecastDate || !selectedMethodConfig?.method) {
-                setRelevantEntities(null);
-                return;
+            if (!activeForecastDate || !isMethodSelectionValid(selectedMethodConfig, fetchWorkspace)) {
+                setRelevantEntities(null); return;
             }
-            // If user selected only the method (no config), clear any previous relevant subset
-            if (!selectedMethodConfig.config) {
-                setRelevantEntities(null);
-                return;
-            }
-            if (selectedMethodConfig._workspace && selectedMethodConfig._workspace !== fetchWorkspace) {
-                setRelevantEntities(null);
-                return;
-            }
+            if (!selectedMethodConfig.config) { setRelevantEntities(null); return; }
             const methodId = selectedMethodConfig.method.id;
+            if (!methodExists(methodConfigTree, methodId)) { setRelevantEntities(null); return; }
             const configId = selectedMethodConfig.config.id;
-            if (!methodConfigTree.find(m => m.id === methodId)) { setRelevantEntities(null); return; }
-            const key = `${fetchWorkspace}|${activeForecastDate}|${methodId}|${configId}`;
+            const key = keyForEntities(fetchWorkspace, activeForecastDate, methodId, configId);
             const cached = relevantCacheRef.current.get(key);
             if (cached) { setRelevantEntities(cached); return; }
             try {

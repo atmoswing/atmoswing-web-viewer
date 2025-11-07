@@ -4,6 +4,7 @@ import {useMethods} from './MethodsContext.jsx';
 import {useSynthesis} from './SynthesisContext.jsx';
 import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '../services/api.js';
 import { computeLeadHours, hasTargetDate } from '../utils/targetDateUtils.js';
+import { isMethodSelectionValid, methodExists, keyForForecastValues } from '../utils/contextGuards.js';
 
 const ForecastValuesContext = createContext({});
 
@@ -23,7 +24,7 @@ export function ForecastValuesProvider({children}) {
 
     // Immediate availability feedback based on selection vs leads
     useEffect(() => {
-        if (!selectedMethodConfig?.method || !activeForecastDate) {
+        if (!isMethodSelectionValid(selectedMethodConfig, workspace) || !activeForecastDate) {
             setForecastUnavailable(false);
             return;
         }
@@ -32,29 +33,30 @@ export function ForecastValuesProvider({children}) {
             return;
         }
         setForecastUnavailable(!hasTargetDate(leadResolution, selectedTargetDate, dailyLeads, subDailyLeads));
-    }, [selectedMethodConfig, activeForecastDate, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
+    }, [selectedMethodConfig, workspace, activeForecastDate, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
 
     // Fetch forecast values
     useEffect(() => {
         let cancelled = false;
         const reqId = ++reqIdRef.current;
         async function run() {
-            if (!activeForecastDate || !selectedMethodConfig?.method) {
+            if (!activeForecastDate || !isMethodSelectionValid(selectedMethodConfig, workspace)) {
                 setForecastValues({}); setForecastValuesNorm({}); setForecastLoading(false); setForecastUnavailable(false); setForecastError(null); return;
             }
             const methodId = selectedMethodConfig.method.id;
-            if (!methodConfigTree.find(m => m.id === methodId)) { setForecastValues({}); setForecastValuesNorm({}); return; }
-            const configId = selectedMethodConfig.config?.id;
+            if (!methodExists(methodConfigTree, methodId)) { setForecastValues({}); setForecastValuesNorm({}); return; }
+            const configId = selectedMethodConfig.config?.id; // aggregated when null
             const leadHours = computeLeadHours(forecastBaseDate, selectedTargetDate, leadResolution, selectedLead, dailyLeads, subDailyLeads);
-            const key = `${workspace}|${activeForecastDate}|${methodId}|${configId || 'agg'}|${leadHours}|${percentile}|${normalizationRef || 'raw'}`;
+            const key = keyForForecastValues(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef);
             const cached = cacheRef.current.get(key);
             if (cached) {
                 setForecastValuesNorm(cached.norm); setForecastValues(cached.raw); setForecastUnavailable(false); return;
             }
             setForecastLoading(true); setForecastError(null); setForecastValues({}); setForecastValuesNorm({});
             try {
-                let resp;
-                if (configId) resp = await getEntitiesValuesPercentile(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef); else resp = await getAggregatedEntitiesValues(workspace, activeForecastDate, methodId, leadHours, percentile, normalizationRef);
+                const resp = configId
+                    ? await getEntitiesValuesPercentile(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef)
+                    : await getAggregatedEntitiesValues(workspace, activeForecastDate, methodId, leadHours, percentile, normalizationRef);
                 if (cancelled || reqId !== reqIdRef.current) return;
                 const ids = resp.entity_ids || [];
                 const valsNorm = Array.isArray(resp.values_normalized) ? resp.values_normalized : [];
