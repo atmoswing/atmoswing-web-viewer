@@ -314,7 +314,7 @@ export default function ModalForecastSeries() {
             // Default to 6h if sub-daily likely; otherwise 24h. Use conservative 12h as a safe small margin.
             stepMs = 12 * 3600 * 1000;
         }
-        const rightPadMs = Math.max(stepMs * 0.1, 1 * 3600 * 1000);
+        const rightPadMs = Math.max(stepMs * 0.1, 3600 * 1000);
         const domainMax = (maxX || d3.max(dates)) ? new Date((maxX || d3.max(dates)).getTime() + rightPadMs) : maxX;
 
         const xScale = d3.scaleTime().domain([startDomain, domainMax]).range([0, innerW]);
@@ -628,8 +628,7 @@ export default function ModalForecastSeries() {
         legendItems.forEach((item) => {
             const isMarker = !!item.marker;
             const color = item.color || '#000';
-            const label = String(item.label || '');
-            const displayLabel = label;
+            const displayLabel = String(item.label || '');
 
             if (isMarker) {
                 legendG.append('circle').attr('cx', curX + 8).attr('cy', 0).attr('r', 5).attr('fill', 'transparent').attr('stroke', color).attr('stroke-width', 1);
@@ -683,6 +682,22 @@ export default function ModalForecastSeries() {
         setChartSize(prev => (prev.width !== rect.width || prev.height !== rect.height ? {width: rect.width, height: rect.height} : prev));
         return () => ro.disconnect();
     }, [selectedEntityId]);
+
+    // Also re-evaluate on window resize (helps when container layout changes without direct element resize events)
+    useEffect(() => {
+        let timer = null;
+        const onResize = () => {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => {
+                const el = chartRef.current;
+                if (!el) return;
+                const rect = el.getBoundingClientRect();
+                setChartSize(prev => (prev.width !== rect.width || prev.height !== rect.height) ? {width: rect.width, height: rect.height} : prev);
+            }, 120);
+        };
+        window.addEventListener('resize', onResize);
+        return () => { window.removeEventListener('resize', onResize); if (timer) clearTimeout(timer); };
+    }, []);
 
     // Fetch reference values when requested (either 10yr or all return periods)
     useEffect(() => {
@@ -1067,7 +1082,7 @@ export default function ModalForecastSeries() {
 
     return (
         <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth
-                sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', display:'flex', flexDirection:'column'}}}>
+                sx={{'& .MuiPaper-root': {width:'90vw', maxWidth:'1000px', height:'50vh', minHeight:'460px', maxHeight:'90vh', display:'flex', flexDirection:'column'}}}>
             <DialogTitle sx={{pr: 5}}>
                 {stationName ? `${stationName}` : ''}
                 <IconButton aria-label={t('seriesModal.close')} onClick={handleClose} size="small"
@@ -1109,7 +1124,7 @@ export default function ModalForecastSeries() {
                     )}
                     {selectedEntityId && error && !loading && !resolvingConfig && <div style={{fontSize:13, color:'#b00020'}}>{t('seriesModal.errorLoadingSeries')}</div>}
                     {selectedEntityId && !loading && !resolvingConfig && !error && (series || (options.bestAnalogs && bestAnalogs)) && (
-                        <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:300}} />
+                        <div ref={chartRef} style={{position:'relative', width:'100%', height:'100%', flex:1, minHeight:360}} />
                     )}
                     {selectedEntityId && !loading && !resolvingConfig && !error && !series && !(options.bestAnalogs && bestAnalogs) && resolvedConfigId && <div style={{fontSize:13}}>{t('seriesModal.noDataForStation')}</div>}
                 </Box>
