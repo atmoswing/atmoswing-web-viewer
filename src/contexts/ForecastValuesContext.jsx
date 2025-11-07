@@ -53,6 +53,9 @@ export function ForecastValuesProvider({children}) {
             let leadHours = 0;
             if (forecastBaseDate && selectedTargetDate) {
                 leadHours = Math.max(0, Math.round((selectedTargetDate.getTime() - forecastBaseDate.getTime()) / 3600000));
+                // Get the timezone offset if possible to adjust leadHours
+                const tzDiff = (selectedTargetDate.getTimezoneOffset() - forecastBaseDate.getTimezoneOffset());
+                leadHours -= tzDiff / 60;
             } else {
                 if (leadResolution === 'sub') {
                     const step = subDailyLeads[selectedLead]?.time_step || (subDailyLeads[0]?.time_step || 0);
