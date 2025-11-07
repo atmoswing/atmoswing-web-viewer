@@ -4,6 +4,7 @@ import {useMethods} from './MethodsContext.jsx';
 import {getEntities, getRelevantEntities} from '../services/api.js';
 import { isMethodSelectionValid, methodExists, deriveConfigId, keyForEntities } from '../utils/contextGuards.js';
 import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { normalizeEntitiesResponse, normalizeRelevantEntityIds } from '../utils/apiNormalization.js';
 
 const EntitiesContext = createContext({});
 
@@ -55,7 +56,7 @@ export function EntitiesProvider({children}) {
             const cached = entitiesCacheRef.current.get(entitiesKey);
             if (cached) return cached;
             const resp = await getEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId);
-            const list = resp?.entities || resp || [];
+            const list = normalizeEntitiesResponse(resp);
             entitiesCacheRef.current.set(entitiesKey, list);
             return list;
         },
@@ -77,9 +78,7 @@ export function EntitiesProvider({children}) {
             const cached = relevantCacheRef.current.get(relevantKey);
             if (cached) return cached;
             const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id);
-            let ids = [];
-            if (Array.isArray(resp)) ids = (typeof resp[0] === 'object') ? resp.map(r => r.id ?? r.entity_id).filter(v => v != null) : resp; else if (resp && typeof resp === 'object') ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
-            const setIds = new Set(ids);
+            const setIds = normalizeRelevantEntityIds(resp);
             relevantCacheRef.current.set(relevantKey, setIds);
             return setIds;
         },

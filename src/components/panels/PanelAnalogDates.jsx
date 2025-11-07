@@ -5,11 +5,11 @@ import Paper from '@mui/material/Paper';
 import { useTranslation } from 'react-i18next';
 import { useMethods } from '../../contexts/ForecastsContext.jsx';
 import { useForecastSession } from '../../contexts/ForecastsContext.jsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getAnalogDates, getAnalogyCriteria } from '../../services/api.js';
 import { useSynthesis } from '../../contexts/SynthesisContext.jsx';
 import { computeLeadHours } from '../../utils/targetDateUtils.js';
-import { formatDateDDMMYYYY } from '../../utils/formattingUtils.js';
+import { formatCriteria, formatDateDDMMYYYY } from '../../utils/formattingUtils.js';
 
 export default function PanelAnalogDates(props) {
     const { t } = useTranslation();
@@ -20,11 +20,11 @@ export default function PanelAnalogDates(props) {
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const columns = [
+    const columns = useMemo(() => ([
         { field: 'rank', headerName: t('analog.columns.rank'), flex: 0.12, minWidth: 60 },
-        { field: 'date', headerName: t('analog.columns.date'), flex: 0.6, minWidth: 120, sortable: false },
-        { field: 'criteria', headerName: t('analog.columns.criteria'), flex: 0.28, minWidth: 100 },
-    ];
+        { field: 'date', headerName: t('analog.columns.date'), flex: 0.6, minWidth: 120, sortable: false, valueFormatter: (params) => formatDateDDMMYYYY(params.value) },
+        { field: 'criteria', headerName: t('analog.columns.criteria'), flex: 0.28, minWidth: 100, valueFormatter: (params) => formatCriteria(params.value) },
+    ]), [t]);
 
     const paginationModel = { page: 0, pageSize: 10 };
 
@@ -78,7 +78,7 @@ export default function PanelAnalogDates(props) {
                 const mapped = (dates || []).map((d, idx) => ({
                     id: idx + 1,
                     rank: idx + 1,
-                    date: formatDateDDMMYYYY(d),
+                    date: d,
                     criteria: (criteria && criteria.length > idx) ? criteria[idx] : null
                 }));
 

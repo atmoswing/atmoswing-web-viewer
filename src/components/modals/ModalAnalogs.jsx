@@ -30,6 +30,8 @@ import {
     getSeriesValuesPercentiles
 } from '../../services/api.js';
 import {useTranslation} from 'react-i18next';
+import { formatPrecipitation, formatCriteria, compareEntitiesByName, formatDateLabel } from '../../utils/formattingUtils.js';
+import { normalizeAnalogsResponse, extractTargetDatesArray, normalizeEntitiesResponse, normalizeRelevantEntityIds } from '../../utils/apiNormalization.js';
 
 export default function ModalAnalogs({open, onClose}) {
     const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();
@@ -130,15 +132,9 @@ export default function ModalAnalogs({open, onClose}) {
                 }
                 const resp = await getEntities(fetchWorkspace, date, selectedMethodId, cfgId);
                 if (cancelled || reqId !== stationsReqRef.current) return;
-                const list = resp?.entities || resp || [];
+                const list = normalizeEntitiesResponse(resp);
                 // sort alphabetically by name (fallback to id), case-insensitive
-                const sorted = Array.isArray(list) ? [...list].sort((a, b) => {
-                    const aName = String(a?.name ?? a?.id ?? '').toLowerCase();
-                    const bName = String(b?.name ?? b?.id ?? '').toLowerCase();
-                    if (aName < bName) return -1;
-                    if (aName > bName) return 1;
-                    return 0;
-                }) : list;
+                const sorted = Array.isArray(list) ? [...list].sort(compareEntitiesByName) : list;
                 setStations(sorted);
                 // default-select first station (sorted) if none selected
                 if (!selectedStationId && sorted?.length) {
@@ -230,8 +226,7 @@ export default function ModalAnalogs({open, onClose}) {
             try {
                 const resp = await getAnalogs(workspace, activeForecastDate, selectedMethodId, cfgId, selectedStationId, selectedLead);
                 if (cancelled) return;
-                // normalize response: expect array of analogs with fields rank/index/date/value/criteria
-                const items = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.analogs) ? resp.analogs : []);
+                const items = normalizeAnalogsResponse(resp);
                 setAnalogs(items.map((it, i) => ({
                     rank: it.rank ?? it.analog ?? (i + 1),
                     date: it.date ?? it.analog_date ?? it.analog_date_str ?? it.dt ?? it.date_str ?? null,
@@ -275,18 +270,7 @@ export default function ModalAnalogs({open, onClose}) {
                 if (cancelled) return;
 
                 // Try to extract an array of date strings from common response shapes; prefer series_values.target_dates
-                const rawDates = (function () {
-                    if (!resp) return [];
-                    if (resp.series_values && Array.isArray(resp.series_values.target_dates)) return resp.series_values.target_dates;
-                    if (Array.isArray(resp.target_dates)) return resp.target_dates;
-                    if (Array.isArray(resp.series_percentiles) && resp.series_percentiles.length && Array.isArray(resp.series_percentiles[0].target_dates)) return resp.series_percentiles[0].target_dates;
-                    if (Array.isArray(resp.series) && resp.series.length && Array.isArray(resp.series[0].target_dates)) return resp.series[0].target_dates;
-                    if (Array.isArray(resp)) {
-                        if (resp.length && typeof resp[0] === 'string') return resp;
-                        if (resp.length && resp[0] && Array.isArray(resp[0].target_dates)) return resp[0].target_dates;
-                    }
-                    return [];
-                })();
+                const rawDates = extractTargetDatesArray(resp);
 
                 // Choose a base date for lead calculations: prefer forecastBaseDate, else try resp.parameters.forecast_date
                 const baseDate = (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) ? forecastBaseDate : (resp && resp.parameters && resp.parameters.forecast_date ? new Date(resp.parameters.forecast_date) : null);
@@ -299,7 +283,7 @@ export default function ModalAnalogs({open, onClose}) {
                     } catch {
                         d = null;
                     }
-                    const label = d ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}${(d.getHours() || d.getMinutes()) ? ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : ''}` : String(s);
+                    const label = d ? formatDateLabel(d) : String(s);
                     const leadNum = (d && baseDate && !isNaN(baseDate.getTime())) ? Math.round((d.getTime() - baseDate.getTime()) / 3600000) : null;
                     return {lead: leadNum, date: d, label};
                 }).filter(x => x.lead != null && !isNaN(x.lead));
@@ -343,22 +327,6 @@ export default function ModalAnalogs({open, onClose}) {
         const m = methodOptions.find(x => x.id === selectedMethodId);
         return m?.configurations || [];
     }, [methodOptions, selectedMethodId]);
-
-    // Formatting helpers
-    const formatPrecipitation = (v) => {
-        if (v == null) return '-';
-        const n = Number(v);
-        if (isNaN(n)) return String(v);
-        if (n === 0) return '0';
-        return n.toFixed(1);
-    };
-
-    const formatCriteria = (v) => {
-        if (v == null) return '-';
-        const n = Number(v);
-        if (isNaN(n)) return String(v);
-        return n.toFixed(2);
-    };
 
     // Render helpers
     const renderConfigLabel = (cfg) => {
@@ -523,15 +491,7 @@ export default function ModalAnalogs({open, onClose}) {
                                             {analogs.map((a, idx) => (
                                                 <TableRow key={idx} hover>
                                                     <TableCell sx={{width: '6%'}}>{a.rank ?? (idx + 1)}</TableCell>
-                                                    <TableCell sx={{width: '34%'}}>{(function (d) {
-                                                        try {
-                                                            const D = new Date(d);
-                                                            if (isNaN(D)) return d;
-                                                            return `${String(D.getDate()).padStart(2, '0')}.${String(D.getMonth() + 1).padStart(2, '0')}.${D.getFullYear()}`;
-                                                        } catch {
-                                                            return d;
-                                                        }
-                                                    })(a.date)}</TableCell>
+                                                    <TableCell sx={{width: '34%'}}>{formatDateLabel(a.date)}</TableCell>
                                                     <TableCell sx={{width: '30%'}}
                                                                align="right">{formatPrecipitation(a.value)}</TableCell>
                                                     <TableCell sx={{width: '30%'}}

@@ -6,6 +6,7 @@ import Select from '@mui/material/Select';
 import { useEntities, useSelectedEntity } from '../../contexts/ForecastsContext.jsx';
 import { useTranslation } from 'react-i18next';
 import PanelStatus from './PanelStatus.jsx';
+import { compareEntitiesByName } from '../../utils/formattingUtils.js';
 
 export default function PanelStations(props) {
     const { t } = useTranslation();
@@ -31,13 +32,7 @@ export default function PanelStations(props) {
     // Memoize sorted entities by name (case-insensitive), fall back to id
     const sortedEntities = React.useMemo(() => {
         if (!entities || entities.length === 0) return [];
-        return [...entities].sort((a, b) => {
-            const aName = (a.name || a.id || '').toString().toLowerCase();
-            const bName = (b.name || b.id || '').toString().toLowerCase();
-            if (aName < bName) return -1;
-            if (aName > bName) return 1;
-            return 0;
-        });
+        return [...entities].sort(compareEntitiesByName);
     }, [entities]);
 
     const handleChangeStation = (event) => {
