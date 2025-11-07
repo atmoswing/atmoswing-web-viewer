@@ -2,6 +2,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState, 
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {getMethodsAndConfigs} from '../services/api.js';
+import { useManagedRequest } from '../hooks/useManagedRequest.js';
 
 const MethodsContext = createContext({});
 
@@ -9,77 +10,38 @@ export function MethodsProvider({children}) {
     const {workspace, activeForecastDate} = useForecastSession();
     const {workspaceData} = useWorkspace();
 
-    const [methodsAndConfigs, setMethodsAndConfigs] = useState(null);
-    const [methodsLoading, setMethodsLoading] = useState(false);
-    const [methodsError, setMethodsError] = useState(null);
     const [selectedMethodConfig, setSelectedMethodConfig] = useState(null);
-
-    const reqIdRef = useRef(0);
     const keyRef = useRef(null);
     const prevWorkspaceRef = useRef(workspace);
 
-    // Adopt preloaded methods from workspaceData if available
-    useEffect(() => {
-        if (!workspaceData || !workspace || !activeForecastDate) return;
-        const preloadDate = workspaceData.date?.last_forecast_date;
-        if (!preloadDate) return;
-        if (activeForecastDate !== preloadDate) return;
-        if (workspaceData.__workspace !== workspace) return;
-        if (!workspaceData.methodsAndConfigs) return;
-        const key = `${workspace}|${activeForecastDate}`;
-        if (keyRef.current === key) return; // already set
-        setMethodsAndConfigs(workspaceData.methodsAndConfigs);
-        keyRef.current = key;
-        setMethodsError(null);
-        setMethodsLoading(false);
-    }, [workspaceData, workspace, activeForecastDate]);
+    // Preload adoption
+    const preloaded = (workspaceData && workspaceData.__workspace === workspace && workspaceData.date?.last_forecast_date === activeForecastDate) ? workspaceData.methodsAndConfigs : null;
 
-    // Clear methods state and selection on workspace change
+    const { data: methodsAndConfigs, loading: methodsLoading, error: methodsError } = useManagedRequest(
+        async () => {
+            if (!workspace || !activeForecastDate) return null;
+            const key = `${workspace}|${activeForecastDate}`;
+            if (preloaded && keyRef.current !== key) {
+                keyRef.current = key; // mark adopted
+                return preloaded;
+            }
+            const fetched = await getMethodsAndConfigs(workspace, activeForecastDate);
+            keyRef.current = key;
+            return fetched;
+        },
+        [workspace, activeForecastDate, preloaded],
+        { enabled: !!workspace && !!activeForecastDate }
+    );
+
+    // Clear selection on workspace change
     useEffect(() => {
         if (prevWorkspaceRef.current !== workspace) {
-            // Clear selection and cached key immediately on workspace change
             setSelectedMethodConfig(null);
-            setMethodsAndConfigs(null);
             keyRef.current = null;
             prevWorkspaceRef.current = workspace;
         }
     }, [workspace]);
 
-    // Fetch methods when workspace/date changes (skips if already loaded via preload)
-    useEffect(() => {
-        let cancelled = false;
-        const reqId = ++reqIdRef.current;
-        async function run() {
-            if (!workspace || !activeForecastDate) {
-                setMethodsAndConfigs(null);
-                keyRef.current = null;
-                return;
-            }
-            const key = `${workspace}|${activeForecastDate}`;
-            if (methodsAndConfigs && keyRef.current === key) return; // already loaded or preloaded
-            setMethodsLoading(true);
-            setMethodsError(null);
-            try {
-                const data = await getMethodsAndConfigs(workspace, activeForecastDate);
-                if (!cancelled && reqId === reqIdRef.current) {
-                    setMethodsAndConfigs(data);
-                    keyRef.current = key;
-                }
-            } catch (e) {
-                if (!cancelled && reqId === reqIdRef.current) {
-                    setMethodsError(e);
-                    setMethodsAndConfigs(null);
-                    keyRef.current = null;
-                }
-            } finally {
-                if (!cancelled && reqId === reqIdRef.current) setMethodsLoading(false);
-            }
-        }
-        run();
-        return () => { cancelled = true; };
-    }, [workspace, activeForecastDate]);
-
-    // Method tree
     const methodConfigTree = useMemo(() => {
         if (!methodsAndConfigs?.methods) return [];
         return methodsAndConfigs.methods.map(m => ({

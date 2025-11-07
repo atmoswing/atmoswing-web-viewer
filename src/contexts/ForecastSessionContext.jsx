@@ -5,21 +5,39 @@ import {hasForecastDate, getSynthesisTotal, getLastForecastDate} from '../servic
 
 const ForecastSessionContext = createContext({});
 
+async function findShiftedForecast(workspace, activeForecastDate, pattern, hours, maxAttempts = 12) {
+    const start = parseForecastDate(activeForecastDate);
+    if (!start || isNaN(start)) return null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const candidate = new Date(start.getTime());
+        candidate.setHours(candidate.getHours() + hours * attempt);
+        const raw = formatForecastDateForApi(candidate, pattern || activeForecastDate);
+        const exists = await hasForecastDate(workspace, raw);
+        if (!exists['has_forecasts']) continue;
+        try {
+            const resp = await getSynthesisTotal(workspace, raw, 90, 10);
+            const series = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+            const hasLeads = series.some(sp => Array.isArray(sp?.target_dates) && sp.target_dates.length > 0);
+            if (hasLeads) return { raw, dateObj: candidate };
+        } catch {
+            // ignore and continue attempts
+        }
+    }
+    return null;
+}
+
 export function ForecastSessionProvider({children}) {
     const {workspace, workspaceData} = useWorkspace();
 
-    const [activeForecastDate, setActiveForecastDate] = useState(null); // raw string (API)
+    const [activeForecastDate, setActiveForecastDate] = useState(null);
     const [activeForecastDatePattern, setActiveForecastDatePattern] = useState(null);
-    const [forecastBaseDate, setForecastBaseDate] = useState(null); // parsed Date from synthesis
+    const [forecastBaseDate, setForecastBaseDate] = useState(null);
 
-    // Display / fetch parameters shared across domains
     const [percentile, setPercentile] = useState(90);
     const [normalizationRef, setNormalizationRef] = useState(10);
 
-    // Incremented whenever a date shift or explicit reset occurs; downstream providers clear caches on change
     const [resetVersion, setResetVersion] = useState(0);
 
-    // Flag set when a shift search (6h navigation) exhausted 12 attempts without finding any available forecast
     const [baseDateSearchFailed, setBaseDateSearchFailed] = useState(false);
     const [baseDateSearching, setBaseDateSearching] = useState(false);
     const searchReqIdRef = useRef(0);
@@ -64,35 +82,14 @@ export function ForecastSessionProvider({children}) {
             setBaseDateSearchFailed(false);
             setBaseDateSearching(true);
             if (!activeForecastDate || !workspace) { setBaseDateSearchFailed(false); setBaseDateSearching(false); return; }
-            const start = parseForecastDate(activeForecastDate);
-            if (!start || isNaN(start)) { setBaseDateSearching(false); return; }
-            const MAX_ATTEMPTS = 12;
-            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                if (searchReqIdRef.current !== reqId) return; // cancelled
-                const candidate = new Date(start.getTime());
-                candidate.setHours(candidate.getHours() + hours * attempt);
-                const raw = formatForecastDateForApi(candidate, activeForecastDatePattern || activeForecastDate);
-                const exists = await hasForecastDate(workspace, raw);
-                if (!exists['has_forecasts']) {
-                    continue;
-                }
-                try {
-                    const resp = await getSynthesisTotal(workspace, raw, 90, 10);
-                    if (searchReqIdRef.current !== reqId) return; // stale
-                    const series = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
-                    const hasLeads = series.some(sp => Array.isArray(sp?.target_dates) && sp.target_dates.length > 0);
-                    if (hasLeads) {
-                        setActiveForecastDate(raw);
-                        fullReset(candidate);
-                        setBaseDateSearchFailed(false);
-                        setBaseDateSearching(false);
-                        return;
-                    }
-                } catch (_) {
-                    if (searchReqIdRef.current !== reqId) return;
-                }
-            }
-            if (searchReqIdRef.current === reqId) {
+            const result = await findShiftedForecast(workspace, activeForecastDate, activeForecastDatePattern, hours);
+            if (searchReqIdRef.current !== reqId) return; // cancelled/stale
+            if (result) {
+                setActiveForecastDate(result.raw);
+                fullReset(result.dateObj);
+                setBaseDateSearchFailed(false);
+                setBaseDateSearching(false);
+            } else {
                 setBaseDateSearchFailed(true);
                 setBaseDateSearching(false);
             }

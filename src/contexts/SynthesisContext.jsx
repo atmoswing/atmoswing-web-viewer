@@ -1,8 +1,9 @@
-import React, {createContext, useContext, useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useState, useCallback} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {getSynthesisTotal, getSynthesisPerMethod} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import { isSameInstant, isSameDay } from '../utils/targetDateUtils.js';
+import { useManagedRequest } from '../hooks/useManagedRequest.js';
 
 const SynthesisContext = createContext({});
 
@@ -20,19 +21,36 @@ export function SynthesisProvider({children}) {
     const [selectedLead, setSelectedLead] = useState(0);
     const [selectedTargetDate, setSelectedTargetDate] = useState(null);
 
-    // Per-method synthesis (baseline)
+    // Reintroduced state for per-method synthesis
     const [perMethodSynthesis, setPerMethodSynthesis] = useState([]);
-    const [perMethodSynthesisLoading, setPerMethodSynthesisLoading] = useState(false);
-    const [perMethodSynthesisError, setPerMethodSynthesisError] = useState(null);
 
-    const totalReqIdRef = useRef(0);
-    const perReqIdRef = useRef(0);
+    // Parse series_percentiles into daily/subDaily and base date
+    const parseTotalSynthesis = useCallback((resp) => {
+        const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+        const baseStr = resp?.parameters?.forecast_date || activeForecastDate;
+        const baseDt = parseForecastDate(baseStr) || parseForecastDate(activeForecastDate) || (baseStr ? new Date(baseStr) : null);
+        let daily = [], sub = [];
+        arr.forEach(sp => {
+            const dates = Array.isArray(sp.target_dates) ? sp.target_dates : [];
+            const vals = Array.isArray(sp.values_normalized) ? sp.values_normalized : [];
+            dates.forEach((dStr, i) => {
+                const dt = parseForecastDate(dStr) || new Date(dStr);
+                if (isNaN(dt)) return;
+                const rec = {index: i, date: dt, time_step: sp.time_step, valueNorm: vals[i]};
+                if (sp.time_step === 24) daily.push(rec); else sub.push({...rec, subIndex: i});
+            });
+        });
+        daily.sort((a,b)=>a.date-b.date);
+        sub.sort((a,b)=>a.date-b.date);
+        return { baseDt, daily, sub };
+    }, [activeForecastDate]);
 
-    // Fetch total synthesis (leads) - only when workspace/date changes
+    // Fetch total synthesis (leads)
     useEffect(() => {
         let cancelled = false;
-        const reqId = ++totalReqIdRef.current;
+        let reqId = 0;
         async function run() {
+            const localId = ++reqId;
             if (!activeForecastDate || !workspace) {
                 setDailyLeads([]);
                 setSubDailyLeads([]);
@@ -42,41 +60,20 @@ export function SynthesisProvider({children}) {
             }
             try {
                 const resp = await getSynthesisTotal(workspace, activeForecastDate, BASELINE_PERCENTILE, BASELINE_NORMALIZATION_REF);
-                if (cancelled || reqId !== totalReqIdRef.current) return;
-                const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
-                const baseStr = resp?.parameters?.forecast_date || activeForecastDate;
-                const baseDt = parseForecastDate(baseStr) || parseForecastDate(activeForecastDate) || (baseStr ? new Date(baseStr) : null);
+                if (cancelled || localId !== reqId) return;
+                const { baseDt, daily, sub } = parseTotalSynthesis(resp);
                 setForecastBaseDate(baseDt);
-                let daily = [], sub = [];
-                arr.forEach(sp => {
-                    const dates = Array.isArray(sp.target_dates) ? sp.target_dates : [];
-                    const vals = Array.isArray(sp.values_normalized) ? sp.values_normalized : [];
-                    dates.forEach((dStr, i) => {
-                        const dt = parseForecastDate(dStr) || new Date(dStr);
-                        if (isNaN(dt)) return;
-                        const rec = {index: i, date: dt, time_step: sp.time_step, valueNorm: vals[i]};
-                        if (sp.time_step === 24) daily.push(rec); else sub.push({...rec, subIndex: i});
-                    });
-                });
-                daily.sort((a,b)=>a.date-b.date);
-                sub.sort((a,b)=>a.date-b.date);
                 setDailyLeads(daily);
                 setSubDailyLeads(sub);
                 if (daily.length) {
-                    setSelectedLead(0);
-                    setLeadResolution('daily');
-                    setSelectedTargetDate(daily[0].date);
+                    setSelectedLead(0); setLeadResolution('daily'); setSelectedTargetDate(daily[0].date);
                 } else if (sub.length) {
-                    setSelectedLead(0);
-                    setLeadResolution('sub');
-                    setSelectedTargetDate(sub[0].date);
+                    setSelectedLead(0); setLeadResolution('sub'); setSelectedTargetDate(sub[0].date);
                 } else {
-                    setSelectedLead(0);
-                    setSelectedTargetDate(null);
-                    setLeadResolution('daily');
+                    setSelectedLead(0); setSelectedTargetDate(null); setLeadResolution('daily');
                 }
             } catch {
-                if (cancelled || reqId !== totalReqIdRef.current) return;
+                if (cancelled) return;
                 setDailyLeads([]);
                 setSubDailyLeads([]);
                 setSelectedLead(0);
@@ -86,32 +83,22 @@ export function SynthesisProvider({children}) {
         }
         run();
         return () => { cancelled = true; };
-    }, [workspace, activeForecastDate, setForecastBaseDate]);
+    }, [workspace, activeForecastDate, setForecastBaseDate, parseTotalSynthesis]);
 
-    // Fetch per-method synthesis (baseline) - only when workspace/date changes
+    // Fetch per-method synthesis (baseline)
+    const { data: fetchedPerMethodData, loading: perMethodSynthesisLoading, error: perMethodSynthesisError } = useManagedRequest(
+        async () => {
+            const resp = await getSynthesisPerMethod(workspace, activeForecastDate, BASELINE_PERCENTILE);
+            return Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+        },
+        [workspace, activeForecastDate],
+        { enabled: !!workspace && !!activeForecastDate, initialData: [] }
+    );
+
     useEffect(() => {
-        let cancelled = false;
-        const reqId = ++perReqIdRef.current;
-        async function run() {
-            setPerMethodSynthesis([]);
-            setPerMethodSynthesisError(null);
-            if (!workspace || !activeForecastDate) return;
-            setPerMethodSynthesisLoading(true);
-            try {
-                const resp = await getSynthesisPerMethod(workspace, activeForecastDate, BASELINE_PERCENTILE);
-                if (!cancelled && reqId === perReqIdRef.current) setPerMethodSynthesis(Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : []);
-            } catch (e) {
-                if (!cancelled && reqId === perReqIdRef.current) {
-                    setPerMethodSynthesisError(e);
-                    setPerMethodSynthesis([]);
-                }
-            } finally {
-                if (!cancelled && reqId === perReqIdRef.current) setPerMethodSynthesisLoading(false);
-            }
-        }
-        run();
-        return () => { cancelled = true; };
-    }, [workspace, activeForecastDate]);
+        // keep state name same for external API
+        if (fetchedPerMethodData) setPerMethodSynthesis(fetchedPerMethodData);
+    }, [fetchedPerMethodData]);
 
     // Public selection helper
     const selectTargetDate = useCallback((date, preferSub) => {

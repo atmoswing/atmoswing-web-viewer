@@ -1,9 +1,10 @@
 import * as React from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import { useTranslation } from 'react-i18next';
-import { useConfig } from '../contexts/ConfigContext.jsx';
-import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
-import { useSnackbar } from '../contexts/SnackbarContext.jsx';
+import { useConfig } from '../../contexts/ConfigContext.jsx';
+import { useWorkspace } from '../../contexts/WorkspaceContext.jsx';
+import { useSnackbar } from '../../contexts/SnackbarContext.jsx';
+import { SnackbarItem } from './SnackbarItem.jsx';
 
 export default function AppSnackbars() {
     const { t } = useTranslation();
@@ -49,12 +50,13 @@ export default function AppSnackbars() {
                 message={t('workspace.invalidFromUrl', { key: invalidWorkspaceKey })}
             />
             {snackbars.map((snackbar) => (
-                <Snackbar
+                <SnackbarItem
                     key={snackbar.id}
-                    anchorOrigin={snackbar.anchorOrigin || { vertical: 'bottom', horizontal: 'left' }}
+                    id={snackbar.id}
+                    anchorOrigin={snackbar.anchorOrigin}
                     open={snackbar.open}
                     onClose={handleCloseSnackbar(snackbar.id)}
-                    autoHideDuration={snackbar.autoHideDuration || 6000}
+                    autoHideDuration={snackbar.autoHideDuration}
                     message={snackbar.message}
                 />
             ))}

@@ -8,7 +8,7 @@ import MapViewer from "./components/map/MapViewer.jsx";
 import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
 import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
 import ModalForecastSeries from './components/modals/ModalForecastSeries.jsx';
-import AppSnackbars from './components/AppSnackbars.jsx';
+import AppSnackbars from './components/snackbars/AppSnackbars.jsx';
 import {SnackbarProvider} from './contexts/SnackbarContext.jsx';
 
 function MapArea() {
