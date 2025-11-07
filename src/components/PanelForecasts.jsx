@@ -4,6 +4,7 @@ import {useMethods} from '../contexts/ForecastsContext.jsx';
 import {SimpleTreeView} from '@mui/x-tree-view/SimpleTreeView';
 import {TreeItem} from '@mui/x-tree-view/TreeItem';
 import { useTranslation } from 'react-i18next';
+import PanelStatus from './common/PanelStatus.jsx';
 
 
 export default function PanelForecasts(props) {
@@ -32,7 +33,11 @@ export default function PanelForecasts(props) {
     }, [selectedMethodConfig]);
 
     if (!methodConfigTree || methodConfigTree.length === 0) {
-        return <Panel title={t('panel.forecasts')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('forecasts.loading')}</span></Panel>;
+        return (
+            <Panel title={t('panel.forecasts')} defaultOpen={props.defaultOpen}>
+                <PanelStatus loading messages={{ loading: t('forecasts.loading') }} />
+            </Panel>
+        );
     }
 
     return (

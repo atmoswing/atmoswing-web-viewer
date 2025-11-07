@@ -5,6 +5,7 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { useEntities, useSelectedEntity } from '../contexts/ForecastsContext.jsx';
 import { useTranslation } from 'react-i18next';
+import PanelStatus from './common/PanelStatus.jsx';
 
 export default function PanelStations(props) {
     const { t } = useTranslation();
@@ -45,6 +46,23 @@ export default function PanelStations(props) {
     };
 
     const disabled = entitiesLoading || !!entitiesError || !entities || entities.length === 0;
+
+    if (entitiesLoading || entitiesError || !entities || entities.length === 0) {
+        return (
+            <Panel title={t('panel.stationSelection')} defaultOpen={props.defaultOpen}>
+                <PanelStatus
+                    loading={entitiesLoading}
+                    error={!!entitiesError}
+                    empty={!entitiesError && !entitiesLoading && (!entities || entities.length === 0)}
+                    messages={{
+                        loading: t('stations.loading'),
+                        error: t('stations.errorLoading'),
+                        empty: t('stations.select'),
+                    }}
+                />
+            </Panel>
+        );
+    }
 
     return (
         <Panel title={t('panel.stationSelection')} defaultOpen={props.defaultOpen}>

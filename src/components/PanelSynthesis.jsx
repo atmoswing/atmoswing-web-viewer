@@ -5,6 +5,7 @@ import {valueToColorCSS} from '../utils/colorUtils.js';
 import { SUB_HOURS, isSameDay, makeDayKey, parseDayKey } from '../utils/targetDateUtils.js';
 import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
 import { useTranslation } from 'react-i18next';
+import PanelStatus from './common/PanelStatus.jsx';
 
 // Local small helpers (kept in this file as they are only used here)
 function SelectionMarker({ size = 6, color = '#2a2a2a' }) {
@@ -98,14 +99,21 @@ export default function PanelSynthesis(props) {
     // Derive global set of sub-daily hours (canonical 4 slots)
     const subHours = useMemo(() => SUB_HOURS, []);
 
-    if (perMethodSynthesisLoading) {
-        return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.loading')}</span></Panel>;
-    }
-    if (perMethodSynthesisError) {
-        return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.errorLoading', { what: t('panel.synthesis') })}</span></Panel>;
-    }
-    if (!perMethodSynthesis.length) {
-        return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.noData')}</span></Panel>;
+    if (perMethodSynthesisLoading || perMethodSynthesisError || !perMethodSynthesis.length) {
+        return (
+            <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}>
+                <PanelStatus
+                    loading={perMethodSynthesisLoading}
+                    error={!!perMethodSynthesisError}
+                    empty={!perMethodSynthesisError && !perMethodSynthesisLoading && !perMethodSynthesis.length}
+                    messages={{
+                        loading: t('panel.loading'),
+                        error: t('panel.errorLoading', { what: t('panel.synthesis') }),
+                        empty: t('panel.noData'),
+                    }}
+                />
+            </Panel>
+        );
     }
 
     return (
