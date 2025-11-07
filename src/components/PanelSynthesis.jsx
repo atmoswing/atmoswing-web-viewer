@@ -2,9 +2,42 @@ import Panel from './Panel';
 import React, {useMemo, useCallback} from 'react';
 import {useMethods, useSynthesis} from '../contexts/ForecastsContext.jsx';
 import {valueToColorCSS} from '../utils/colorUtils.js';
-import { SUB_HOURS, isSameDay } from '../utils/targetDateUtils.js';
+import { SUB_HOURS, isSameDay, makeDayKey, parseDayKey } from '../utils/targetDateUtils.js';
 import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
 import { useTranslation } from 'react-i18next';
+
+// Local small helpers (kept in this file as they are only used here)
+function SelectionMarker({ size = 6, color = '#2a2a2a' }) {
+    const s = { position: 'absolute', top: '50%', left: '50%', width: size, height: size, background: color, borderRadius: '50%', transform: 'translate(-50%, -50%)' };
+    return <div style={s} />;
+}
+
+function SubDailyStrip({ segmentsByHour, methodLabel, onSelect, selectedDate }) {
+    const hours = React.useMemo(() => SUB_HOURS, []);
+    return (
+        <div style={{display:'flex', width:'100%', height:'100%'}} onClick={e=>e.stopPropagation()}>
+            {hours.map((hr, idx) => {
+                const seg = segmentsByHour.get(hr);
+                if (!seg) {
+                    return <div key={idx} className="alarm-sub-seg placeholder" style={{flex:1, borderRight: idx < hours.length-1 ? '1px solid #2a2a2a':'none', position:'relative', cursor:'default'}} />;
+                }
+                const color = valueToColorCSS(typeof seg.valueNorm === 'number' ? seg.valueNorm : 0, 1);
+                const selected = selectedDate && seg.date.getTime() === selectedDate.getTime();
+                return (
+                    <div
+                        key={idx}
+                        className="alarm-sub-seg"
+                        title={`${methodLabel} | ${seg.date.toLocaleString()}`}
+                        style={{flex:1, background:color, borderRight: idx < hours.length-1 ? '1px solid #2a2a2a':'none', cursor:'pointer', position:'relative'}}
+                        onClick={(e)=>{e.stopPropagation(); onSelect && onSelect(seg.date);}}
+                    >
+                        {selected && <SelectionMarker/>}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
 export default function PanelSynthesis(props) {
     const { t } = useTranslation();
@@ -27,7 +60,7 @@ export default function PanelSynthesis(props) {
             dates.forEach((dStr, idx) => {
                 const dt = dStr ? new Date(dStr) : null;
                 if (!dt || isNaN(dt)) return;
-                const dayKey = `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
+                const dayKey = makeDayKey(dt);
                 if (!map.has(methodId)) map.set(methodId, new Map());
                 const mMap = map.get(methodId);
                 if (!mMap.has(dayKey)) mMap.set(dayKey, []);
@@ -46,15 +79,9 @@ export default function PanelSynthesis(props) {
         data.forEach(mMap => mMap.forEach((_, dayKey) => set.add(dayKey)));
         // fallback daily leads
         if (dailyLeads && dailyLeads.length) {
-            dailyLeads.forEach(dl => {
-                const k = `${dl.date.getFullYear()}-${dl.date.getMonth()}-${dl.date.getDate()}`;
-                set.add(k);
-            });
+            dailyLeads.forEach(dl => set.add(makeDayKey(dl.date)));
         }
-        const arr = Array.from(set).map(k => {
-            const [y,m,d] = k.split('-').map(Number);
-            return { key: k, date: new Date(y, m, d) };
-        });
+        const arr = Array.from(set).map(k => ({ key: k, date: parseDayKey(k) }));
         arr.sort((a,b)=>a.date-b.date);
         return arr;
     }, [data, dailyLeads]);
@@ -107,7 +134,7 @@ export default function PanelSynthesis(props) {
                             if (!segs.length) {
                                 const selected = isMethodSelected && dayMatches;
                                 return <td key={d.key} style={{ width:40, height:24, padding:0, border:'1px solid #2a2a2a', position:'relative'}} title={methodName[methodId] || methodId} onClick={()=>handleSelect(methodId, d.date, false)}>
-                                    {selected && <div style={{position:'absolute', top:'50%', left:'50%', width:6, height:6, background:'#2a2a2a', borderRadius:'50%', transform:'translate(-50%,-50%)'}} />}
+                                    {selected && <SelectionMarker/>}
                                 </td>;
                             }
                             // Daily only (single) if only one segment AND it is midnight (assumed daily forecast) OR no subHours defined
@@ -116,30 +143,15 @@ export default function PanelSynthesis(props) {
                                 <td key={d.key} style={{ width:40, height:24, padding:0, border:'1px solid #2a2a2a', cursor:'pointer', position:'relative'}} title={methodName[methodId] || methodId} onClick={()=>handleSelect(methodId, segs[0].date, !isDailySingle)}>
                                     {isDailySingle ? (
                                         <div style={{width:'100%', height:'100%', position:'relative', background:valueToColorCSS(typeof segs[0].valueNorm==='number'?segs[0].valueNorm:0,1)}}>
-                                            {isMethodSelected && dayMatches && <div style={{position:'absolute', top:'50%', left:'50%', width:6, height:6, background:'#2a2a2a', borderRadius:'50%', transform:'translate(-50%,-50%)'}} />}
+                                            {isMethodSelected && dayMatches && <SelectionMarker/>}
                                         </div>
                                     ) : (
-                                        <div style={{display:'flex', width:'100%', height:'100%'}} onClick={e=>e.stopPropagation()}>
-                                            {subHours.map((hr, idx) => {
-                                                const s = segByHour.get(hr);
-                                                if (!s) {
-                                                    return <div key={idx} className="alarm-sub-seg placeholder" style={{flex:1, borderRight: idx < subHours.length-1 ? '1px solid #2a2a2a':'none', position:'relative', cursor:'default'}} />;
-                                                }
-                                                const color = valueToColorCSS(typeof s.valueNorm === 'number' ? s.valueNorm : 0, 1);
-                                                const segSelected = isMethodSelected && selectedTargetDate && s.date.getTime() === selectedTargetDate.getTime();
-                                                return (
-                                                    <div
-                                                        key={idx}
-                                                        className="alarm-sub-seg"
-                                                        title={`${methodName[methodId] || methodId} | ${s.date.toLocaleString()}`}
-                                                        style={{flex:1, background:color, borderRight: idx < subHours.length-1 ? '1px solid #2a2a2a':'none', cursor:'pointer', position:'relative'}}
-                                                        onClick={(e)=>{e.stopPropagation(); handleSelect(methodId, s.date, true);}}
-                                                    >
-                                                        {segSelected && <div style={{position:'absolute', top:'50%', left:'50%', width:6, height:6, background:'#2a2a2a', borderRadius:'50%', transform:'translate(-50%,-50%)'}} />}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                        <SubDailyStrip
+                                            segmentsByHour={segByHour}
+                                            methodLabel={methodName[methodId] || methodId}
+                                            selectedDate={selectedTargetDate}
+                                            onSelect={(dt)=>handleSelect(methodId, dt, true)}
+                                        />
                                     )}
                                 </td>
                             );

@@ -3,6 +3,19 @@
 
 export const SUB_HOURS = [0, 6, 12, 18];
 
+/** Create a stable YYYY-M-D key for a date (month is 0-based per Date API). */
+export function makeDayKey(date) {
+    if (!(date instanceof Date)) return '';
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+/** Parse a YYYY-M-D key to a local Date object (month 0-based). */
+export function parseDayKey(key) {
+    if (!key || typeof key !== 'string') return new Date(NaN);
+    const [y, m, d] = key.split('-').map(Number);
+    return new Date(y, m, d);
+}
+
 /**
  * Compute lead hours given either a base date + target date (preferred) or fallback indices.
  * Applies timezone offset adjustment when both dates are provided to keep consistent hour differences.

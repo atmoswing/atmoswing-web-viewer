@@ -2,6 +2,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState, 
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {getSynthesisTotal, getSynthesisPerMethod} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
+import { isSameInstant, isSameDay } from '../utils/targetDateUtils.js';
 
 const SynthesisContext = createContext({});
 
@@ -116,7 +117,7 @@ export function SynthesisProvider({children}) {
     const selectTargetDate = useCallback((date, preferSub) => {
         if (!date) return;
         if (preferSub && subDailyLeads.length) {
-            const idx = subDailyLeads.findIndex(l => l.date.getTime() === date.getTime());
+            const idx = subDailyLeads.findIndex(l => isSameInstant(l.date, date));
             if (idx >= 0) {
                 setSelectedLead(idx);
                 setLeadResolution('sub');
@@ -125,8 +126,7 @@ export function SynthesisProvider({children}) {
             }
         }
         if (dailyLeads.length) {
-            const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
-            const idx = dailyLeads.findIndex(l => l.date.getFullYear()===y && l.date.getMonth()===m && l.date.getDate()===d);
+            const idx = dailyLeads.findIndex(l => isSameDay(l.date, date));
             if (idx >= 0) {
                 setSelectedLead(idx);
                 setLeadResolution('daily');

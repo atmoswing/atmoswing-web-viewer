@@ -27,7 +27,7 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import ModalAnalogs from './ModalAnalogs.jsx';
 import ModalDistributions from './ModalDistributions.jsx';
-import { SUB_HOURS } from '../utils/targetDateUtils.js';
+import { SUB_HOURS, makeDayKey, isSameDay } from '../utils/targetDateUtils.js';
 import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
 
 function ToolbarSquares() {
@@ -42,7 +42,7 @@ function ToolbarSquares() {
     const subByDay = React.useMemo(() => {
         const m = new Map();
         subDailyLeads.forEach(s => {
-            const k = `${s.date.getFullYear()}-${s.date.getMonth()}-${s.date.getDate()}`;
+            const k = makeDayKey(s.date);
             if (!m.has(k)) m.set(k, []);
             m.get(k).push(s);
         });
@@ -55,11 +55,11 @@ function ToolbarSquares() {
             {dailyLeads.map((d,i) => {
                 const label = formatDateDDMMYYYY(d.date).slice(0,5); // DD.MM
                 const color = valueToColorCSS(d.valueNorm, maxVal);
-                const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
+                const key = makeDayKey(d.date);
                 const subs = subByDay.get(key) || [];
                 const subsByHour = new Map(subs.map(s => [s.date.getHours(), s]));
                 const hasAnySub = subHours.some(hr => subsByHour.has(hr));
-                const isSelected = selectedTargetDate && d.date.getFullYear()===selectedTargetDate.getFullYear() && d.date.getMonth()===selectedTargetDate.getMonth() && d.date.getDate()===selectedTargetDate.getDate() && (!selectedTargetDate.getHours() || subs.length===0);
+                const isSelected = selectedTargetDate && isSameDay(d.date, selectedTargetDate) && (!selectedTargetDate.getHours() || subs.length===0);
                 return (
                     <Tooltip
                         key={i}
