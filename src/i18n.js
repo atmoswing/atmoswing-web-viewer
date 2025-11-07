@@ -38,7 +38,9 @@ const resources = {
                 "hour": "Hour",
                 "loading": "Loading...",
                 "searching": "Searching...",
-                "restoreLastForecast": "Restore last forecast"
+                "restoreLastForecast": "Restore last forecast",
+                "selectLeadTime": "Select lead time",
+                "colorSynthesis": "Color: synthesis of all methods"
             },
             "forecasts": {
                 "loading": "Loading..."
@@ -185,7 +187,9 @@ const resources = {
                 "hour": "Heure",
                 "loading": "Chargement...",
                 "searching": "Recherche...",
-                "restoreLastForecast": "Restaurer la dernière prévision"
+                "restoreLastForecast": "Restaurer la dernière prévision",
+                "selectLeadTime": "Sélectionner l'échéance",
+                "colorSynthesis": "Couleur : synthèse de toutes les méthodes"
             },
             "forecasts": {
                 "loading": "Chargement..."

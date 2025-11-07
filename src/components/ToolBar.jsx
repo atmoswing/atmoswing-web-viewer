@@ -30,6 +30,7 @@ import ModalDistributions from './ModalDistributions.jsx';
 
 function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useSynthesis();
+    const { t } = useTranslation();
     const maxVal = 1;
 
     // Canonical 4 sub-daily hours (00,06,12,18)
@@ -50,7 +51,10 @@ function ToolbarSquares() {
     return (
         <div className="toolbar-left" style={{display:'flex', gap:4}}>
             {dailyLeads.map((d,i) => {
-                const label = `${String(d.date.getDate()).padStart(2,'0')}.${String(d.date.getMonth()+1).padStart(2,'0')}`;
+                const ddStr = String(d.date.getDate()).padStart(2,'0');
+                const mmStr = String(d.date.getMonth()+1).padStart(2,'0');
+                const yyyyStr = d.date.getFullYear();
+                const label = `${ddStr}.${mmStr}`;
                 const color = valueToColorCSS(d.valueNorm, maxVal);
                 const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
                 const subs = subByDay.get(key) || [];
@@ -58,36 +62,46 @@ function ToolbarSquares() {
                 const hasAnySub = subHours.some(hr => subsByHour.has(hr));
                 const isSelected = selectedTargetDate && d.date.getFullYear()===selectedTargetDate.getFullYear() && d.date.getMonth()===selectedTargetDate.getMonth() && d.date.getDate()===selectedTargetDate.getDate() && (!selectedTargetDate.getHours() || subs.length===0);
                 return (
-                    <div
+                    <Tooltip
                         key={i}
-                        className={`toolbar-square${isSelected ? ' selected' : ''}`}
-                        style={{background: color}}
-                        onClick={() => selectTargetDate(d.date, false)}
+                        title={
+                            <>
+                                <div>{t('toolbar.selectLeadTime', { defaultValue: 'Select lead time' })} {ddStr}.{mmStr}.{yyyyStr}</div>
+                                <div>{t('toolbar.colorSynthesis', { defaultValue: 'Color: synthesis of all methods' })}</div>
+                            </>
+                        }
+                        arrow
                     >
-                        <span>{label}</span>
-                        {subHours.length > 0 && (
-                            <div
-                                className={`square-subdaily${hasAnySub ? ' has-subs' : ''}`}
-                                style={!hasAnySub ? {display:'none'} : undefined}
-                                onClick={e=>{e.stopPropagation();}}
-                            >
-                                {subHours.map((hr, j) => {
-                                    const s = subsByHour.get(hr);
-                                    if (!s) return <div key={j} className="square-subdaily-seg placeholder"/>;
-                                    const subColor = valueToColorCSS(s.valueNorm, maxVal);
-                                    const subSelected = selectedTargetDate && s.date.getTime()===selectedTargetDate.getTime();
-                                    return (
-                                        <div
-                                            key={j}
-                                            className={`square-subdaily-seg${subSelected ? ' selected' : ''}`}
-                                            style={{background: subColor}}
-                                            onClick={() => selectTargetDate(s.date, true)}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
+                        <div
+                            className={`toolbar-square${isSelected ? ' selected' : ''}`}
+                            style={{background: color}}
+                            onClick={() => selectTargetDate(d.date, false)}
+                        >
+                            <span>{label}</span>
+                            {subHours.length > 0 && (
+                                <div
+                                    className={`square-subdaily${hasAnySub ? ' has-subs' : ''}`}
+                                    style={!hasAnySub ? {display:'none'} : undefined}
+                                    onClick={e=>{e.stopPropagation();}}
+                                >
+                                    {subHours.map((hr, j) => {
+                                        const s = subsByHour.get(hr);
+                                        if (!s) return <div key={j} className="square-subdaily-seg placeholder"/>;
+                                        const subColor = valueToColorCSS(s.valueNorm, maxVal);
+                                        const subSelected = selectedTargetDate && s.date.getTime()===selectedTargetDate.getTime();
+                                        return (
+                                            <div
+                                                key={j}
+                                                className={`square-subdaily-seg${subSelected ? ' selected' : ''}`}
+                                                style={{background: subColor}}
+                                                onClick={() => selectTargetDate(s.date, true)}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </Tooltip>
                 );
             })}
         </div>
