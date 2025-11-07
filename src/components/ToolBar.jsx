@@ -11,7 +11,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useSynthesis, useMethods, useForecastSession } from '../contexts/ForecastsContext.jsx';
 import { useWorkspace } from '../contexts/WorkspaceContext.jsx';
-import { valueToColorCSS } from '../utils/colors.js';
+import { valueToColorCSS } from '../utils/colorUtils.js';
 import Tooltip from '@mui/material/Tooltip';
 import { useTranslation } from 'react-i18next';
 import { formatForecastDateForApi } from '../utils/forecastDateUtils.js';
@@ -27,14 +27,16 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import ModalAnalogs from './ModalAnalogs.jsx';
 import ModalDistributions from './ModalDistributions.jsx';
+import { SUB_HOURS } from '../utils/targetDateUtils.js';
+import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
 
 function ToolbarSquares() {
     const { dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate } = useSynthesis();
     const { t } = useTranslation();
     const maxVal = 1;
 
-    // Canonical 4 sub-daily hours (00,06,12,18)
-    const subHours = React.useMemo(() => [0,6,12,18], []);
+    // Canonical sub-daily hours from util
+    const subHours = React.useMemo(() => SUB_HOURS, []);
 
     // Map dayKey -> sub segments (original grouping)
     const subByDay = React.useMemo(() => {
@@ -51,10 +53,7 @@ function ToolbarSquares() {
     return (
         <div className="toolbar-left" style={{display:'flex', gap:4}}>
             {dailyLeads.map((d,i) => {
-                const ddStr = String(d.date.getDate()).padStart(2,'0');
-                const mmStr = String(d.date.getMonth()+1).padStart(2,'0');
-                const yyyyStr = d.date.getFullYear();
-                const label = `${ddStr}.${mmStr}`;
+                const label = formatDateDDMMYYYY(d.date).slice(0,5); // DD.MM
                 const color = valueToColorCSS(d.valueNorm, maxVal);
                 const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
                 const subs = subByDay.get(key) || [];
@@ -66,7 +65,7 @@ function ToolbarSquares() {
                         key={i}
                         title={
                             <>
-                                <div>{t('toolbar.selectLeadTime', { defaultValue: 'Select lead time' })} {ddStr}.{mmStr}.{yyyyStr}</div>
+                                <div>{t('toolbar.selectLeadTime', { defaultValue: 'Select lead time' })} {label}</div>
                                 <div>{t('toolbar.colorSynthesis', { defaultValue: 'Color: synthesis of all methods' })}</div>
                             </>
                         }
@@ -133,7 +132,7 @@ function ToolbarCenter() {
     const [dialogDate, setDialogDate] = React.useState('');
     const [selectedHour, setSelectedHour] = React.useState('00');
 
-    const allowedHours = React.useMemo(() => [0,6,12,18], []);
+    const allowedHours = React.useMemo(() => SUB_HOURS, []);
 
     // initialize dialog fields from forecastBaseDate
     React.useEffect(() => {

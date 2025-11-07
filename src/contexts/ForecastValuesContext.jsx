@@ -3,6 +3,7 @@ import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {useSynthesis} from './SynthesisContext.jsx';
 import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '../services/api.js';
+import { computeLeadHours, hasTargetDate } from '../utils/targetDateUtils.js';
 
 const ForecastValuesContext = createContext({});
 
@@ -30,13 +31,7 @@ export function ForecastValuesProvider({children}) {
             setForecastUnavailable(false);
             return;
         }
-        if (leadResolution === 'sub') {
-            const match = subDailyLeads.find(l => l.date.getTime() === selectedTargetDate.getTime());
-            setForecastUnavailable(!match);
-        } else {
-            const match = dailyLeads.find(l => l.date.getFullYear()===selectedTargetDate.getFullYear() && l.date.getMonth()===selectedTargetDate.getMonth() && l.date.getDate()===selectedTargetDate.getDate());
-            setForecastUnavailable(!match);
-        }
+        setForecastUnavailable(!hasTargetDate(leadResolution, selectedTargetDate, dailyLeads, subDailyLeads));
     }, [selectedMethodConfig, activeForecastDate, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
 
     // Fetch forecast values
@@ -50,21 +45,7 @@ export function ForecastValuesProvider({children}) {
             const methodId = selectedMethodConfig.method.id;
             if (!methodConfigTree.find(m => m.id === methodId)) { setForecastValues({}); setForecastValuesNorm({}); return; }
             const configId = selectedMethodConfig.config?.id;
-            let leadHours = 0;
-            if (forecastBaseDate && selectedTargetDate) {
-                leadHours = Math.max(0, Math.round((selectedTargetDate.getTime() - forecastBaseDate.getTime()) / 3600000));
-                // Get the timezone offset if possible to adjust leadHours
-                let tzDiff = (selectedTargetDate.getTimezoneOffset() - forecastBaseDate.getTimezoneOffset());
-                leadHours -= tzDiff / 60;
-            } else {
-                if (leadResolution === 'sub') {
-                    const step = subDailyLeads[selectedLead]?.time_step || (subDailyLeads[0]?.time_step || 0);
-                    leadHours = step * selectedLead;
-                } else {
-                    const step = dailyLeads[selectedLead]?.time_step || (dailyLeads[0]?.time_step || 24);
-                    leadHours = step * selectedLead;
-                }
-            }
+            const leadHours = computeLeadHours(forecastBaseDate, selectedTargetDate, leadResolution, selectedLead, dailyLeads, subDailyLeads);
             const key = `${workspace}|${activeForecastDate}|${methodId}|${configId || 'agg'}|${leadHours}|${percentile}|${normalizationRef || 'raw'}`;
             const cached = cacheRef.current.get(key);
             if (cached) {
@@ -108,4 +89,3 @@ export function ForecastValuesProvider({children}) {
 }
 
 export const useForecastValues = () => useContext(ForecastValuesContext);
-

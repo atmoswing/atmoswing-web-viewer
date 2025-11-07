@@ -1,7 +1,9 @@
 import Panel from './Panel';
 import React, {useMemo, useCallback} from 'react';
 import {useMethods, useSynthesis} from '../contexts/ForecastsContext.jsx';
-import {valueToColorCSS} from '../utils/colors.js';
+import {valueToColorCSS} from '../utils/colorUtils.js';
+import { SUB_HOURS, isSameDay } from '../utils/targetDateUtils.js';
+import { formatDateDDMMYYYY } from '../utils/formattingUtils.js';
 import { useTranslation } from 'react-i18next';
 
 export default function PanelSynthesis(props) {
@@ -67,7 +69,7 @@ export default function PanelSynthesis(props) {
     }, [methodConfigTree, setSelectedMethodConfig, selectTargetDate]);
 
     // Derive global set of sub-daily hours (canonical 4 slots)
-    const subHours = useMemo(() => [0,6,12,18], []);
+    const subHours = useMemo(() => SUB_HOURS, []);
 
     if (perMethodSynthesisLoading) {
         return <Panel title={t('panel.synthesis')} defaultOpen={props.defaultOpen}><span className="panel-secondary-text">{t('panel.loading')}</span></Panel>;
@@ -87,9 +89,8 @@ export default function PanelSynthesis(props) {
                 <thead>
                 <tr>
                     {days.map(d => {
-                        const dd = String(d.date.getDate()).padStart(2,'0');
-                        const mm = String(d.date.getMonth()+1).padStart(2,'0');
-                        return <th key={d.key} style={{ padding: '2px', border: '0', fontWeight: 'normal' }}>{dd}.{mm}</th>;
+                        const ddmm = formatDateDDMMYYYY(d.date).slice(0,5);
+                        return <th key={d.key} style={{ padding: '2px', border: '0', fontWeight: 'normal' }}>{ddmm}</th>;
                     })}
                 </tr>
                 </thead>
@@ -99,7 +100,7 @@ export default function PanelSynthesis(props) {
                         {days.map(d => {
                             const segs = data.get(methodId)?.get(d.key) || [];
                             const isMethodSelected = selectedMethodConfig?.method?.id === methodId;
-                            const dayMatches = selectedTargetDate && selectedTargetDate.getFullYear()===d.date.getFullYear() && selectedTargetDate.getMonth()===d.date.getMonth() && selectedTargetDate.getDate()===d.date.getDate();
+                            const dayMatches = selectedTargetDate && isSameDay(selectedTargetDate, d.date);
                             // Index sub segments by hour for slot placement
                             const segByHour = new Map(segs.map(s => [s.date.getHours(), s]));
                             const isSubDailyDay = subHours.length > 0 && segs.some(s => s.date.getHours() !== 0);

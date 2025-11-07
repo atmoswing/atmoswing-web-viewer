@@ -24,7 +24,7 @@ import {useSelectedEntity} from '../contexts/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
 import config from '../config.js';
 import {useWorkspace} from '../contexts/WorkspaceContext.jsx';
-import {valueToColor} from '../utils/colors.js';
+import {valueToColor} from '../utils/colorUtils.js';
 import {useConfig} from '../contexts/ConfigContext.jsx';
 import {useSnackbar} from '../contexts/SnackbarContext.jsx';
 // NEW: formats and shapefile loader
