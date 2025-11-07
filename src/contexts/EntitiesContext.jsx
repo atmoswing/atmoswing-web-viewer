@@ -1,9 +1,9 @@
-import React, {createContext, useContext, useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {getEntities, getRelevantEntities} from '../services/api.js';
 import { isMethodSelectionValid, methodExists, deriveConfigId, keyForEntities } from '../utils/contextGuards.js';
-import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { useCachedRequest } from '../hooks/useCachedRequest.js';
 import { normalizeEntitiesResponse, normalizeRelevantEntityIds } from '../utils/apiNormalization.js';
 
 const EntitiesContext = createContext({});
@@ -16,23 +16,12 @@ export function EntitiesProvider({children}) {
     const [entitiesLoading, setEntitiesLoading] = useState(false);
     const [entitiesError, setEntitiesError] = useState(null);
     const [relevantEntities, setRelevantEntities] = useState(null);
-    const [refreshTick, setRefreshTick] = useState(0);
 
-    const entitiesCacheRef = useRef(new Map());
-    const relevantCacheRef = useRef(new Map());
     const prevWorkspaceRef = useRef(workspace);
-    const versionRef = useRef(0);
 
-    const refreshEntities = useCallback(() => {
-        setRefreshTick(t => t + 1);
-        setEntitiesError(null);
-    }, []);
-
-    // Clear caches on session reset or workspace change
+    // Clear derived state on session reset or workspace change
     useEffect(() => {
         if (prevWorkspaceRef.current !== workspace) {
-            entitiesCacheRef.current.clear();
-            relevantCacheRef.current.clear();
             setEntities([]);
             setRelevantEntities(null);
             prevWorkspaceRef.current = workspace;
@@ -40,8 +29,6 @@ export function EntitiesProvider({children}) {
     }, [workspace]);
 
     useEffect(() => {
-        entitiesCacheRef.current.clear();
-        relevantCacheRef.current.clear();
         setEntities([]);
         setRelevantEntities(null);
     }, [resetVersion]);
@@ -51,16 +38,13 @@ export function EntitiesProvider({children}) {
 
     const entitiesKey = canQueryEntities ? keyForEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId) : null;
 
-    const { data: entitiesData, loading: entitiesReqLoading, error: entitiesReqError } = useManagedRequest(
+    const { data: entitiesData, loading: entitiesReqLoading, error: entitiesReqError } = useCachedRequest(
+        entitiesKey,
         async () => {
-            const cached = entitiesCacheRef.current.get(entitiesKey);
-            if (cached) return cached;
             const resp = await getEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId);
-            const list = normalizeEntitiesResponse(resp);
-            entitiesCacheRef.current.set(entitiesKey, list);
-            return list;
+            return normalizeEntitiesResponse(resp);
         },
-        [workspace, activeForecastDate, selectedMethodConfig, effectiveConfigId, methodConfigTree, methodsLoading, refreshTick],
+        [workspace, activeForecastDate, selectedMethodConfig, effectiveConfigId, methodConfigTree, methodsLoading],
         { enabled: !!entitiesKey, initialData: [] }
     );
 
@@ -73,14 +57,11 @@ export function EntitiesProvider({children}) {
     const canQueryRelevant = canQueryEntities && !!selectedMethodConfig?.config?.id;
     const relevantKey = canQueryRelevant ? keyForEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id) : null;
 
-    const { data: relevantData } = useManagedRequest(
+    const { data: relevantData } = useCachedRequest(
+        relevantKey,
         async () => {
-            const cached = relevantCacheRef.current.get(relevantKey);
-            if (cached) return cached;
             const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id);
-            const setIds = normalizeRelevantEntityIds(resp);
-            relevantCacheRef.current.set(relevantKey, setIds);
-            return setIds;
+            return normalizeRelevantEntityIds(resp);
         },
         [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree],
         { enabled: !!relevantKey, initialData: null }
@@ -92,10 +73,9 @@ export function EntitiesProvider({children}) {
         entities,
         entitiesLoading,
         entitiesError,
-        refreshEntities,
         relevantEntities,
         entitiesWorkspace: workspace
-    }), [entities, entitiesLoading, entitiesError, refreshEntities, relevantEntities, workspace]);
+    }), [entities, entitiesLoading, entitiesError, relevantEntities, workspace]);
 
     return <EntitiesContext.Provider value={value}>{children}</EntitiesContext.Provider>;
 }

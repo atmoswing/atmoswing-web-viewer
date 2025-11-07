@@ -50,3 +50,38 @@ export function extractTargetDatesArray(resp) {
     return [];
 }
 
+// Add forecast values and methods/synthesis normalization helpers
+export function normalizeForecastValuesResponse(resp) {
+    if (!resp || typeof resp !== 'object') return { norm: {}, raw: {}, unavailable: true };
+    const ids = Array.isArray(resp.entity_ids) ? resp.entity_ids : [];
+    const valsNorm = Array.isArray(resp.values_normalized) ? resp.values_normalized : [];
+    const valsRaw = Array.isArray(resp.values) ? resp.values : [];
+    const allEmpty = ids.length > 0 && valsNorm.length === 0 && valsRaw.length === 0;
+    const mismatch = ids.length > 0 && ((valsNorm.length > 0 && valsNorm.length !== ids.length) && (valsRaw.length > 0 && valsRaw.length !== ids.length));
+    if (allEmpty || mismatch) return { norm: {}, raw: {}, unavailable: true };
+    const normMap = {}, rawMap = {};
+    ids.forEach((id, i) => { normMap[id] = valsNorm[i]; rawMap[id] = valsRaw[i]; });
+    return { norm: normMap, raw: rawMap, unavailable: false };
+}
+
+export function normalizeMethodsAndConfigs(resp) {
+    const methods = Array.isArray(resp?.methods) ? resp.methods : [];
+    return methods.map(m => ({
+        id: m.id,
+        name: m.name,
+        children: Array.isArray(m.configurations) ? m.configurations.map(c => ({ id: c.id, name: c.name })) : []
+    }));
+}
+
+export function normalizeSynthesisTotal(resp) {
+    const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+    return arr.map(sp => ({
+        time_step: sp.time_step,
+        target_dates: Array.isArray(sp.target_dates) ? sp.target_dates : [],
+        values_normalized: Array.isArray(sp.values_normalized) ? sp.values_normalized : []
+    }));
+}
+
+export function normalizePerMethodSynthesis(resp) {
+    return Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+}

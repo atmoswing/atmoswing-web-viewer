@@ -1,11 +1,12 @@
-import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {useSynthesis} from './SynthesisContext.jsx';
 import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '../services/api.js';
 import { computeLeadHours, hasTargetDate } from '../utils/targetDateUtils.js';
 import { isMethodSelectionValid, methodExists, keyForForecastValues } from '../utils/contextGuards.js';
-import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { useCachedRequest } from '../hooks/useCachedRequest.js';
+import { normalizeForecastValuesResponse } from '../utils/apiNormalization.js';
 
 const ForecastValuesContext = createContext({});
 
@@ -19,8 +20,6 @@ export function ForecastValuesProvider({children}) {
     const [forecastLoading, setForecastLoading] = useState(false);
     const [forecastError, setForecastError] = useState(null);
     const [forecastUnavailable, setForecastUnavailable] = useState(false);
-
-    const cacheRef = useRef(new Map());
 
     // Immediate availability feedback based on selection vs leads
     useEffect(() => {
@@ -41,29 +40,16 @@ export function ForecastValuesProvider({children}) {
     const configId = selectedMethodConfig?.config?.id;
     const key = canQuery ? keyForForecastValues(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef) : null;
 
-    const { data: valuesData, loading: valuesReqLoading, error: valuesReqError } = useManagedRequest(
+    const { data: valuesData, loading: valuesReqLoading, error: valuesReqError } = useCachedRequest(
+        key,
         async () => {
-            const cached = cacheRef.current.get(key);
-            if (cached) return cached;
             const resp = configId
                 ? await getEntitiesValuesPercentile(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef)
                 : await getAggregatedEntitiesValues(workspace, activeForecastDate, methodId, leadHours, percentile, normalizationRef);
-            const ids = resp.entity_ids || [];
-            const valsNorm = Array.isArray(resp.values_normalized) ? resp.values_normalized : [];
-            const valsRaw = Array.isArray(resp.values) ? resp.values : [];
-            const allEmpty = ids.length > 0 && valsNorm.length === 0 && valsRaw.length === 0;
-            const mismatch = ids.length > 0 && ((valsNorm.length > 0 && valsNorm.length !== ids.length) && (valsRaw.length > 0 && valsRaw.length !== ids.length));
-            if (allEmpty || mismatch) {
-                return { norm: {}, raw: {}, unavailable: true };
-            }
-            const normMap = {}, rawMap = {};
-            ids.forEach((id,i)=>{ normMap[id]=valsNorm[i]; rawMap[id]=valsRaw[i]; });
-            const result = { norm: normMap, raw: rawMap, unavailable: false };
-            cacheRef.current.set(key, result);
-            return result;
+            return normalizeForecastValuesResponse(resp);
         },
         [workspace, activeForecastDate, selectedMethodConfig, percentile, normalizationRef, selectedLead, leadResolution, dailyLeads, subDailyLeads, forecastBaseDate, selectedTargetDate, methodConfigTree, forecastUnavailable],
-        { enabled: !!key }
+        { enabled: !!key, initialData: null }
     );
 
     useEffect(() => {

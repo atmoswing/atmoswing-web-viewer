@@ -4,6 +4,7 @@ import {getSynthesisTotal, getSynthesisPerMethod} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import { isSameInstant, isSameDay } from '../utils/targetDateUtils.js';
 import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { normalizePerMethodSynthesis } from '../utils/apiNormalization.js';
 
 const SynthesisContext = createContext({});
 
@@ -89,7 +90,7 @@ export function SynthesisProvider({children}) {
     const { data: fetchedPerMethodData, loading: perMethodSynthesisLoading, error: perMethodSynthesisError } = useManagedRequest(
         async () => {
             const resp = await getSynthesisPerMethod(workspace, activeForecastDate, BASELINE_PERCENTILE);
-            return Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
+            return normalizePerMethodSynthesis(resp);
         },
         [workspace, activeForecastDate],
         { enabled: !!workspace && !!activeForecastDate, initialData: [] }

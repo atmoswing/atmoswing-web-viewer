@@ -3,6 +3,7 @@ import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {getMethodsAndConfigs} from '../services/api.js';
 import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { normalizeMethodsAndConfigs } from '../utils/apiNormalization.js';
 
 const MethodsContext = createContext({});
 
@@ -44,11 +45,7 @@ export function MethodsProvider({children}) {
 
     const methodConfigTree = useMemo(() => {
         if (!methodsAndConfigs?.methods) return [];
-        return methodsAndConfigs.methods.map(m => ({
-            id: m.id,
-            name: m.name,
-            children: (m.configurations || []).map(c => ({id: c.id, name: c.name}))
-        }));
+        return normalizeMethodsAndConfigs(methodsAndConfigs);
     }, [methodsAndConfigs]);
 
     const setSelectedMethodConfigScoped = useCallback(sel => {
