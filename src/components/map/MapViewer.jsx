@@ -93,7 +93,7 @@ export default function MapViewer() {
             // Swiss LV95
             proj4.defs('EPSG:2056', '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs +type=crs');
         }
-        try { register(proj4); } catch (_) {}
+        try { register(proj4); } catch (e) { void e; }
         lastRegisteredProjRef.current = ENTITIES_SOURCE_EPSG;
     }, [ENTITIES_SOURCE_EPSG]);
 
@@ -402,9 +402,9 @@ export default function MapViewer() {
                             if (timer) clearInterval(timer);
                         });
                     }
-                } catch (_) {}
+                } catch (e) { void e; }
                 // remove click handler if present
-                try { if (mapInstanceRef.current.__singleClickHandler) mapInstanceRef.current.un('singleclick', mapInstanceRef.current.__singleClickHandler); } catch (_) {}
+                try { if (mapInstanceRef.current.__singleClickHandler) mapInstanceRef.current.un('singleclick', mapInstanceRef.current.__singleClickHandler); } catch (e) { void e; }
                 mapInstanceRef.current.setTarget(null);
                 mapInstanceRef.current = null;
             }
@@ -416,7 +416,7 @@ export default function MapViewer() {
     useEffect(() => {
         if (!baseDateSearchFailed) return;
         const id = setTimeout(() => {
-            try { clearBaseDateSearchFailed(); } catch (_) {}
+            try { clearBaseDateSearchFailed(); } catch (e) { void e; }
         }, 2000);
         return () => clearTimeout(id);
     }, [baseDateSearchFailed, clearBaseDateSearchFailed]);
@@ -466,7 +466,7 @@ export default function MapViewer() {
             layersCollection.getArray()
                 .filter(l => l && l.get && l.get('__fromWorkspaceConfig'))
                 .forEach(l => layersCollection.remove(l));
-        } catch (_) {}
+        } catch (e) { void e; }
         // Resolve selected workspace config
         const ws = runtimeConfig?.workspaces?.find(w => w.key === workspace);
         const items = (ws && Array.isArray(ws.shapefiles)) ? ws.shapefiles : [];
@@ -504,7 +504,7 @@ export default function MapViewer() {
 
             // Resolve style asynchronously (config style > .qml > default)
             resolveOverlayStyle(item, styleFn).then(sfn => {
-                try { layer.setStyle(sfn); } catch (_) {}
+                try { layer.setStyle(sfn); } catch (e) { void e; }
             });
 
             const lower = String(url).toLowerCase();
@@ -627,7 +627,7 @@ export default function MapViewer() {
                 style
             });
             feat.setStyle(style);
-            try { feat.setId(ent.id); } catch (_) {}
+            try { feat.setId(ent.id); } catch (e) { void e; }
             source.addFeature(feat);
         });
 

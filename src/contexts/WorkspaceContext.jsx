@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { getLastForecastDate, getMethodsAndConfigs } from '../services/api.js';
-import { normalizeMethodsAndConfigs } from '../utils/apiNormalization.js';
 import {useConfig} from './ConfigContext.jsx';
 import { readWorkspaceFromUrl, writeWorkspaceToUrl, onWorkspacePopState } from '../utils/urlWorkspaceUtils.js';
 import { useCachedRequest, clearCachedRequests } from '../hooks/useCachedRequest.js';
@@ -42,7 +41,7 @@ export function WorkspaceProvider({ children }) {
                 if (first) { setWorkspaceState(first); writeWorkspaceToUrl(first); }
             }
         }
-    }, [workspaces]);
+    }, [workspaces, workspace]);
 
     // Keep URL in sync whenever workspace state changes and is valid
     useEffect(() => {

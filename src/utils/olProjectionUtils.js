@@ -13,5 +13,5 @@ export function ensureProjDefined(epsg) {
     if (PREDEFINED[epsg]) {
         proj4.defs(epsg, PREDEFINED[epsg]);
     }
-    try { register(proj4); } catch (_) {}
+    try { register(proj4); } catch (e) { void e; }
 }

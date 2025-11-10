@@ -1,42 +1,37 @@
-import React from 'react';
+import React, { Suspense, lazy, memo } from 'react';
 
-import './styles/App.css'
+import '@/styles/App.css'
 
-import SideBar from "./components/sidebar/SideBar.jsx";
-import ToolBar from "./components/toolbar/ToolBar.jsx";
-import MapViewer from "./components/map/MapViewer.jsx";
-import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
-import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
-import ModalForecastSeries from './components/modals/ModalForecastSeries.jsx';
-import AppSnackbars from './components/snackbars/AppSnackbars.jsx';
-import {SnackbarProvider} from './contexts/SnackbarContext.jsx';
-import ErrorBoundary from './components/ErrorBoundary.jsx';
+import SideBar from '@/components/sidebar/SideBar.jsx';
+import ToolBar from '@/components/toolbar/ToolBar.jsx';
+import MapViewer from '@/components/map/MapViewer.jsx';
+import AppSnackbars from '@/components/snackbars/AppSnackbars.jsx';
+import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 
-function MapArea() {
+// Lazy heavy modal
+const ModalForecastSeries = lazy(() => import('@/components/modals/ModalForecastSeries.jsx'));
+
+const MapArea = memo(function MapArea() {
     return (
         <main className="map-area">
             <MapViewer />
         </main>
     );
-}
+});
 
 export default function App() {
     return (
         <div className="app-layout">
             <ErrorBoundary>
-                <SnackbarProvider>
-                    <WorkspaceProvider>
-                        <ForecastsProvider>
-                                <SideBar />
-                                <div className="main-content">
-                                    <ToolBar />
-                                    <MapArea />
-                                    <ModalForecastSeries />
-                                </div>
-                                <AppSnackbars />
-                        </ForecastsProvider>
-                    </WorkspaceProvider>
-                </SnackbarProvider>
+                <SideBar />
+                <div className="main-content">
+                    <ToolBar />
+                    <MapArea />
+                    <Suspense fallback={null}>
+                        <ModalForecastSeries />
+                    </Suspense>
+                </div>
+                <AppSnackbars />
             </ErrorBoundary>
         </div>
     );

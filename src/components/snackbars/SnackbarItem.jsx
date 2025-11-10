@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Snackbar from '@mui/material/Snackbar';
 
-export function SnackbarItem({ id, anchorOrigin, open, onClose, autoHideDuration, message }) {
+export function SnackbarItem({ anchorOrigin, open, onClose, autoHideDuration, message }) {
     return (
         <Snackbar
             anchorOrigin={anchorOrigin || { vertical: 'bottom', horizontal: 'left' }}
@@ -12,4 +12,3 @@ export function SnackbarItem({ id, anchorOrigin, open, onClose, autoHideDuration
         />
     );
 }
-

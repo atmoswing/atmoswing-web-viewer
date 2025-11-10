@@ -102,7 +102,8 @@ export async function tryLoadQmlStyle(styleUrl) {
             }
         };
         return styleFromConfigObj({ line, polygon, point });
-    } catch (_) {
+    } catch (e) {
+        void e; // ignore parse errors and return null
         return null;
     }
 }
@@ -123,7 +124,7 @@ export function candidateStyleUrlsForDataUrl(dataUrl) {
 
 export async function resolveOverlayStyle(item, defaultsStyleFn) {
     if (item && item.style) {
-        try { return styleFromConfigObj(item.style); } catch (_) {}
+        try { return styleFromConfigObj(item.style); } catch (e) { void e; }
     }
     const candidates = candidateStyleUrlsForDataUrl(item?.url || '');
     for (const url of candidates) {

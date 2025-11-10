@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useEffect, useState, useCallback} from 'react';
+import React, {createContext, useContext, useEffect, useState} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
 
 const SelectedEntityContext = createContext({});
@@ -17,4 +17,3 @@ export function SelectedEntityProvider({children}) {
 }
 
 export const useSelectedEntity = () => useContext(SelectedEntityContext);
-
