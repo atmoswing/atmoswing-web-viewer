@@ -45,7 +45,7 @@ import {
 } from '../../utils/apiNormalization.js';
 import {DEFAULT_TTL, SHORT_TTL} from '../../utils/cacheTTLs.js';
 
-export default function ModalAnalogs({open, onClose}) {
+export default function DetailsAnalogsModal({open, onClose}) {
   const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();
   const {t} = useTranslation();
 
@@ -234,7 +234,7 @@ export default function ModalAnalogs({open, onClose}) {
         {relevant && <Typography variant="caption" sx={{
           color: 'primary.main',
           fontWeight: 600
-        }}>({t('modalAnalogs.relevant')})</Typography>}
+        }}>({t('detailsAnalogsModal.relevant')})</Typography>}
       </Box>
     );
   };
@@ -243,8 +243,8 @@ export default function ModalAnalogs({open, onClose}) {
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="md"
             sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '920px'}}}>
       <DialogTitle sx={{pr: 5}}>
-        {t('modalAnalogs.title')}
-        <IconButton aria-label={t('modalAnalogs.close')} onClick={onClose} size="small"
+        {t('detailsAnalogsModal.title')}
+        <IconButton aria-label={t('detailsAnalogsModal.close')} onClick={onClose} size="small"
                     sx={{position: 'absolute', right: 8, top: 8}}>
           <CloseIcon fontSize="small"/>
         </IconButton>
@@ -253,12 +253,12 @@ export default function ModalAnalogs({open, onClose}) {
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 3}}>
             <FormControl fullWidth size="small">
-              <InputLabel id="analogs-method-label">{t('modalAnalogs.method')}</InputLabel>
+              <InputLabel id="analogs-method-label">{t('detailsAnalogsModal.method')}</InputLabel>
               <Select
                 variant="standard"
                 labelId="analogs-method-label"
                 value={selectedMethodId ?? ''}
-                label={t('modalAnalogs.method')}
+                label={t('detailsAnalogsModal.method')}
                 onChange={(e) => {
                   setSelectedMethodId(e.target.value);
                   setSelectedConfigId(null);
@@ -266,9 +266,9 @@ export default function ModalAnalogs({open, onClose}) {
                   setRelevantMapVersion(v => v + 1);
                 }}
               >
-                {methodsLoading && <MenuItem value=""><em>{t('modalAnalogs.loading')}</em></MenuItem>}
+                {methodsLoading && <MenuItem value=""><em>{t('detailsAnalogsModal.loading')}</em></MenuItem>}
                 {!methodsLoading && methodOptions.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noMethods')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noMethods')}</em></MenuItem>}
                 {methodOptions.map(m => (
                   <MenuItem key={m.id} value={m.id}>{m.name || m.id}</MenuItem>
                 ))}
@@ -276,12 +276,12 @@ export default function ModalAnalogs({open, onClose}) {
             </FormControl>
 
             <FormControl fullWidth size="small">
-              <InputLabel id="analogs-config-label">{t('modalAnalogs.config')}</InputLabel>
+              <InputLabel id="analogs-config-label">{t('detailsAnalogsModal.config')}</InputLabel>
               <Select
                 variant="standard"
                 labelId="analogs-config-label"
                 value={selectedConfigId ?? ''}
-                label={t('modalAnalogs.config')}
+                label={t('detailsAnalogsModal.config')}
                 onChange={(e) => {
                   setSelectedConfigId(e.target.value);
                 }}
@@ -291,7 +291,7 @@ export default function ModalAnalogs({open, onClose}) {
                 }}
               >
                 {configsForSelectedMethod.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noConfigs')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noConfigs')}</em></MenuItem>}
                 {configsForSelectedMethod.map(cfg => (
                   <MenuItem key={cfg.id} value={cfg.id}>
                     {renderConfigLabel(cfg)}
@@ -301,12 +301,12 @@ export default function ModalAnalogs({open, onClose}) {
             </FormControl>
 
             <FormControl fullWidth size="small">
-              <InputLabel id="analogs-entity-label">{t('modalAnalogs.entity')}</InputLabel>
+              <InputLabel id="analogs-entity-label">{t('detailsAnalogsModal.entity')}</InputLabel>
               <Select
                 variant="standard"
                 labelId="analogs-entity-label"
                 value={selectedStationId ?? ''}
-                label={t('modalAnalogs.entity')}
+                label={t('detailsAnalogsModal.entity')}
                 onChange={(e) => {
                   setSelectedStationId(e.target.value);
                   setRelevantMapVersion(v => v + 1);
@@ -314,9 +314,9 @@ export default function ModalAnalogs({open, onClose}) {
                 MenuProps={{PaperProps: {style: {maxHeight: 320}}}}
               >
                 {stationsLoading &&
-                  <MenuItem value=""><em>{t('modalAnalogs.loadingEntities')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.loadingEntities')}</em></MenuItem>}
                 {!stationsLoading && stations.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noEntities')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noEntities')}</em></MenuItem>}
                 {stations.map(s => (
                   <MenuItem key={s.id} value={s.id}>{s.name || s.id}</MenuItem>
                 ))}
@@ -324,18 +324,18 @@ export default function ModalAnalogs({open, onClose}) {
             </FormControl>
 
             <FormControl fullWidth size="small">
-              <InputLabel id="analogs-lead-label">{t('modalAnalogs.lead')}</InputLabel>
+              <InputLabel id="analogs-lead-label">{t('detailsAnalogsModal.lead')}</InputLabel>
               <Select
                 variant="standard"
                 labelId="analogs-lead-label"
                 value={selectedLead ?? ''}
-                label={t('modalAnalogs.lead')}
+                label={t('detailsAnalogsModal.lead')}
                 onChange={(e) => setSelectedLead(e.target.value)}
               >
                 {leadsLoading &&
-                  <MenuItem value=""><em>{t('modalAnalogs.loadingAnalogs')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.loadingAnalogs')}</em></MenuItem>}
                 {!leadsLoading && leads.length === 0 && <MenuItem
-                  value=""><em>{t('modalAnalogs.noLeads') || 'No lead times'}</em></MenuItem>}
+                  value=""><em>{t('detailsAnalogsModal.noLeads') || 'No lead times'}</em></MenuItem>}
                 {leads.map(l => (
                   <MenuItem key={String(l.lead) + (l.label || '')}
                             value={l.lead}>{l.label || (l.lead != null ? `${l.lead}h` : '')}</MenuItem>
@@ -345,31 +345,31 @@ export default function ModalAnalogs({open, onClose}) {
           </Box>
           <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>
             <Typography variant="subtitle1"
-                        sx={{mb: 1}}>{t('modalAnalogs.analogsList') || 'Analogs'}</Typography>
+                        sx={{mb: 1}}>{t('detailsAnalogsModal.analogsList') || 'Analogs'}</Typography>
 
             <Box sx={{mt: 2}}>
               {methodsError && <Typography variant="caption"
-                                           sx={{color: '#b00020'}}>{t('modalAnalogs.errorLoadingMethods')}</Typography>}
+                                           sx={{color: '#b00020'}}>{t('detailsAnalogsModal.errorLoadingMethods')}</Typography>}
               {methodsLoading &&
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={18}/>
-                  <Typography variant="caption">{t('modalAnalogs.loadingMethods')}</Typography></Box>}
+                  <Typography variant="caption">{t('detailsAnalogsModal.loadingMethods')}</Typography></Box>}
               {stationsError && <Typography variant="caption"
-                                            sx={{color: '#b00020'}}>{t('modalAnalogs.errorLoadingEntities') || 'Failed to load entities'}</Typography>}
+                                            sx={{color: '#b00020'}}>{t('detailsAnalogsModal.errorLoadingEntities') || 'Failed to load entities'}</Typography>}
               {stationsLoading &&
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={18}/>
                   <Typography
-                    variant="caption">{t('modalAnalogs.loadingEntities')}</Typography></Box>}
+                    variant="caption">{t('detailsAnalogsModal.loadingEntities')}</Typography></Box>}
             </Box>
 
             <Box sx={{mt: 2}}>
               {analogsLoading &&
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={20}/>
                   <Typography
-                    variant="caption">{t('modalAnalogs.loadingAnalogs') || 'Loading...'}</Typography></Box>}
+                    variant="caption">{t('detailsAnalogsModal.loadingAnalogs') || 'Loading...'}</Typography></Box>}
               {analogsError && <Typography variant="caption"
-                                           sx={{color: '#b00020'}}>{t('modalAnalogs.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
+                                           sx={{color: '#b00020'}}>{t('detailsAnalogsModal.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
               {leadsError && <Typography variant="caption"
-                                         sx={{color: '#b00020'}}>{t('modalAnalogs.errorLoadingLeads') || 'Failed to load leads'}</Typography>}
+                                         sx={{color: '#b00020'}}>{t('detailsAnalogsModal.errorLoadingLeads') || 'Failed to load leads'}</Typography>}
               {!analogsLoading && analogs && (
                 <TableContainer component={Paper} sx={{maxHeight: 420, mt: 1}}>
                   <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
@@ -377,15 +377,15 @@ export default function ModalAnalogs({open, onClose}) {
                       <TableRow>
                         <TableCell sx={{width: '6%'}}>#</TableCell>
                         <TableCell
-                          sx={{width: '34%'}}> {t('modalAnalogs.colDate') || 'Date'}</TableCell>
+                          sx={{width: '34%'}}> {t('detailsAnalogsModal.colDate') || 'Date'}</TableCell>
                         <TableCell sx={{
                           width: '30%',
                           textAlign: 'right'
-                        }}>{t('modalAnalogs.colPrecipitation') || t('modalAnalogs.precipitation') || 'Precipitation'}</TableCell>
+                        }}>{t('detailsAnalogsModal.colPrecipitation') || t('detailsAnalogsModal.precipitation') || 'Precipitation'}</TableCell>
                         <TableCell sx={{
                           width: '30%',
                           textAlign: 'right'
-                        }}>{t('modalAnalogs.colCriteria') || 'Criteria'}</TableCell>
+                        }}>{t('detailsAnalogsModal.colCriteria') || 'Criteria'}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>

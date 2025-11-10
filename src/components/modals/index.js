@@ -1,4 +1,3 @@
-export {default as ModalAnalogs} from './ModalAnalogs.jsx';
-export {default as ModalDistributions} from './ModalDistributions.jsx';
-export {default as ModalForecastSeries} from './ModalForecastSeries.jsx';
-
+export {default as DetailsAnalogsModal} from './DetailsAnalogsModal.jsx';
+export {default as DistributionsModal} from './DistributionsModal.jsx';
+export {default as TimeSeriesModal} from './TimeSeriesModal.jsx';

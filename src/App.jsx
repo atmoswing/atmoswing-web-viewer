@@ -9,7 +9,7 @@ import AppSnackbars from '@/components/snackbars/AppSnackbars.jsx';
 import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 
 // Lazy heavy modal
-const ModalForecastSeries = lazy(() => import('@/components/modals/ModalForecastSeries.jsx'));
+const TimeSeriesModal = lazy(() => import('@/components/modals/TimeSeriesModal.jsx'));
 
 const MapArea = memo(function MapArea() {
   return (
@@ -28,7 +28,7 @@ export default function App() {
           <ToolBar/>
           <MapArea/>
           <Suspense fallback={null}>
-            <ModalForecastSeries/>
+            <TimeSeriesModal/>
           </Suspense>
         </div>
         <AppSnackbars/>

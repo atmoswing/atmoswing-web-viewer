@@ -121,7 +121,7 @@ const resources = {
         "criteriaTitle": "Criteria distribution",
         "noCriteria": "No criteria values available for the selected selection."
       },
-      "modalAnalogs": {
+      "detailsAnalogsModal": {
         "title": "Analogs details",
         "close": "Close",
         "entity": "Entity",
@@ -272,7 +272,7 @@ const resources = {
         "criteriaTitle": "Distribution des critères",
         "noCriteria": "Aucune valeur de critère disponible pour la sélection."
       },
-      "modalAnalogs": {
+      "detailsAnalogsModal": {
         "title": "Détails des analogues",
         "close": "Fermer",
         "entity": "Entité",
