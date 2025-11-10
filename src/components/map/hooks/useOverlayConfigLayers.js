@@ -4,8 +4,8 @@ import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
 import shp from 'shpjs';
-import {ensureProjDefined} from '@/utils/olProjectionUtils.js';
-import {resolveOverlayStyle} from '@/utils/olStyleUtils.js';
+import {ensureProjDefined} from '@/components/map/utils/olProjectionUtils.js';
+import {resolveOverlayStyle} from '@/components/map/utils/olStyleUtils.js';
 import config from '@/config.js';
 
 export default function useOverlayConfigLayers(
