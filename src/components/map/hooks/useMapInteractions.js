@@ -20,8 +20,7 @@ export default function useMapInteractions({mapRef, forecastLayerRef, setSelecte
     return () => {
       try {
         map.un('singleclick', clickHandler);
-      } catch {
-      }
+      } catch { /* listener already detached */ }
     };
   }, [mapRef, forecastLayerRef, setSelectedEntityId, mapReady]);
 
@@ -50,8 +49,7 @@ export default function useMapInteractions({mapRef, forecastLayerRef, setSelecte
       try {
         map.un('pointermove', handleMove);
         map.un('pointerout', handleOut);
-      } catch {
-      }
+      } catch { /* handlers might be already removed */ }
     };
   }, [mapRef, forecastLayerRef, setTooltip, mapReady]);
 }

@@ -275,7 +275,8 @@ export default function ModalDistributions({open, onClose}) {
   }, [methodOptions, selectedMethodId]);
 
   const TENYR_COLOR = '#d00000';
-  const SELECTED_RPS = [100, 50, 20, 10, 5, 2];
+  // Stable return periods constant (frozen to avoid hook dependency churn)
+  const SELECTED_RPS = Object.freeze([100, 50, 20, 10, 5, 2]);
 
   const handleOptionChange = (key) => (e) => {
     const checked = e.target.checked;
@@ -564,8 +565,7 @@ export default function ModalDistributions({open, onClose}) {
       if (rightPart) parts.push(rightPart);
       const titleText = parts.join(' — ');
       svg.append('text').attr('x', margin.left + innerW / 2).attr('y', Math.max(12, margin.top - 12)).attr('text-anchor', 'middle').attr('fill', '#222').attr('font-size', 14).attr('font-weight', 600).text(titleText);
-    } catch {
-    }
+    } catch { /* ignore title build errors */ }
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -696,7 +696,7 @@ export default function ModalDistributions({open, onClose}) {
     svg.append('text').attr('transform', 'rotate(-90)').attr('x', -(margin.top + innerH / 2)).attr('y', 12).attr('text-anchor', 'middle').text(t('distributionPlots.cumulativeFrequency') || 'Cumulative frequency');
     g.selectAll('path.domain').remove();
 
-  }, [analogValues, t, renderTick, tabIndex, percentileMarkers, bestAnalogsData, referenceValues, options.tenYearReturn, options.allReturnPeriods, options.bestAnalogs]);
+  }, [analogValues, t, renderTick, tabIndex, percentileMarkers, bestAnalogsData, referenceValues, options.tenYearReturn, options.allReturnPeriods, options.bestAnalogs, SELECTED_RPS, activeForecastDate, leads, selectedConfigId, selectedLead, selectedMethodId, stationName]);
 
   // Draw criteria distribution
   useEffect(() => {
@@ -736,8 +736,7 @@ export default function ModalDistributions({open, onClose}) {
       if (rightPart) parts.push(rightPart);
       const titleText = parts.join(' — ');
       svg.append('text').attr('x', margin.left + innerW / 2).attr('y', Math.max(12, margin.top - 12)).attr('text-anchor', 'middle').attr('fill', '#222').attr('font-size', 14).attr('font-weight', 600).text(titleText);
-    } catch {
-    }
+    } catch { /* ignore criteria title build errors */ }
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -762,7 +761,7 @@ export default function ModalDistributions({open, onClose}) {
     g.selectAll('path.domain').remove();
     svg.append('text').attr('x', (margin.left + innerW / 2)).attr('y', height - 6).attr('text-anchor', 'middle').text(t('modalAnalogs.analogsList') || 'Analogues');
     svg.append('text').attr('transform', 'rotate(-90)').attr('x', -(margin.top + innerH / 2)).attr('y', 14).attr('text-anchor', 'middle').text(t('modalAnalogs.colCriteria') || 'Criteria');
-  }, [criteriaValues, analogValues, t, renderTick, tabIndex]);
+  }, [criteriaValues, analogValues, t, renderTick, tabIndex, activeForecastDate, leads, selectedConfigId, selectedLead, selectedMethodId, stationName]);
 
   // When station changes, compute which configs for the selected method are relevant to that station (like ModalAnalogs)
   useEffect(() => {
@@ -790,9 +789,7 @@ export default function ModalDistributions({open, onClose}) {
           const setIds = new Set(ids);
           const isRelevant = setIds.has(selectedStationId);
           relevantRef.current.set(cfg.id, isRelevant);
-        } catch (e) {
-          relevantRef.current.set(cfg.id, false);
-        }
+        } catch { /* set relevant false on error */ }
       });
       try {
         await Promise.all(promises);
@@ -883,7 +880,7 @@ export default function ModalDistributions({open, onClose}) {
               <Select variant="standard" labelId="dist-lead-label" value={selectedLead ?? ''}
                       label={t('modalAnalogs.lead')}
                       onChange={(e) => setSelectedLead(e.target.value === '' ? null : Number(e.target.value))}>
-                {leadsLoading && <MenuItem value=""><em>{t('modalAnalogs.loadingAnalogs')}</em></MenuItem>}
+                {leadsLoading && <MenuItem value=""><em>{t('modalAnalogs.loadingAnalogs') || 'Loading...'}</em></MenuItem>}
                 {!leadsLoading && leads.length === 0 &&
                   <MenuItem value=""><em>{t('modalAnalogs.noLeads') || 'No lead times'}</em></MenuItem>}
                 {leads.map(l => (<MenuItem key={String(l.lead) + (l.label || '')}

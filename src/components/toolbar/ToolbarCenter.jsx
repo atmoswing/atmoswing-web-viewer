@@ -100,7 +100,7 @@ export default function ToolbarCenter() {
 
   const handleCalendarClick = React.useCallback(() => {
     setDateDialogOpen(true);
-  }, [forecastBaseDate]);
+  }, []);
 
   return (
     <div className="toolbar-center">
@@ -182,4 +182,3 @@ export default function ToolbarCenter() {
     </div>
   );
 }
-

@@ -223,7 +223,7 @@ export default function ModalAnalogs({open, onClose}) {
   }, [methodOptions, selectedMethodId]);
 
   // Force a no-op read to ensure linter detects usage of relevantRef
-  const _relevanceCount = relevantRef.current.size; // eslint-disable-line no-unused-vars
+  const _relevanceCount = relevantRef.current.size;
 
   // Render helpers
   const renderConfigLabel = (cfg) => {

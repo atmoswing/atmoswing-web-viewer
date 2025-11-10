@@ -146,8 +146,8 @@ export function ForecastSessionProvider({children}) {
     {enabled: !!synthesisCheckKey, initialData: null, ttlMs: SHORT_TTL}
   );
   // Lint: reference to avoid unused warnings in certain build modes
-  const _hasDateBool = hasDateData ? normalizeHasForecastDate(hasDateData) : null; // eslint-disable-line no-unused-vars
-  const _synthAvail = synthesisAvailRaw ? normalizeSynthesisHasLeads(synthesisAvailRaw) : null; // eslint-disable-line no-unused-vars
+  const _hasDateBool = hasDateData ? normalizeHasForecastDate(hasDateData) : null;
+  const _synthAvail = synthesisAvailRaw ? normalizeSynthesisHasLeads(synthesisAvailRaw) : null;
 
   const value = useMemo(() => ({
     workspace,
@@ -168,7 +168,7 @@ export function ForecastSessionProvider({children}) {
     // search feedback
     baseDateSearchFailed,
     baseDateSearching
-  }), [workspace, activeForecastDate, activeForecastDatePattern, forecastBaseDate, shiftForecastBaseDate, percentile, normalizationRef, resetVersion, fullReset, baseDateSearchFailed, baseDateSearching]);
+  }), [workspace, activeForecastDate, activeForecastDatePattern, forecastBaseDate, shiftForecastBaseDate, percentile, normalizationRef, resetVersion, fullReset, clearBaseDateSearchFailed, restoreLastAvailableForecast, baseDateSearchFailed, baseDateSearching]);
 
   return <ForecastSessionContext.Provider value={value}>{children}</ForecastSessionContext.Provider>;
 }

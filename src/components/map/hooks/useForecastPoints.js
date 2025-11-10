@@ -101,8 +101,7 @@ export default function useForecastPoints(
       feat.setStyle(style);
       try {
         feat.setId(ent.id);
-      } catch {
-      }
+      } catch { /* setting feature id may fail for some sources */ }
       source.addFeature(feat);
     });
 

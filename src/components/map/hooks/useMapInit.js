@@ -8,7 +8,6 @@ import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import LayerSwitcher from 'ol-layerswitcher';
-import WMTS from 'ol/source/WMTS';
 import { loadWmtsCapabilities, createWmtsTileLayer } from '@/components/map/utils/loadWmtsCapabilities.js';
 import { DEFAULT_PROJECTION } from '@/components/map/mapConstants.js';
 
@@ -91,12 +90,10 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
             const timer = l && l.get && l.get('__refreshTimer');
             if (timer) clearInterval(timer);
           });
-        } catch {
-        }
+        } catch { /* clean-up best-effort */ }
         try {
           if (mapRef.current.__singleClickHandler) mapRef.current.un('singleclick', mapRef.current.__singleClickHandler);
-        } catch {
-        }
+        } catch { /* handler may already be removed */ }
         mapRef.current.setTarget(null);
         mapRef.current = null;
       }

@@ -30,12 +30,12 @@ export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, prefer
         if (preferredStyle) {
           try {
             opts = optionsFromCapabilities(caps, { layer: item.wmtsLayer, matrixSet: WMTS_MATRIX_SET_DEFAULT, style: preferredStyle });
-          } catch {}
+          } catch { /* try without explicit style below */ }
         }
         if (!opts) {
           try {
             opts = optionsFromCapabilities(caps, { layer: item.wmtsLayer, matrixSet: WMTS_MATRIX_SET_DEFAULT });
-          } catch {}
+          } catch { /* capabilities may not include layer */ }
         }
         if (opts) wmtsOptionsCache[item.wmtsLayer] = opts; else if (enqueueWarning) enqueueWarning(`Failed to load layer ${item.title}: layer not found in capabilities`);
       });

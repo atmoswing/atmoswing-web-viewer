@@ -37,6 +37,10 @@ import {
   normalizeSeriesValuesPercentilesHistory
 } from '../../utils/apiNormalization.js';
 
+// Stable percentile sets (frozen) declared outside component to avoid reallocation warnings
+const DEFAULT_PCTS = Object.freeze([20, 60, 90]);
+const FULL_PCTS = Object.freeze([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+
 export default function ModalForecastSeries() {
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
   const {selectedMethodConfig, methodConfigTree} = useMethods();
@@ -62,9 +66,7 @@ export default function ModalForecastSeries() {
     previousForecasts: false,
   });
 
-  // Percentile sets used for requests
-  const DEFAULT_PCTS = [20, 60, 90];
-  const FULL_PCTS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  // Percentile sets used for requests (arrays lifted out of component to stabilize deps)
   const requestedPercentiles = useMemo(() => (options.allQuantiles ? FULL_PCTS : DEFAULT_PCTS), [options.allQuantiles]);
 
   const handleOptionChange = (key) => (e) => {
@@ -654,7 +656,7 @@ export default function ModalForecastSeries() {
       .attr('font-size', 14)
       .attr('font-weight', 600)
       .text(titleText);
-  }, [t, series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs, pastForecasts, options.previousForecasts, activeForecastDate]);
+  }, [t, series, options.mainQuantiles, options.tenYearReturn, referenceValues, chartSize.width, chartSize.height, options.allReturnPeriods, options.allQuantiles, options.bestAnalogs, bestAnalogs, pastForecasts, options.previousForecasts, activeForecastDate, selectedMethodConfig, stationName, chartSize]);
 
   const handleClose = () => setSelectedEntityId(null);
 

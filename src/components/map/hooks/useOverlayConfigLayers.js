@@ -29,8 +29,7 @@ export default function useOverlayConfigLayers(
       layersCollection.getArray()
         .filter(l => l && l.get && l.get('__fromWorkspaceConfig'))
         .forEach(l => layersCollection.remove(l));
-    } catch {
-    }
+    } catch { /* removing old overlay layers: best-effort */ }
 
     const ws = runtimeConfig?.workspaces?.find(w => w.key === workspace);
     const items = (ws && Array.isArray(ws.shapefiles)) ? ws.shapefiles : [];
@@ -68,7 +67,7 @@ export default function useOverlayConfigLayers(
 
       resolveOverlayStyle(item, styleFn).then(sfn => {
         if (cancelled) return;
-        try { layer.setStyle(sfn); } catch {}
+        try { layer.setStyle(sfn); } catch { /* ignore style set failure */ }
       });
 
       const lower = String(url).toLowerCase();
@@ -93,7 +92,7 @@ export default function useOverlayConfigLayers(
             if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e);
           });
         // Attach controller to layer for potential manual abort later
-        try { layer.set('__abortController', controller); } catch {}
+        try { layer.set('__abortController', controller); } catch { /* best-effort */ }
       } else if (lower.endsWith('.zip') || lower.endsWith('.shp')) {
         // shpjs doesn't support AbortController; use cancelled flag
         shp(url)
@@ -127,7 +126,7 @@ export default function useOverlayConfigLayers(
           if (ctrl && typeof ctrl.abort === 'function') ctrl.abort();
           layersCollection.remove(l);
         });
-      } catch {}
+      } catch { /* cleanup errors ignored */ }
     };
   }, [mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef]);
 }

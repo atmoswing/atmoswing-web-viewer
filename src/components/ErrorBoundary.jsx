@@ -14,11 +14,9 @@ export class ErrorBoundary extends React.Component {
     if (this.props.onError) {
       try {
         this.props.onError(error, info);
-      } catch (e) { /* ignore */
-      }
+      } catch { /* swallow error from onError handler */ }
     }
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
+    if (import.meta.env.MODE !== 'production') {
       console.error('[ErrorBoundary]', error, info);
     }
   }
@@ -39,4 +37,3 @@ export class ErrorBoundary extends React.Component {
 }
 
 export default ErrorBoundary;
-
