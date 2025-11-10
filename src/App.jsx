@@ -10,6 +10,7 @@ import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
 import ModalForecastSeries from './components/modals/ModalForecastSeries.jsx';
 import AppSnackbars from './components/snackbars/AppSnackbars.jsx';
 import {SnackbarProvider} from './contexts/SnackbarContext.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 function MapArea() {
     return (
@@ -22,19 +23,21 @@ function MapArea() {
 export default function App() {
     return (
         <div className="app-layout">
-            <SnackbarProvider>
-                <WorkspaceProvider>
-                    <ForecastsProvider>
-                        <SideBar />
-                        <div className="main-content">
-                            <ToolBar />
-                            <MapArea />
-                            <ModalForecastSeries />
-                        </div>
-                        <AppSnackbars />
-                    </ForecastsProvider>
-                </WorkspaceProvider>
-            </SnackbarProvider>
+            <ErrorBoundary>
+                <SnackbarProvider>
+                    <WorkspaceProvider>
+                        <ForecastsProvider>
+                                <SideBar />
+                                <div className="main-content">
+                                    <ToolBar />
+                                    <MapArea />
+                                    <ModalForecastSeries />
+                                </div>
+                                <AppSnackbars />
+                        </ForecastsProvider>
+                    </WorkspaceProvider>
+                </SnackbarProvider>
+            </ErrorBoundary>
         </div>
     );
 }
