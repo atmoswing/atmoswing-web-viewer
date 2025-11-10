@@ -2,8 +2,9 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState, 
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {getMethodsAndConfigs} from '../services/api.js';
-import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { useCachedRequest } from '../hooks/useCachedRequest.js';
 import { normalizeMethodsAndConfigs } from '../utils/apiNormalization.js';
+import { DEFAULT_TTL } from '../utils/cacheTTLs.js';
 
 const MethodsContext = createContext({});
 
@@ -18,20 +19,20 @@ export function MethodsProvider({children}) {
     // Preload adoption
     const preloaded = (workspaceData && workspaceData.__workspace === workspace && workspaceData.date?.last_forecast_date === activeForecastDate) ? workspaceData.methodsAndConfigs : null;
 
-    const { data: methodsAndConfigs, loading: methodsLoading, error: methodsError } = useManagedRequest(
+    const cacheKey = workspace && activeForecastDate ? `methods|${workspace}|${activeForecastDate}` : null;
+    const { data: methodsAndConfigs, loading: methodsLoading, error: methodsError } = useCachedRequest(
+        cacheKey,
         async () => {
-            if (!workspace || !activeForecastDate) return null;
-            const key = `${workspace}|${activeForecastDate}`;
-            if (preloaded && keyRef.current !== key) {
-                keyRef.current = key; // mark adopted
+            if (preloaded && keyRef.current !== cacheKey) {
+                keyRef.current = cacheKey; // mark adopted
                 return preloaded;
             }
             const fetched = await getMethodsAndConfigs(workspace, activeForecastDate);
-            keyRef.current = key;
+            keyRef.current = cacheKey;
             return fetched;
         },
         [workspace, activeForecastDate, preloaded],
-        { enabled: !!workspace && !!activeForecastDate }
+        { enabled: !!workspace && !!activeForecastDate, initialData: null, ttlMs: DEFAULT_TTL }
     );
 
     // Clear selection on workspace change

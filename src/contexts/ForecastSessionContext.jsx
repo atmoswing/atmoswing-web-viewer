@@ -2,9 +2,14 @@ import React, {createContext, useContext, useEffect, useRef, useState, useCallba
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {parseForecastDate, formatForecastDateForApi} from '../utils/forecastDateUtils.js';
 import {hasForecastDate, getSynthesisTotal, getLastForecastDate} from '../services/api.js';
+import { normalizeHasForecastDate, normalizeSynthesisHasLeads } from '../utils/apiNormalization.js';
+import { useCachedRequest as useCachedRequestHook } from '../hooks/useCachedRequest.js';
+
+const SHORT_TTL = 1000 * 60 * 5; // 5 minutes (for cached requests)
 
 const ForecastSessionContext = createContext({});
 
+// Cached helper component (hook usage must be inside provider): we expose a function that reads caches via direct fetch but benefits from prior caching.
 async function findShiftedForecast(workspace, activeForecastDate, pattern, hours, maxAttempts = 12) {
     const start = parseForecastDate(activeForecastDate);
     if (!start || isNaN(start)) return null;
@@ -12,23 +17,19 @@ async function findShiftedForecast(workspace, activeForecastDate, pattern, hours
         const candidate = new Date(start.getTime());
         candidate.setHours(candidate.getHours() + hours * attempt);
         const raw = formatForecastDateForApi(candidate, pattern || activeForecastDate);
-        const exists = await hasForecastDate(workspace, raw);
-        if (!exists['has_forecasts']) continue;
+        let exists = false;
+        try { const existsResp = await hasForecastDate(workspace, raw); exists = normalizeHasForecastDate(existsResp); } catch { exists = false; }
+        if (!exists) continue;
         try {
             const resp = await getSynthesisTotal(workspace, raw, 90, 10);
-            const series = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
-            const hasLeads = series.some(sp => Array.isArray(sp?.target_dates) && sp.target_dates.length > 0);
-            if (hasLeads) return { raw, dateObj: candidate };
-        } catch {
-            // ignore and continue attempts
-        }
+            if (normalizeSynthesisHasLeads(resp)) return { raw, dateObj: candidate };
+        } catch { /* continue searching */ }
     }
     return null;
 }
 
 export function ForecastSessionProvider({children}) {
     const {workspace, workspaceData} = useWorkspace();
-
     const [activeForecastDate, setActiveForecastDate] = useState(null);
     const [activeForecastDatePattern, setActiveForecastDatePattern] = useState(null);
     const [forecastBaseDate, setForecastBaseDate] = useState(null);
@@ -103,26 +104,35 @@ export function ForecastSessionProvider({children}) {
 
     // Restore the session to the workspace's last known forecast (used by toolbar button)
     const restoreLastAvailableForecast = useCallback(async () => {
-        try {
-            let raw = workspaceData?.date?.last_forecast_date;
-            if (!raw && workspace) {
-                try {
-                    const resp = await getLastForecastDate(workspace);
-                    raw = resp?.last_forecast_date;
-                } catch (e) {
-                    // ignore — nothing to restore
-                    console.warn('[ForecastSession] getLastForecastDate failed', e);
-                }
-            }
-            if (!raw) return;
-            setActiveForecastDate(raw);
-            setActiveForecastDatePattern(p => p || raw);
-            fullReset(parseForecastDate(raw));
-            setBaseDateSearchFailed(false);
-        } catch (err) {
-            console.error('[ForecastSession] restoreLastAvailableForecast error', err);
+        let raw = workspaceData?.date?.last_forecast_date;
+        if (!raw && workspace) {
+            try { const resp = await getLastForecastDate(workspace); raw = resp?.last_forecast_date; } catch (e) { console.warn('[ForecastSession] getLastForecastDate failed', e); }
         }
+        if (!raw) return;
+        setActiveForecastDate(raw);
+        setActiveForecastDatePattern(p => p || raw);
+        fullReset(parseForecastDate(raw));
+        setBaseDateSearchFailed(false);
     }, [workspaceData, fullReset, workspace]);
+
+    // Lightweight cached lookups for current active forecast date (reactive; shifting still uses direct function with short loops)
+    const hasForecastKey = workspace && activeForecastDate ? `has_date|${workspace}|${activeForecastDate}` : null;
+    const { data: hasDateData } = useCachedRequestHook(
+         hasForecastKey,
+         async () => await hasForecastDate(workspace, activeForecastDate),
+         [workspace, activeForecastDate],
+         { enabled: !!hasForecastKey, initialData: null, ttlMs: SHORT_TTL }
+     );
+    const synthesisCheckKey = workspace && activeForecastDate ? `synth_avail|${workspace}|${activeForecastDate}` : null;
+    const { data: synthesisAvailRaw } = useCachedRequestHook(
+         synthesisCheckKey,
+         async () => await getSynthesisTotal(workspace, activeForecastDate, 90, 10),
+         [workspace, activeForecastDate],
+         { enabled: !!synthesisCheckKey, initialData: null, ttlMs: SHORT_TTL }
+     );
+    // Lint: reference to avoid unused warnings in certain build modes
+    const _hasDateBool = hasDateData ? normalizeHasForecastDate(hasDateData) : null; // eslint-disable-line no-unused-vars
+    const _synthAvail = synthesisAvailRaw ? normalizeSynthesisHasLeads(synthesisAvailRaw) : null; // eslint-disable-line no-unused-vars
 
     const value = useMemo(() => ({
         workspace,

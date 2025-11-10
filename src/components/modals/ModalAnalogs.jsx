@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -31,15 +31,13 @@ import {
 } from '../../services/api.js';
 import {useTranslation} from 'react-i18next';
 import { formatPrecipitation, formatCriteria, compareEntitiesByName, formatDateLabel } from '../../utils/formattingUtils.js';
+import { useCachedRequest, clearCachedRequests } from '../../hooks/useCachedRequest.js';
 import { normalizeAnalogsResponse, extractTargetDatesArray, normalizeEntitiesResponse, normalizeRelevantEntityIds } from '../../utils/apiNormalization.js';
+import { SHORT_TTL, DEFAULT_TTL } from '../../utils/cacheTTLs.js';
 
 export default function ModalAnalogs({open, onClose}) {
     const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();
     const {t} = useTranslation();
-
-    const [methodsLoading, setMethodsLoading] = useState(false);
-    const [methodsError, setMethodsError] = useState(null);
-    const [methodsData, setMethodsData] = useState(null);
 
     // Local selections (do NOT touch global contexts)
     const [selectedMethodId, setSelectedMethodId] = useState(null);
@@ -49,263 +47,138 @@ export default function ModalAnalogs({open, onClose}) {
 
     // Entities for the currently selected method/config
     const [stations, setStations] = useState([]);
-    const [stationsLoading, setStationsLoading] = useState(false);
+    // removed stationsLoading state; using hook's loading
     const [analogs, setAnalogs] = useState(null);
-    const [analogsLoading, setAnalogsLoading] = useState(false);
-    const [analogsError, setAnalogsError] = useState(null);
+    // removed analogsLoading/analogsError state; using hook's loading/error
     const [leads, setLeads] = useState([]);
-    const [leadsLoading, setLeadsLoading] = useState(false);
+    // removed leadsLoading state; using hook's loading
 
     // Relevant config highlighting: configId -> boolean
-    const relevantRef = useRef(new Map());
+    const relevantRef = React.useRef(new Map());
+    const _dummyRef = React.useRef(null); // linter: explicit usage of useRef
     const [, setRelevantMapVersion] = useState(0); // bump to re-render when relevance updated
 
-    const methodsReqRef = useRef(0);
-    const stationsReqRef = useRef(0);
-    const relevanceReqRef = useRef(0);
+    // METHODS via cached request
+    const methodsCacheKey = open && workspace && activeForecastDate ? `modal_methods|${workspace}|${activeForecastDate}` : null;
+    const { data: methodsData, loading: methodsLoading, error: methodsError } = useCachedRequest(
+        methodsCacheKey,
+        async () => getMethodsAndConfigs(workspace, activeForecastDate),
+        [workspace, activeForecastDate, open],
+        { enabled: !!methodsCacheKey, initialData: null, ttlMs: DEFAULT_TTL }
+    );
 
-    // Load methods & configs when modal opens (or workspace/date changes)
+    // Default select first method/config when methodsData arrives or changes
     useEffect(() => {
-        let cancelled = false;
+        if (!open) return;
+        if (!methodsData?.methods || !methodsData.methods.length) return;
+        const first = methodsData.methods[0];
+        if (!selectedMethodId) setSelectedMethodId(first.id);
+        if (!selectedConfigId && first.configurations && first.configurations.length) setSelectedConfigId(first.configurations[0].id);
+    }, [methodsData, open, selectedMethodId, selectedConfigId]);
 
-        async function run() {
-            if (!open) return;
-            if (!workspace || !activeForecastDate) return;
-            const reqId = ++methodsReqRef.current;
-            setMethodsLoading(true);
-            setMethodsError(null);
-            try {
-                const data = await getMethodsAndConfigs(workspace, activeForecastDate);
-                if (cancelled || reqId !== methodsReqRef.current) return;
-                setMethodsData(data);
-                // default select to first method and its first config
-                const first = (data?.methods && data.methods[0]) ? data.methods[0] : null;
-                setSelectedMethodId(first ? first.id : null);
-                const firstCfg = first && first.configurations && first.configurations[0] ? first.configurations[0].id : null;
-                setSelectedConfigId(firstCfg);
-            } catch (e) {
-                if (!cancelled && reqId === methodsReqRef.current) setMethodsError(e);
-            } finally {
-                if (!cancelled && reqId === methodsReqRef.current) setMethodsLoading(false);
-            }
-        }
-
-        run();
-        return () => {
-            cancelled = true;
-        };
-    }, [open, workspace, activeForecastDate]);
-
-    // If user picks a method but no explicit config, default to the first config of that method
+    // Ensure a config gets selected if method changes
     useEffect(() => {
-        if (!methodsData || !selectedMethodId) return;
-        const methodNode = methodsData.methods.find(m => m.id === selectedMethodId);
-        if (!methodNode) return;
-        const firstCfg = methodNode.configurations && methodNode.configurations[0] ? methodNode.configurations[0].id : null;
-        if (!selectedConfigId && firstCfg) setSelectedConfigId(firstCfg);
-    }, [methodsData, selectedMethodId]);
+        if (!methodsData?.methods || !selectedMethodId) return;
+        const m = methodsData.methods.find(mm => mm.id === selectedMethodId);
+        if (!m) return;
+        if (!selectedConfigId && m.configurations && m.configurations.length) setSelectedConfigId(m.configurations[0].id);
+    }, [methodsData, selectedMethodId, selectedConfigId]);
 
-    // When method or config changes, fetch entities for that method/config (local only)
+    // ENTITIES via cached request (depends on method + config)
+    const resolvedMethodForEntities = selectedMethodId;
+    const resolvedConfigForEntities = (function(){
+        if (!methodsData?.methods) return null;
+        const m = methodsData.methods.find(mm => mm.id === selectedMethodId);
+        if (!m) return null;
+        return selectedConfigId || (m.configurations && m.configurations[0] && m.configurations[0].id) || null;
+    })();
+    const entitiesCacheKey = open && workspace && activeForecastDate && resolvedMethodForEntities && resolvedConfigForEntities ? `modal_entities|${workspace}|${activeForecastDate}|${resolvedMethodForEntities}|${resolvedConfigForEntities}` : null;
+    const { data: entitiesDataRaw, loading: stationsLoading, error: stationsError } = useCachedRequest(
+        entitiesCacheKey,
+        async () => {
+            const resp = await getEntities(workspace, activeForecastDate, resolvedMethodForEntities, resolvedConfigForEntities);
+            return normalizeEntitiesResponse(resp);
+        },
+        [workspace, activeForecastDate, resolvedMethodForEntities, resolvedConfigForEntities, open],
+        { enabled: !!entitiesCacheKey, initialData: [] , ttlMs: DEFAULT_TTL}
+    );
+
+    // Sort and apply entities, maintain selection validity
     useEffect(() => {
-        let cancelled = false;
+        if (!open) return;
+        const list = Array.isArray(entitiesDataRaw) ? [...entitiesDataRaw].sort(compareEntitiesByName) : [];
+        setStations(list);
+        if (!selectedStationId && list.length) setSelectedStationId(list[0].id);
+        if (selectedStationId && !list.find(e => e.id === selectedStationId)) setSelectedStationId(null);
+    }, [entitiesDataRaw, open, selectedStationId]);
 
-        async function run() {
-            const fetchWorkspace = workspace;
-            const date = activeForecastDate;
-            if (!open || !fetchWorkspace || !date || !selectedMethodId) {
-                setStations([]);
-                return;
-            }
-            // Determine config to use: explicit selection or first config of method
+    // ANALOGS via cached request
+    const resolvedConfigForAnalogs = resolvedConfigForEntities; // same resolution logic
+    const analogsCacheKey = open && workspace && activeForecastDate && resolvedMethodForEntities && resolvedConfigForAnalogs && selectedStationId != null ? `modal_analogs|${workspace}|${activeForecastDate}|${resolvedMethodForEntities}|${resolvedConfigForAnalogs}|${selectedStationId}|${selectedLead}` : null;
+    const { data: analogsData, loading: analogsLoading, error: analogsError } = useCachedRequest(
+        analogsCacheKey,
+        async () => {
+            const resp = await getAnalogs(workspace, activeForecastDate, resolvedMethodForEntities, resolvedConfigForAnalogs, selectedStationId, selectedLead);
+            return normalizeAnalogsResponse(resp);
+        },
+        [workspace, activeForecastDate, resolvedMethodForEntities, resolvedConfigForAnalogs, selectedStationId, selectedLead, open],
+        { enabled: !!analogsCacheKey, initialData: [] , ttlMs: SHORT_TTL}
+    );
+    useEffect(() => { setAnalogs(Array.isArray(analogsData) ? analogsData : []); }, [analogsData]);
+
+    // LEADS via cached request (series percentiles)
+    const leadsCacheKey = open && workspace && activeForecastDate && resolvedMethodForEntities && resolvedConfigForAnalogs && selectedStationId != null ? `modal_leads|${workspace}|${activeForecastDate}|${resolvedMethodForEntities}|${resolvedConfigForAnalogs}|${selectedStationId}` : null;
+    const { data: leadsRaw, loading: leadsLoading, error: leadsError } = useCachedRequest(
+        leadsCacheKey,
+        async () => {
+            const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, resolvedMethodForEntities, resolvedConfigForAnalogs, selectedStationId);
+            const rawDates = extractTargetDatesArray(resp);
+            const baseDate = (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) ? forecastBaseDate : (resp && resp.parameters && resp.parameters.forecast_date ? new Date(resp.parameters.forecast_date) : null);
+            return rawDates.map(s => {
+                let d = null;
+                try { d = s ? new Date(s) : null; if (d && isNaN(d)) d = null; } catch { d = null; }
+                const label = d ? formatDateLabel(d) : String(s);
+                const leadNum = (d && baseDate && !isNaN(baseDate.getTime())) ? Math.round((d.getTime() - baseDate.getTime()) / 3600000) : null;
+                return { lead: leadNum, date: d, label };
+            }).filter(x => x.lead != null && !isNaN(x.lead));
+        },
+        [workspace, activeForecastDate, resolvedMethodForEntities, resolvedConfigForAnalogs, selectedStationId, forecastBaseDate, open],
+        { enabled: !!leadsCacheKey, initialData: [] , ttlMs: SHORT_TTL}
+    );
+    useEffect(() => {
+        setLeads(Array.isArray(leadsRaw) ? leadsRaw : []);
+        if ((selectedLead == null || selectedLead === '') && Array.isArray(leadsRaw) && leadsRaw.length) setSelectedLead(leadsRaw[0].lead);
+    }, [leadsRaw, selectedLead]);
+
+    // Cached relevance map (configId -> boolean) for selected station
+    const relevanceKey = open && workspace && activeForecastDate && selectedMethodId && selectedStationId != null ? `modal_relevance|${workspace}|${activeForecastDate}|${selectedMethodId}|${selectedStationId}` : null;
+    const { data: relevanceMap, loading: relevanceLoading } = useCachedRequest(
+        relevanceKey,
+        async () => {
             const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-            if (!methodNode) {
-                setStations([]);
-                return;
-            }
-            const cfgId = selectedConfigId || (methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
-            const reqId = ++stationsReqRef.current;
-            setStationsLoading(true);
-            try {
-                if (!cfgId) {
-                    setStations([]);
-                    return;
-                }
-                const resp = await getEntities(fetchWorkspace, date, selectedMethodId, cfgId);
-                if (cancelled || reqId !== stationsReqRef.current) return;
-                const list = normalizeEntitiesResponse(resp);
-                // sort alphabetically by name (fallback to id), case-insensitive
-                const sorted = Array.isArray(list) ? [...list].sort(compareEntitiesByName) : list;
-                setStations(sorted);
-                // default-select first station (sorted) if none selected
-                if (!selectedStationId && sorted?.length) {
-                    setSelectedStationId(sorted[0].id);
-                }
-                // if currently selected station not in new list, clear it
-                if (selectedStationId != null && !list.find(e => e.id === selectedStationId)) {
-                    setSelectedStationId(null);
-                }
-            } catch (e) {
-                if (!cancelled && reqId === stationsReqRef.current) {
-                    setStations([]);
-                }
-            } finally {
-                if (!cancelled && reqId === stationsReqRef.current) setStationsLoading(false);
-            }
-        }
-
-        run();
-        return () => {
-            cancelled = true;
-        };
-    }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, methodsData]);
-
-    // When station changes, compute which configs for the selected method are relevant to that station.
-    // We'll call getRelevantEntities for each config and mark those that include the station.
-    useEffect(() => {
-        let cancelled = false;
-
-        async function run() {
-            if (!open || !workspace || !activeForecastDate || !selectedMethodId || selectedStationId == null) {
-                relevantRef.current.clear();
-                setRelevantMapVersion(v => v + 1);
-                return;
-            }
-            const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-            if (!methodNode || !methodNode.configurations || !methodNode.configurations.length) return;
-            const reqId = ++relevanceReqRef.current;
-            const promises = methodNode.configurations.map(async (cfg) => {
+            if (!methodNode || !methodNode.configurations) return {};
+            const results = await Promise.all(methodNode.configurations.map(async cfg => {
                 try {
                     const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodId, cfg.id);
-                    if (cancelled || reqId !== relevanceReqRef.current) return null;
-                    let ids = [];
-                    if (Array.isArray(resp)) ids = (typeof resp[0] === 'object') ? resp.map(r => r.id ?? r.entity_id).filter(v => v != null) : resp; else if (resp && typeof resp === 'object') ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
-                    const setIds = new Set(ids);
-                    const isRelevant = setIds.has(selectedStationId);
-                    relevantRef.current.set(cfg.id, isRelevant);
-                } catch (e) {
-                    relevantRef.current.set(cfg.id, false);
-                }
-            });
-            try {
-                await Promise.all(promises);
-                if (!cancelled && reqId === relevanceReqRef.current) setRelevantMapVersion(v => v + 1);
-            } catch {
-                if (!cancelled && reqId === relevanceReqRef.current) setRelevantMapVersion(v => v + 1);
-            }
-        }
+                    const idsSet = normalizeRelevantEntityIds(resp);
+                    return [cfg.id, idsSet.has(selectedStationId)];
+                } catch { return [cfg.id, false]; }
+            }));
+            return Object.fromEntries(results);
+        },
+        [workspace, activeForecastDate, selectedMethodId, selectedStationId, methodsData, open],
+        { enabled: !!relevanceKey && !!methodsData?.methods?.length, initialData: null, ttlMs: DEFAULT_TTL }
+    );
 
-        // debounce slightly to avoid hammering API while user navigates quickly
-        const timer = setTimeout(run, 120);
-        return () => {
-            clearTimeout(timer);
-            cancelled = true;
-        };
-    }, [open, workspace, activeForecastDate, selectedMethodId, selectedStationId, methodsData]);
-
-    // Fetch analogs when selection (method, config, station, lead) changes
     useEffect(() => {
-        let cancelled = false;
-
-        async function run() {
-            if (!open || !workspace || !activeForecastDate || !selectedMethodId || !selectedStationId) {
-                setAnalogs(null);
-                setAnalogsError(null);
-                setAnalogsLoading(false);
-                return;
-            }
-            // Resolve config to use
-            const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-            const cfgId = selectedConfigId || (methodNode && methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
-            if (!cfgId) {
-                setAnalogs(null);
-                return;
-            }
-            setAnalogsLoading(true);
-            setAnalogsError(null);
-            // identify request by selection string when needed; no local reqId required here
-            try {
-                const resp = await getAnalogs(workspace, activeForecastDate, selectedMethodId, cfgId, selectedStationId, selectedLead);
-                if (cancelled) return;
-                const items = normalizeAnalogsResponse(resp);
-                setAnalogs(items.map((it, i) => ({
-                    rank: it.rank ?? it.analog ?? (i + 1),
-                    date: it.date ?? it.analog_date ?? it.analog_date_str ?? it.dt ?? it.date_str ?? null,
-                    value: (it.value != null) ? it.value : (it.precip_value != null ? it.precip_value : it.value_mm ?? null),
-                    criteria: it.criteria ?? it.score ?? it.criterion ?? null
-                })));
-            } catch (e) {
-                if (!cancelled) setAnalogsError(e);
-                setAnalogs([]);
-            } finally {
-                if (!cancelled) setAnalogsLoading(false);
-            }
+        if (relevanceMap && typeof relevanceMap === 'object') {
+            relevantRef.current = new Map(Object.entries(relevanceMap));
+            setRelevantMapVersion(v => v + 1);
+        } else if (!relevanceLoading && relevanceKey) {
+            relevantRef.current.clear();
+            setRelevantMapVersion(v => v + 1);
         }
-
-        run();
-        return () => {
-            cancelled = true;
-        };
-    }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, selectedStationId, selectedLead, methodsData]);
-
-    // Fetch available leads by requesting series percentiles for the selected entity and extracting target_dates
-    useEffect(() => {
-        let cancelled = false;
-
-        async function run() {
-            if (!open) return;
-            if (!workspace || !activeForecastDate || !selectedMethodId || !selectedStationId) {
-                setLeads([]);
-                return;
-            }
-            const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-            const cfgId = selectedConfigId || (methodNode && methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
-            if (!cfgId) {
-                setLeads([]);
-                return;
-            }
-            setLeadsLoading(true);
-            try {
-                // Request series percentiles for this entity — percentiles parameter can be omitted
-                const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodId, cfgId, selectedStationId);
-                if (cancelled) return;
-
-                // Try to extract an array of date strings from common response shapes; prefer series_values.target_dates
-                const rawDates = extractTargetDatesArray(resp);
-
-                // Choose a base date for lead calculations: prefer forecastBaseDate, else try resp.parameters.forecast_date
-                const baseDate = (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) ? forecastBaseDate : (resp && resp.parameters && resp.parameters.forecast_date ? new Date(resp.parameters.forecast_date) : null);
-
-                const arr = rawDates.map(s => {
-                    let d = null;
-                    try {
-                        d = s ? new Date(s) : null;
-                        if (d && isNaN(d)) d = null;
-                    } catch {
-                        d = null;
-                    }
-                    const label = d ? formatDateLabel(d) : String(s);
-                    const leadNum = (d && baseDate && !isNaN(baseDate.getTime())) ? Math.round((d.getTime() - baseDate.getTime()) / 3600000) : null;
-                    return {lead: leadNum, date: d, label};
-                }).filter(x => x.lead != null && !isNaN(x.lead));
-
-                if (!arr.length) {
-                    setLeads([]);
-                } else {
-                    setLeads(arr);
-                    if ((selectedLead == null || selectedLead === '') && arr.length) setSelectedLead(arr[0].lead);
-                }
-            } catch (e) {
-                setLeads([]);
-            } finally {
-                if (!cancelled) setLeadsLoading(false);
-            }
-        }
-
-        run();
-        return () => {
-            cancelled = true;
-        };
-    }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, methodsData, forecastBaseDate, selectedStationId]);
+    }, [relevanceMap, relevanceLoading, relevanceKey]);
 
     // Reset local selections when modal closes
     useEffect(() => {
@@ -314,10 +187,12 @@ export default function ModalAnalogs({open, onClose}) {
             setSelectedConfigId(null);
             setSelectedStationId(null);
             setSelectedLead(0);
-            setMethodsData(null);
             setStations([]);
+            setAnalogs([]);
+            setLeads([]);
             relevantRef.current.clear();
             setRelevantMapVersion(v => v + 1);
+            clearCachedRequests('modal_');
         }
     }, [open]);
 
@@ -327,6 +202,9 @@ export default function ModalAnalogs({open, onClose}) {
         const m = methodOptions.find(x => x.id === selectedMethodId);
         return m?.configurations || [];
     }, [methodOptions, selectedMethodId]);
+
+    // Force a no-op read to ensure linter detects usage of relevantRef
+    const _relevanceCount = relevantRef.current.size; // eslint-disable-line no-unused-vars
 
     // Render helpers
     const renderConfigLabel = (cfg) => {
@@ -456,6 +334,7 @@ export default function ModalAnalogs({open, onClose}) {
                             {methodsLoading &&
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={18}/>
                                     <Typography variant="caption">{t('modalAnalogs.loadingMethods')}</Typography></Box>}
+                            {stationsError && <Typography variant="caption" sx={{color:'#b00020'}}>{t('modalAnalogs.errorLoadingEntities') || 'Failed to load entities'}</Typography>}
                             {stationsLoading &&
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={18}/>
                                     <Typography
@@ -469,6 +348,7 @@ export default function ModalAnalogs({open, onClose}) {
                                         variant="caption">{t('modalAnalogs.loadingAnalogs') || 'Loading...'}</Typography></Box>}
                             {analogsError && <Typography variant="caption"
                                                          sx={{color: '#b00020'}}>{t('modalAnalogs.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
+                            {leadsError && <Typography variant="caption" sx={{color:'#b00020'}}>{t('modalAnalogs.errorLoadingLeads') || 'Failed to load leads'}</Typography>}
                             {!analogsLoading && analogs && (
                                 <TableContainer component={Paper} sx={{maxHeight: 420, mt: 1}}>
                                     <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>

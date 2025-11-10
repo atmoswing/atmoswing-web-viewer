@@ -5,6 +5,7 @@ import {getEntities, getRelevantEntities} from '../services/api.js';
 import { isMethodSelectionValid, methodExists, deriveConfigId, keyForEntities } from '../utils/contextGuards.js';
 import { useCachedRequest } from '../hooks/useCachedRequest.js';
 import { normalizeEntitiesResponse, normalizeRelevantEntityIds } from '../utils/apiNormalization.js';
+import { DEFAULT_TTL } from '../utils/cacheTTLs.js';
 
 const EntitiesContext = createContext({});
 
@@ -45,7 +46,7 @@ export function EntitiesProvider({children}) {
             return normalizeEntitiesResponse(resp);
         },
         [workspace, activeForecastDate, selectedMethodConfig, effectiveConfigId, methodConfigTree, methodsLoading],
-        { enabled: !!entitiesKey, initialData: [] }
+        { enabled: !!entitiesKey, initialData: [] , ttlMs: DEFAULT_TTL}
     );
 
     useEffect(() => {
@@ -64,7 +65,7 @@ export function EntitiesProvider({children}) {
             return normalizeRelevantEntityIds(resp);
         },
         [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree],
-        { enabled: !!relevantKey, initialData: null }
+        { enabled: !!relevantKey, initialData: null, ttlMs: DEFAULT_TTL }
     );
 
     useEffect(() => { setRelevantEntities(relevantData || null); }, [relevantData]);

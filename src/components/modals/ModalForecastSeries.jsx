@@ -12,9 +12,9 @@ import {getSeriesValuesPercentiles, getRelevantEntities, getReferenceValues, get
 import {parseForecastDate} from '../../utils/forecastDateUtils.js';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
-
-// Local cache to avoid refetching same series repeatedly during session
-const seriesCache = new Map();
+import { useCachedRequest } from '../../hooks/useCachedRequest.js';
+import { SHORT_TTL, DEFAULT_TTL } from '../../utils/cacheTTLs.js';
+import { normalizeReferenceValues, normalizeSeriesValuesPercentiles, normalizeSeriesBestAnalogs, normalizeSeriesValuesPercentilesHistory } from '../../utils/apiNormalization.js';
 
 export default function ModalForecastSeries() {
      const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
@@ -23,18 +23,13 @@ export default function ModalForecastSeries() {
      const {entities} = useEntities();
      const { t } = useTranslation();
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [series, setSeries] = useState(null);
     // referenceValues stores { axis: number[], values: number[] } or null
     const [referenceValues, setReferenceValues] = useState(null);
     // bestAnalogs: { items: Array<{label, values: number[]}>, dates?: Date[] }
     const [bestAnalogs, setBestAnalogs] = useState(null);
-    const bestAnalogsCache = useRef(new Map());
     // previous forecasts history
     const [pastForecasts, setPastForecasts] = useState(null);
-    const pastForecastsCache = useRef(new Map());
-    const referenceCache = useRef(new Map()); // key: workspace|methodId|configId|entity -> value
 
     // Sidebar state
     const [options, setOptions] = useState({
@@ -66,7 +61,6 @@ export default function ModalForecastSeries() {
         });
     };
 
-    const reqIdRef = useRef(0);
     const chartRef = useRef(null);
     // Replace previous width-only state with width+height
     const [chartSize, setChartSize] = useState({width: 0, height: 0});
@@ -132,64 +126,24 @@ export default function ModalForecastSeries() {
     }, [selectedMethodConfig, autoConfigId, resolvingConfig]);
 
     // Clear series while waiting for config resolution to avoid flashing stale data
-    useEffect(() => {
-        setSeries(null);
-    }, [resolvedConfigId, selectedEntityId, selectedMethodConfig, workspace, activeForecastDate]);
+    useEffect(() => { setSeries(null); }, [resolvedConfigId, selectedEntityId, selectedMethodConfig, workspace, activeForecastDate]);
 
-    const cacheKey = useMemo(() => {
+    // Series via useCachedRequest with normalization
+    const seriesKey = useMemo(() => {
         if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
-        // include requested percentiles in cache key so different percentile requests don't collide
-        const pctsKey = (requestedPercentiles && requestedPercentiles.length) ? `|pcts=${requestedPercentiles.join(',')}` : '';
-        return `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}${pctsKey}`;
+        const pctsKey = requestedPercentiles && requestedPercentiles.length ? requestedPercentiles.join(',') : '';
+        return `series|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}|${pctsKey}`;
     }, [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles]);
-
-    useEffect(() => {
-        let cancelled = false;
-        const reqId = ++reqIdRef.current;
-
-        async function run() {
-            if (!cacheKey || selectedEntityId == null) {
-                setSeries(null);
-                setError(null);
-                setLoading(false);
-                return;
-            }
-            const cached = seriesCache.get(cacheKey);
-            if (cached) {
-                setSeries(cached);
-                return;
-            }
-            setLoading(true);
-            setError(null);
-            setSeries(null);
-            try {
-                const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId, requestedPercentiles);
-                if (cancelled || reqId !== reqIdRef.current) return;
-                // Parse response (expected shape)
-                const targetDates = (resp?.series_values?.target_dates || []).map(d => parseForecastDate(d) || new Date(d));
-                const percentilesArr = resp?.series_values?.series_percentiles || [];
-                const pctMap = {};
-                percentilesArr.forEach(sp => {
-                    const p = Number(sp.percentile);
-                    pctMap[p] = sp.series_values || [];
-                });
-                const pctList = Object.keys(pctMap).map(Number).sort((a,b) => a - b);
-                const data = {dates: targetDates, percentiles: pctMap, pctList};
-                seriesCache.set(cacheKey, data);
-                setSeries(data);
-            } catch (e) {
-                if (!cancelled && reqId === reqIdRef.current) {
-                    setError(e);
-                    setSeries(null);
-                }
-            } finally {
-                if (!cancelled && reqId === reqIdRef.current) setLoading(false);
-            }
-        }
-
-        run();
-        return () => { cancelled = true; };
-    }, [cacheKey, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles]);
+    const { data: seriesData, loading, error } = useCachedRequest(
+        seriesKey,
+        async () => {
+            const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId, requestedPercentiles);
+            return normalizeSeriesValuesPercentiles(resp, parseForecastDate);
+        },
+        [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles],
+        { enabled: !!seriesKey, initialData: null, ttlMs: SHORT_TTL }
+    );
+    useEffect(() => { setSeries(seriesData || null); }, [seriesData]);
 
     const stationName = useMemo(() => {
         if (selectedEntityId == null) return '';
@@ -699,154 +653,61 @@ export default function ModalForecastSeries() {
         return () => { window.removeEventListener('resize', onResize); if (timer) clearTimeout(timer); };
     }, []);
 
-    // Fetch reference values when requested (either 10yr or all return periods)
-    useEffect(() => {
-        if (!options.tenYearReturn && !options.allReturnPeriods) return; // only fetch when user requests any RP data
-        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
-        const key = `${workspace}|${selectedMethodConfig.method.id}|${selectedEntityId}`;
-        if (referenceCache.current.has(key)) {
-            setReferenceValues(referenceCache.current.get(key));
-            return;
-        }
-        let cancelled = false;
-        setReferenceValues(null);
-        (async () => {
-            try {
-                const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
-                if (cancelled) return;
-                // Expected: { reference_axis: number[], reference_values: number[] }
-                let parsed = null;
-                if (resp && Array.isArray(resp.reference_axis) && Array.isArray(resp.reference_values) && resp.reference_axis.length === resp.reference_values.length) {
-                    parsed = {axis: resp.reference_axis.map(Number), values: resp.reference_values.map(Number)};
-                }
-                if (parsed) {
-                    referenceCache.current.set(key, parsed);
-                    setReferenceValues(parsed);
-                } else {
-                    console.log(t('seriesModal.noReferenceValues'));
-                }
-            } catch (e) {
-                if (!cancelled) console.log(e);
-            }
-        })();
-        return () => { cancelled = true; };
+    // Reference values via cached request
+    const referenceKey = useMemo(() => {
+        if (!(options.tenYearReturn || options.allReturnPeriods)) return null;
+        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
+        return `series_ref|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
     }, [options.tenYearReturn, options.allReturnPeriods, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+    const { data: refData } = useCachedRequest(
+        referenceKey,
+        async () => {
+            const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+            return normalizeReferenceValues(resp);
+        },
+        [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, options.tenYearReturn, options.allReturnPeriods],
+        { enabled: !!referenceKey, initialData: null, ttlMs: DEFAULT_TTL }
+    );
+    useEffect(() => { setReferenceValues(refData || null); }, [refData]);
 
-    // Fetch best analogs when option enabled
-    useEffect(() => {
-        if (!options.bestAnalogs) {
-            setBestAnalogs(null);
-            return;
-        }
-        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
-        const key = `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
-        if (bestAnalogsCache.current.has(key)) {
-            setBestAnalogs(bestAnalogsCache.current.get(key));
-            return;
-        }
-        let cancelled = false;
-        setBestAnalogs(null);
-        (async () => {
-            try {
-                const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
-                if (cancelled) return;
-                // Expected minimal shape: { target_dates?: [], series_values: number[][], series_dates?: (string|Date)[][] }
-                let parsed = null;
-                if (resp && Array.isArray(resp.series_values) && resp.series_values.length) {
-                    const parsedTargetDates = Array.isArray(resp.target_dates)
-                        ? resp.target_dates.map(d => parseForecastDate(d) || new Date(d))
-                        : null;
-
-                    const rowsValues = resp.series_values;
-                    const nRows = rowsValues.length;
-                    const nAnalogs = rowsValues.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
-
-                    const rowsDates = Array.isArray(resp.series_dates) ? resp.series_dates : null;
-
-                    const items = [];
-                    let hasAnalogHours = false;
-
-                    for (let c = 0; c < nAnalogs; c++) {
-                        const values = [];
-                        const analogDates = [];
-                        for (let r = 0; r < nRows; r++) {
-                            const rowVals = rowsValues[r];
-                            const v = (Array.isArray(rowVals) && rowVals.length > c) ? rowVals[c] : null;
-                            values.push(typeof v === 'number' ? v : (v == null ? null : Number(v)));
-
-                            if (rowsDates && Array.isArray(rowsDates[r])) {
-                                const rawDate = rowsDates[r].length > c ? rowsDates[r][c] : null;
-                                const dt = rawDate ? (parseForecastDate(rawDate) || new Date(rawDate)) : null;
-                                analogDates.push(dt && !isNaN(dt) ? dt : null);
-                                if (dt && (dt.getHours() !== 0 || dt.getMinutes() !== 0 || dt.getSeconds() !== 0)) {
-                                    hasAnalogHours = true;
-                                }
-                            } else {
-                                analogDates.push(null);
-                            }
-                        }
-                        items.push({ label: t('seriesModal.analogWithIndex', {index: c+1}), values, datesByAnalog: analogDates });
-                    }
-                    parsed = { items, dates: parsedTargetDates || undefined, hasAnalogHours };
-                }
-
-                if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
-                    bestAnalogsCache.current.set(key, parsed);
-                    setBestAnalogs(parsed);
-                } else {
-                    console.log(t('seriesModal.noBestAnalogs'));
-                }
-            } catch (e) {
-                if (!cancelled) console.log(e);
-            }
-        })();
-        return () => { cancelled = true; };
+    // Best analogs via cached request (still local cache unnecessary, but keep for session reuse if needed)
+    const bestAnalogsKey = useMemo(() => {
+        if (!options.bestAnalogs) return null;
+        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
+        return `series_bestanalogs|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
     }, [options.bestAnalogs, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-
-    // Fetch previous forecasts history when option enabled
-    useEffect(() => {
-        if (!options.previousForecasts) {
-            setPastForecasts(null);
-            return;
-        }
-        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return;
-        const key = `${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
-        if (pastForecastsCache.current.has(key)) {
-            setPastForecasts(pastForecastsCache.current.get(key));
-            return;
-        }
-        let cancelled = false;
-        setPastForecasts(null);
-        (async () => {
-            try {
-                const resp = await getSeriesValuesPercentilesHistory(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
-                if (cancelled) return;
-                // Expected: { past_forecasts: [{ forecast_date, target_dates, series_percentiles: [{percentile, series_values}] }] }
-                const raw = resp?.past_forecasts;
-                if (!Array.isArray(raw)) {
-                     return;
-                }
-                const parsedList = raw.map(item => {
-                    const forecastDate = parseForecastDate(item.forecast_date) || new Date(item.forecast_date);
-                    const dates = (Array.isArray(item.target_dates) ? item.target_dates.map(d => parseForecastDate(d) || new Date(d)).filter(d => d && !isNaN(d)) : []);
-                    const pctMap = {};
-                    if (Array.isArray(item.series_percentiles)) {
-                        item.series_percentiles.forEach(sp => {
-                            const pNum = Number(sp.percentile);
-                            if (!Number.isFinite(pNum)) return;
-                            pctMap[pNum] = Array.isArray(sp.series_values) ? sp.series_values.map(v => (typeof v === 'number' ? v : (v == null ? null : Number(v)))) : [];
-                        });
-                    }
-                    return {forecastDate, dates, percentiles: pctMap};
-                }).filter(p => p.dates && p.dates.length);
-                pastForecastsCache.current.set(key, parsedList);
-                setPastForecasts(parsedList);
-            } catch (e) {
-                if (!cancelled) console.log(e);
+    const { data: bestAnalogsData } = useCachedRequest(
+        bestAnalogsKey,
+        async () => {
+            const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+            const parsed = normalizeSeriesBestAnalogs(resp, parseForecastDate);
+            if (parsed && Array.isArray(parsed.items)) {
+                // add labels for display consistency
+                parsed.items = parsed.items.map((it, idx) => ({ label: t('seriesModal.analogWithIndex', {index: idx+1}), ...it }));
             }
-        })();
-        return () => { cancelled = true; };
+            return parsed;
+        },
+        [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, t],
+        { enabled: !!bestAnalogsKey, initialData: null, ttlMs: SHORT_TTL }
+    );
+    useEffect(() => { setBestAnalogs(bestAnalogsData || null); }, [bestAnalogsData]);
+
+    // Previous forecasts history via cached request
+    const pastKey = useMemo(() => {
+        if (!options.previousForecasts) return null;
+        if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
+        return `series_history|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
     }, [options.previousForecasts, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
+    const { data: pastData } = useCachedRequest(
+        pastKey,
+        async () => {
+            const resp = await getSeriesValuesPercentilesHistory(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
+            return normalizeSeriesValuesPercentilesHistory(resp, parseForecastDate);
+        },
+        [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId],
+        { enabled: !!pastKey, initialData: null, ttlMs: DEFAULT_TTL }
+    );
+    useEffect(() => { setPastForecasts(pastData || null); }, [pastData]);
 
     // Export menu state
     const [exportAnchorEl, setExportAnchorEl] = useState(null);

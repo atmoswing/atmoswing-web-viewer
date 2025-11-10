@@ -3,8 +3,9 @@ import {useForecastSession} from './ForecastSessionContext.jsx';
 import {getSynthesisTotal, getSynthesisPerMethod} from '../services/api.js';
 import {parseForecastDate} from '../utils/forecastDateUtils.js';
 import { isSameInstant, isSameDay } from '../utils/targetDateUtils.js';
-import { useManagedRequest } from '../hooks/useManagedRequest.js';
+import { useCachedRequest } from '../hooks/useCachedRequest.js';
 import { normalizePerMethodSynthesis } from '../utils/apiNormalization.js';
+import { DEFAULT_TTL } from '../utils/cacheTTLs.js';
 
 const SynthesisContext = createContext({});
 
@@ -46,54 +47,53 @@ export function SynthesisProvider({children}) {
         return { baseDt, daily, sub };
     }, [activeForecastDate]);
 
-    // Fetch total synthesis (leads)
+    // Fetch total synthesis (leads) via cached request
+    const totalSynthKey = workspace && activeForecastDate ? `synth_total|${workspace}|${activeForecastDate}|${BASELINE_PERCENTILE}|${BASELINE_NORMALIZATION_REF}` : null;
+    const { data: totalSynthRaw, loading: totalSynthLoading, error: totalSynthError } = useCachedRequest(
+        totalSynthKey,
+        async () => {
+            return await getSynthesisTotal(workspace, activeForecastDate, BASELINE_PERCENTILE, BASELINE_NORMALIZATION_REF);
+        },
+        [workspace, activeForecastDate],
+        { enabled: !!totalSynthKey, initialData: null, ttlMs: DEFAULT_TTL }
+    );
+
+    // Parse total synthesis whenever raw data changes
     useEffect(() => {
-        let cancelled = false;
-        let reqId = 0;
-        async function run() {
-            const localId = ++reqId;
-            if (!activeForecastDate || !workspace) {
-                setDailyLeads([]);
-                setSubDailyLeads([]);
-                setSelectedLead(0);
-                setSelectedTargetDate(null);
-                return;
-            }
-            try {
-                const resp = await getSynthesisTotal(workspace, activeForecastDate, BASELINE_PERCENTILE, BASELINE_NORMALIZATION_REF);
-                if (cancelled || localId !== reqId) return;
-                const { baseDt, daily, sub } = parseTotalSynthesis(resp);
-                setForecastBaseDate(baseDt);
-                setDailyLeads(daily);
-                setSubDailyLeads(sub);
-                if (daily.length) {
-                    setSelectedLead(0); setLeadResolution('daily'); setSelectedTargetDate(daily[0].date);
-                } else if (sub.length) {
-                    setSelectedLead(0); setLeadResolution('sub'); setSelectedTargetDate(sub[0].date);
-                } else {
-                    setSelectedLead(0); setSelectedTargetDate(null); setLeadResolution('daily');
-                }
-            } catch {
-                if (cancelled) return;
-                setDailyLeads([]);
-                setSubDailyLeads([]);
-                setSelectedLead(0);
-                setSelectedTargetDate(null);
-                setForecastBaseDate(null);
-            }
+        if (!workspace || !activeForecastDate) {
+            setDailyLeads([]); setSubDailyLeads([]); setSelectedLead(0); setSelectedTargetDate(null); setForecastBaseDate(null);
+            return;
         }
-        run();
-        return () => { cancelled = true; };
-    }, [workspace, activeForecastDate, setForecastBaseDate, parseTotalSynthesis]);
+        if (!totalSynthRaw) { // still loading or error
+            return;
+        }
+        try {
+            const { baseDt, daily, sub } = parseTotalSynthesis(totalSynthRaw);
+            setForecastBaseDate(baseDt);
+            setDailyLeads(daily);
+            setSubDailyLeads(sub);
+            if (daily.length) {
+                setSelectedLead(0); setLeadResolution('daily'); setSelectedTargetDate(daily[0].date);
+            } else if (sub.length) {
+                setSelectedLead(0); setLeadResolution('sub'); setSelectedTargetDate(sub[0].date);
+            } else {
+                setSelectedLead(0); setSelectedTargetDate(null); setLeadResolution('daily');
+            }
+        } catch {
+            setDailyLeads([]); setSubDailyLeads([]); setSelectedLead(0); setSelectedTargetDate(null); setForecastBaseDate(null);
+        }
+    }, [totalSynthRaw, workspace, activeForecastDate, parseTotalSynthesis, setForecastBaseDate]);
 
     // Fetch per-method synthesis (baseline)
-    const { data: fetchedPerMethodData, loading: perMethodSynthesisLoading, error: perMethodSynthesisError } = useManagedRequest(
+    const perMethodKey = workspace && activeForecastDate ? `synth_per_method|${workspace}|${activeForecastDate}|${BASELINE_PERCENTILE}` : null;
+    const { data: fetchedPerMethodData, loading: perMethodSynthesisLoading, error: perMethodSynthesisError } = useCachedRequest(
+        perMethodKey,
         async () => {
             const resp = await getSynthesisPerMethod(workspace, activeForecastDate, BASELINE_PERCENTILE);
             return normalizePerMethodSynthesis(resp);
         },
         [workspace, activeForecastDate],
-        { enabled: !!workspace && !!activeForecastDate, initialData: [] }
+        { enabled: !!workspace && !!activeForecastDate, initialData: [] , ttlMs: DEFAULT_TTL}
     );
 
     useEffect(() => {
@@ -128,8 +128,9 @@ export function SynthesisProvider({children}) {
         leadResolution, setLeadResolution,
         selectedLead, setSelectedLead,
         selectedTargetDate, selectTargetDate,
-        perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError
-    }), [dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, selectTargetDate, perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError]);
+        perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError,
+        totalSynthLoading, totalSynthError
+    }), [dailyLeads, subDailyLeads, leadResolution, selectedLead, selectedTargetDate, selectTargetDate, perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError, totalSynthLoading, totalSynthError]);
 
     return <SynthesisContext.Provider value={value}>{children}</SynthesisContext.Provider>;
 }
