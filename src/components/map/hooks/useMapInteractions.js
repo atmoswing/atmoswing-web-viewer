@@ -1,8 +1,9 @@
 import {useEffect} from 'react';
 
-export default function useMapInteractions({mapRef, forecastLayerRef, setSelectedEntityId, setTooltip}) {
+export default function useMapInteractions({mapRef, forecastLayerRef, setSelectedEntityId, setTooltip, mapReady}) {
   // Click handler
   useEffect(() => {
+    if (!mapReady) return;
     if (!mapRef.current) return;
     const map = mapRef.current;
     const clickHandler = (evt) => {
@@ -22,10 +23,11 @@ export default function useMapInteractions({mapRef, forecastLayerRef, setSelecte
       } catch {
       }
     };
-  }, [mapRef, forecastLayerRef, setSelectedEntityId]);
+  }, [mapRef, forecastLayerRef, setSelectedEntityId, mapReady]);
 
   // Tooltip pointer handlers
   useEffect(() => {
+    if (!mapReady) return;
     if (!mapRef.current) return;
     const map = mapRef.current;
 
@@ -51,6 +53,5 @@ export default function useMapInteractions({mapRef, forecastLayerRef, setSelecte
       } catch {
       }
     };
-  }, [mapRef, forecastLayerRef, setTooltip]);
+  }, [mapRef, forecastLayerRef, setTooltip, mapReady]);
 }
-

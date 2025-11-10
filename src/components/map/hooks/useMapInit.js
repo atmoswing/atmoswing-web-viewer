@@ -5,11 +5,12 @@ import TileLayer from 'ol/layer/Tile';
 import LayerGroup from 'ol/layer/Group';
 import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
-import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
-import WMTSCapabilities from 'ol/format/WMTSCapabilities';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import LayerSwitcher from 'ol-layerswitcher';
+import WMTS from 'ol/source/WMTS';
+import { loadWmtsCapabilities, createWmtsTileLayer } from '@/components/map/utils/loadWmtsCapabilities.js';
+import { DEFAULT_PROJECTION } from '@/components/map/mapConstants.js';
 
 export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
   const containerRef = useRef(null);
@@ -27,47 +28,7 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
     while (containerRef.current.firstChild) containerRef.current.removeChild(containerRef.current.firstChild);
 
     (async () => {
-      // Collect WMTS by provider
-      const wmtsRequests = {};
-      const providerMap = {};
-      (runtimeConfig.providers || []).forEach(p => providerMap[p.name] = p);
-      const collect = (arr) => (arr || []).forEach(item => {
-        if (item.source === 'wmts' && item.wmtsLayer && item.provider) {
-          const provider = providerMap[item.provider];
-          if (!provider) return;
-          const url = provider.wmtsUrl;
-          if (!wmtsRequests[url]) wmtsRequests[url] = [];
-          wmtsRequests[url].push(item);
-        }
-      });
-      collect(runtimeConfig.baseLayers);
-      collect(runtimeConfig.overlayLayers);
-
-      const wmtsOptionsCache = {};
-      for (const [url, items] of Object.entries(wmtsRequests)) {
-        try {
-          const text = await fetch(url).then(r => r.text());
-          const caps = new WMTSCapabilities().read(text);
-          items.forEach(item => {
-            let opts = null;
-            if (item.style) {
-              try {
-                opts = optionsFromCapabilities(caps, {layer: item.wmtsLayer, matrixSet: 'PM', style: item.style});
-              } catch {
-              }
-            }
-            if (!opts) {
-              try {
-                opts = optionsFromCapabilities(caps, {layer: item.wmtsLayer, matrixSet: 'PM'});
-              } catch {
-              }
-            }
-            if (opts) wmtsOptionsCache[item.wmtsLayer] = opts; else enqueueSnackbar(`Failed to load layer ${item.title}: layer not found in capabilities`, {variant: 'warning'});
-          });
-        } catch (error) {
-          items.forEach(item => enqueueSnackbar(`Failed to load layer ${item.title}: ${error.message}`, {variant: 'warning'}));
-        }
-      }
+      const wmtsOptionsCache = await loadWmtsCapabilities(runtimeConfig, (msg) => enqueueSnackbar(msg, {variant:'warning'}));
 
       const baseLayersArray = [
         new TileLayer({
@@ -82,17 +43,17 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
         new TileLayer({title: t('map.layers.osm'), type: 'base', visible: false, source: new OSM()})
       ];
       (runtimeConfig.baseLayers || []).forEach(item => {
-        let source;
         if (item.source === 'wmts') {
-          const opts = wmtsOptionsCache[item.wmtsLayer];
-          if (opts) source = new WMTS(opts);
+          const source = createWmtsTileLayer(item, wmtsOptionsCache);
+          if (source) {
+            baseLayersArray.push(new TileLayer({
+              title: item.title,
+              type: item.type || 'base',
+              visible: !!item.visible,
+              source
+            }));
+          }
         }
-        if (source) baseLayersArray.push(new TileLayer({
-          title: item.title,
-          type: item.type || 'base',
-          visible: !!item.visible,
-          source
-        }));
       });
 
       const baseLayers = new LayerGroup({title: t('map.baseLayers'), fold: 'open', layers: baseLayersArray});
@@ -108,7 +69,7 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
       mapRef.current = new Map({
         target: containerRef.current,
         layers: [baseLayers, overlayLayers, forecastLayerRef.current],
-        view: new View({center: [0, 0], zoom: 2, projection: 'EPSG:3857'}),
+        view: new View({center: [0, 0], zoom: 2, projection: DEFAULT_PROJECTION}),
         controls: []
       });
 

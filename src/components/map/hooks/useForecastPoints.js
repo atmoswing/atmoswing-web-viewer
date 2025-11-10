@@ -6,6 +6,17 @@ import {transform} from 'ol/proj';
 import proj4 from 'proj4';
 import {valueToColor} from '@/utils/colorUtils.js';
 import config from '@/config.js';
+import {buildLegendStops} from '@/components/map/utils/buildLegendStops.js';
+import {
+  FIT_PADDING,
+  FORECAST_POINT_RADIUS_RELEVANT,
+  FORECAST_POINT_RADIUS_NORMAL,
+  FORECAST_POINT_STROKE_WIDTH,
+  FORECAST_POINT_STROKE_COLOR_RELEVANT,
+  FORECAST_POINT_STROKE_COLOR_DIM,
+  FORECAST_POINT_OPACITY_RELEVANT,
+  FORECAST_POINT_OPACITY_DIM
+} from '@/components/map/mapConstants.js';
 
 export default function useForecastPoints(
   {
@@ -49,13 +60,7 @@ export default function useForecastPoints(
     }
     const maxVal = 1; // simplified scaling placeholder
     setLegendMax(maxVal);
-    const samples = 40;
-    const stops = [];
-    for (let i = 0; i <= samples; i++) {
-      const v = (i / samples) * maxVal;
-      const [r, g, b] = valueToColor(v, maxVal);
-      stops.push({color: `rgb(${r},${g},${b})`, pct: (i / samples) * 100});
-    }
+    const stops = buildLegendStops(maxVal);
     setLegendStops(stops);
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -64,13 +69,13 @@ export default function useForecastPoints(
       const rawVal = forecastValues ? forecastValues[ent.id] : undefined;
       const [r, g, b] = valueToColor(normVal, maxVal);
       const isRelevant = !relevantEntities || relevantEntities.has(ent.id);
-      const opacity = isRelevant ? 0.9 : 0.7;
-      const radius = isRelevant ? 8 : 6;
-      const strokeColor = isRelevant ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)';
+      const opacity = isRelevant ? FORECAST_POINT_OPACITY_RELEVANT : FORECAST_POINT_OPACITY_DIM;
+      const radius = isRelevant ? FORECAST_POINT_RADIUS_RELEVANT : FORECAST_POINT_RADIUS_NORMAL;
+      const strokeColor = isRelevant ? FORECAST_POINT_STROKE_COLOR_RELEVANT : FORECAST_POINT_STROKE_COLOR_DIM;
       const style = new Style({
         image: new CircleStyle({
           radius,
-          stroke: new Stroke({color: strokeColor, width: 2}),
+          stroke: new Stroke({color: strokeColor, width: FORECAST_POINT_STROKE_WIDTH}),
           fill: new Fill({color: `rgba(${r},${g},${b},${opacity})`})
         })
       });
@@ -104,7 +109,7 @@ export default function useForecastPoints(
     if (workspace && lastFittedWorkspaceRef.current !== workspace && isFinite(minX) && isFinite(minY) && isFinite(maxX) && isFinite(maxY) && minX < maxX && minY < maxY) {
       const view = mapRef?.current?.getView?.();
       if (view) {
-        view.fit([minX, minY, maxX, maxY], {padding: [60, 60, 60, 60], duration: 500, maxZoom: 11});
+        view.fit([minX, minY, maxX, maxY], {padding: FIT_PADDING, duration: 500, maxZoom: 11});
         lastFittedWorkspaceRef.current = workspace;
       }
     }

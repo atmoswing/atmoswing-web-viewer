@@ -79,7 +79,7 @@ export default function MapViewer() {
   });
 
   // Interactions (click & tooltip)
-  useMapInteractions({mapRef, forecastLayerRef, setSelectedEntityId, setTooltip});
+  useMapInteractions({mapRef, forecastLayerRef, setSelectedEntityId, setTooltip, mapReady});
 
   // Auto-dismiss search failed overlay
   useEffect(() => {
