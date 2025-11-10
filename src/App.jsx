@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, memo } from 'react';
+import React, {lazy, memo, Suspense} from 'react';
 
 import '@/styles/App.css'
 
@@ -12,27 +12,27 @@ import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 const ModalForecastSeries = lazy(() => import('@/components/modals/ModalForecastSeries.jsx'));
 
 const MapArea = memo(function MapArea() {
-    return (
-        <main className="map-area">
-            <MapViewer />
-        </main>
-    );
+  return (
+    <main className="map-area">
+      <MapViewer/>
+    </main>
+  );
 });
 
 export default function App() {
-    return (
-        <div className="app-layout">
-            <ErrorBoundary>
-                <SideBar />
-                <div className="main-content">
-                    <ToolBar />
-                    <MapArea />
-                    <Suspense fallback={null}>
-                        <ModalForecastSeries />
-                    </Suspense>
-                </div>
-                <AppSnackbars />
-            </ErrorBoundary>
+  return (
+    <div className="app-layout">
+      <ErrorBoundary>
+        <SideBar/>
+        <div className="main-content">
+          <ToolBar/>
+          <MapArea/>
+          <Suspense fallback={null}>
+            <ModalForecastSeries/>
+          </Suspense>
         </div>
-    );
+        <AppSnackbars/>
+      </ErrorBoundary>
+    </div>
+  );
 }

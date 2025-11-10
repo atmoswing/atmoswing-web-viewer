@@ -1,13 +1,13 @@
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 
-export default function useMapInteractions({ mapRef, forecastLayerRef, setSelectedEntityId, setTooltip }) {
+export default function useMapInteractions({mapRef, forecastLayerRef, setSelectedEntityId, setTooltip}) {
   // Click handler
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
     const clickHandler = (evt) => {
       if (!forecastLayerRef.current) return;
-      const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === forecastLayerRef.current });
+      const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, {layerFilter: l => l === forecastLayerRef.current});
       if (feature) {
         const fid = typeof feature.getId === 'function' ? feature.getId() : undefined;
         const id = fid != null ? fid : (feature.get('id') ?? feature.get('entity_id') ?? feature.get('entityId'));
@@ -16,25 +16,41 @@ export default function useMapInteractions({ mapRef, forecastLayerRef, setSelect
     };
     map.__singleClickHandler = clickHandler;
     map.on('singleclick', clickHandler);
-    return () => { try { map.un('singleclick', clickHandler); } catch {} };
+    return () => {
+      try {
+        map.un('singleclick', clickHandler);
+      } catch {
+      }
+    };
   }, [mapRef, forecastLayerRef, setSelectedEntityId]);
 
   // Tooltip pointer handlers
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
+
     function handleMove(evt) {
       if (!forecastLayerRef.current) return;
-      const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === forecastLayerRef.current });
+      const feature = map.forEachFeatureAtPixel(evt.pixel, f => f, {layerFilter: l => l === forecastLayerRef.current});
       if (feature) {
         const coord = evt.pixel;
-        setTooltip({ x: coord[0], y: coord[1], name: feature.get('name'), valueRaw: feature.get('valueRaw') });
+        setTooltip({x: coord[0], y: coord[1], name: feature.get('name'), valueRaw: feature.get('valueRaw')});
       } else setTooltip(null);
     }
-    function handleOut() { setTooltip(null); }
+
+    function handleOut() {
+      setTooltip(null);
+    }
+
     map.on('pointermove', handleMove);
     map.on('pointerout', handleOut);
-    return () => { try { map.un('pointermove', handleMove); map.un('pointerout', handleOut); } catch {} };
+    return () => {
+      try {
+        map.un('pointermove', handleMove);
+        map.un('pointerout', handleOut);
+      } catch {
+      }
+    };
   }, [mapRef, forecastLayerRef, setTooltip]);
 }
 

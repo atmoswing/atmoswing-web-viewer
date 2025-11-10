@@ -1,4 +1,4 @@
-import React, { StrictMode, Suspense } from 'react';
+import React, {StrictMode, Suspense} from 'react';
 import {createRoot} from 'react-dom/client';
 import Providers from '@/providers/Providers.jsx';
 import '@/styles/index.css';
@@ -9,7 +9,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Providers>
       <Suspense fallback={null}>
-        <App />
+        <App/>
       </Suspense>
     </Providers>
   </StrictMode>
