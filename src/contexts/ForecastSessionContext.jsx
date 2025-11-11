@@ -4,6 +4,7 @@ import {formatForecastDateForApi, parseForecastDate} from '../utils/forecastDate
 import {getLastForecastDate, getSynthesisTotal, hasForecastDate} from '../services/api.js';
 import {normalizeHasForecastDate, normalizeSynthesisHasLeads} from '../utils/apiNormalization.js';
 import {useCachedRequest as useCachedRequestHook} from '../hooks/useCachedRequest.js';
+import config from '@/config.js';
 
 const SHORT_TTL = 1000 * 60 * 5; // 5 minutes (for cached requests)
 
@@ -120,7 +121,7 @@ export function ForecastSessionProvider({children}) {
         const resp = await getLastForecastDate(workspace);
         raw = resp?.last_forecast_date;
       } catch (e) {
-        console.warn('[ForecastSession] getLastForecastDate failed', e);
+        if (config.API_DEBUG) console.warn('[ForecastSession] getLastForecastDate failed', e);
       }
     }
     if (!raw) return;

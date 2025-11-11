@@ -24,7 +24,7 @@ import {
 } from '../../services/api.js';
 import {parseForecastDate} from '../../utils/forecastDateUtils.js';
 import {useTranslation} from 'react-i18next';
-import {useCachedRequest} from '../../hooks/useCachedRequest.js';
+import {useCachedRequest, clearCachedRequests} from '../../hooks/useCachedRequest.js';
 import {DEFAULT_TTL, SHORT_TTL} from '../../utils/cacheTTLs.js';
 import {
   normalizeReferenceValues,
@@ -32,7 +32,7 @@ import {
   normalizeSeriesValuesPercentiles,
   normalizeSeriesValuesPercentilesHistory
 } from '../../utils/apiNormalization.js';
-import TimeSeriesChart from './TimeSeriesChart.jsx';
+import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
 import {DEFAULT_PCTS, FULL_PCTS} from './common/plotConstants.js';
 import { safeForFilename, downloadBlob, inlineAllStyles, getSVGSize, withTemporaryContainer } from './common/exportUtils.js';
@@ -368,6 +368,22 @@ export default function TimeSeriesModal() {
       document.body.removeChild(container);
     }
   };
+
+  // When modal closes (selectedEntityId becomes null), clear series state, caches, and chart DOM
+  useEffect(() => {
+    if (selectedEntityId == null) {
+      setSeries(null);
+      setReferenceValues(null);
+      setBestAnalogs(null);
+      setPastForecasts(null);
+      try { if (chartRef.current) d3.select(chartRef.current).selectAll('*').remove(); } catch {}
+      // clear cached series-related keys
+      clearCachedRequests('series|');
+      clearCachedRequests('series_ref|');
+      clearCachedRequests('series_bestanalogs|');
+      clearCachedRequests('series_history|');
+    }
+  }, [selectedEntityId]);
 
   return (
     <Dialog open={selectedEntityId != null} onClose={handleClose} maxWidth={false} fullWidth

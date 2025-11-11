@@ -1,8 +1,8 @@
 import {useEffect, useMemo} from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
-import {ANALOG_MARKER_COLOR, QUANTILE_COLORS, SELECTED_RPS, TEN_YEAR_COLOR} from './common/plotConstants.js';
-import {parseForecastDate} from '../../utils/forecastDateUtils.js';
+import {ANALOG_MARKER_COLOR, QUANTILE_COLORS, SELECTED_RPS, TEN_YEAR_COLOR} from '../common/plotConstants.js';
+import {parseForecastDate} from '../../../utils/forecastDateUtils.js';
 
 export default function TimeSeriesChart({
   containerRef,

@@ -39,11 +39,14 @@ import {
   normalizeAnalogPercentiles,
   normalizeAnalogsResponse,
   normalizeEntitiesResponse,
-  normalizeReferenceValues
+  normalizeReferenceValues,
+  normalizeRelevantEntityIds
 } from '../../utils/apiNormalization.js';
 import {DEFAULT_TTL, SHORT_TTL} from '../../utils/cacheTTLs.js';
 import ExportMenu from './common/ExportMenu.jsx';
-import { SELECTED_RPS, TEN_YEAR_COLOR } from './common/plotConstants.js';
+import { safeForFilename, inlineAllStyles, getSVGSize, withTemporaryContainer, downloadBlob } from './common/exportUtils.js';
+import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
+import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 
 function TabPanel({children, value, index, ...other}) {
   return (
@@ -180,20 +183,41 @@ export default function DistributionsModal({open, onClose}) {
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead, open],
     { enabled: !!analogKey, initialData: [], ttlMs: SHORT_TTL }
   );
-  useEffect(() => { setAnalogValues(Array.isArray(analogResp) ? analogResp : null); }, [analogResp]);
+  useEffect(() => {
+    setAnalogValues(Array.isArray(analogResp) ? analogResp : null);
+  }, [analogResp]);
 
-  // Criteria via cache
-  const criteriaKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedStationId != null && selectedLead != null ?
-    `dist_criteria|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedStationId}|${selectedLead}` : null;
+  // Criteria via cache (per-lead; endpoint does not take entity)
+  const criteriaKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedLead != null ?
+    `dist_criteria|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedLead}` : null;
   const { data: criteriaResp, loading: criteriaLoading } = useCachedRequest(
     criteriaKey,
-    async () => normalizeAnalogCriteriaArray(await getAnalogyCriteria(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead)),
-    [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead, open],
+    async () => normalizeAnalogCriteriaArray(await getAnalogyCriteria(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedLead)),
+    [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedLead, open],
     { enabled: !!criteriaKey, initialData: null, ttlMs: SHORT_TTL }
   );
   useEffect(() => {
-    if (criteriaResp) setCriteriaValues(criteriaResp.map((v, i) => ({ index: i + 1, value: v })).filter(x => x.value != null)); else setCriteriaValues(null);
+    if (Array.isArray(criteriaResp) && criteriaResp.length) {
+      setCriteriaValues(criteriaResp.map((v, i) => ({ index: i + 1, value: v })).filter(x => x.value != null));
+    } else {
+      setCriteriaValues(null);
+    }
   }, [criteriaResp]);
+
+  // Fallback: if no criteriaResp available, derive criteria from current analogValues for the selected lead
+  useEffect(() => {
+    if (Array.isArray(criteriaResp) && criteriaResp.length) return; // prefer API-provided criteria
+    if (Array.isArray(analogValues) && analogValues.length) {
+      const derived = analogValues
+        .map(a => (a && a.criteria != null ? Number(a.criteria) : null))
+        .filter(v => v != null && Number.isFinite(v));
+      if (derived.length) {
+        setCriteriaValues(derived.map((v, i) => ({ index: i + 1, value: v })));
+        return;
+      }
+    }
+    // otherwise keep as null
+  }, [criteriaResp, analogValues, selectedLead]);
 
   // Percentile markers via cache
   const pctsKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedStationId != null && selectedLead != null ?
@@ -220,6 +244,9 @@ export default function DistributionsModal({open, onClose}) {
   // Cleanup on close: reset and clear caches for this modal
   useEffect(() => {
     if (!open) {
+      // Clear chart containers immediately for visual cleanup
+      try { if (precipRef.current) d3.select(precipRef.current).selectAll('*').remove(); } catch {}
+      try { if (critRef.current) d3.select(critRef.current).selectAll('*').remove(); } catch {}
       setSelectedMethodId(null);
       setSelectedConfigId(null);
       setSelectedStationId(null);
@@ -243,124 +270,146 @@ export default function DistributionsModal({open, onClose}) {
     return m?.configurations || [];
   }, [methodOptions, selectedMethodId]);
 
+  // Option toggles (mutual exclusion for return period checkboxes)
   const handleOptionChange = (key) => (e) => {
     const checked = e.target.checked;
-    setOptions(o => {
+    setOptions(prev => {
       if (key === 'tenYearReturn') {
-        return {...o, tenYearReturn: checked, allReturnPeriods: checked ? false : o.allReturnPeriods};
+        return {...prev, tenYearReturn: checked, allReturnPeriods: checked ? false : prev.allReturnPeriods};
       }
       if (key === 'allReturnPeriods') {
-        return {...o, allReturnPeriods: checked, tenYearReturn: checked ? false : o.tenYearReturn};
+        return {...prev, allReturnPeriods: checked, tenYearReturn: checked ? false : prev.tenYearReturn};
       }
-      return {...o, [key]: checked};
+      return {...prev, [key]: checked};
     });
   };
 
-  // Fetch analog values when selection changes
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      if (!open || !workspace || !activeForecastDate || !selectedMethodId || !selectedStationId || selectedLead == null) {
-        setAnalogValues(null);
-        setAnalogError(null);
-        setAnalogLoading(false);
-        return;
-      }
-      const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-      const cfgId = selectedConfigId || (methodNode && methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
-      if (!cfgId) {
-        setAnalogValues(null);
-        return;
-      }
-      setAnalogLoading(true);
-      setAnalogError(null);
+  // Export helpers and filename builder
+  const stationName = useMemo(() => {
+    const match = stations?.find(s => s.id === selectedStationId);
+    return match?.name || match?.id || selectedStationId || '';
+  }, [stations, selectedStationId]);
+  const buildExportFilenamePrefix = () => {
+    let datePart = '';
+    if (activeForecastDate) {
       try {
-        const resp = await getAnalogValues(workspace, activeForecastDate, selectedMethodId, cfgId, selectedStationId, selectedLead);
-        if (cancelled) return;
-        let arr;
-        if (Array.isArray(resp)) arr = resp;
-        else if (resp && Array.isArray(resp.analogs)) arr = resp.analogs;
-        else if (resp && Array.isArray(resp.analog_values)) arr = resp.analog_values;
-        else if (resp && Array.isArray(resp.values)) arr = resp.values;
-        else if (resp && Array.isArray(resp.data)) arr = resp.data;
-        else if (resp && Array.isArray(resp.items)) arr = resp.items;
-        else arr = [];
-
-        const values = arr.map((it, i) => {
-          if (it == null) return {rank: i + 1, date: null, value: null, criteria: null};
-          if (typeof it === 'number') return {rank: i + 1, date: null, value: it, criteria: null};
-          const rank = it.rank ?? it.analog ?? (i + 1);
-          const date = it.date ?? it.analog_date ?? it.dt ?? it.target_date ?? null;
-          const v = (it.value != null) ? it.value : (it.precip_value != null ? it.precip_value : (it.value_mm != null ? it.value_mm : (it.amount != null ? it.amount : null)));
-          const criteria = it.criteria ?? it.score ?? it.criterion ?? it.crit ?? null;
-          if (v == null) {
-            const numKeys = ['val', 'value_mm', 'precip', 'precipitation'];
-            for (const k of numKeys) {
-              if (it[k] != null && typeof it[k] === 'number') {
-                return {rank, date, value: it[k], criteria};
-              }
-            }
-          }
-          return {rank, date, value: (typeof v === 'number' ? v : (v != null ? Number(v) : null)), criteria};
-        });
-        setAnalogValues(values);
-      } catch (e) {
-        if (!cancelled) setAnalogError(e);
-        setAnalogValues([]);
-      } finally {
-        if (!cancelled) setAnalogLoading(false);
-      }
+        const d = new Date(activeForecastDate);
+        if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
+      } catch { /* ignore */ }
     }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, selectedStationId, selectedLead, methodsData]);
-
-  // Fetch criteria distribution explicitly if available
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      if (!open || !workspace || !activeForecastDate || !selectedMethodId || !selectedStationId || selectedLead == null) {
-        setCriteriaValues(null);
-        setCriteriaLoading(false);
-        return;
-      }
-      const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-      const cfgId = selectedConfigId || (methodNode && methodNode.configurations && methodNode.configurations[0] && methodNode.configurations[0].id) || null;
-      if (!cfgId) {
-        setCriteriaValues(null);
-        return;
-      }
-      setCriteriaLoading(true);
+    const entityPart = safeForFilename(stationName || 'entity');
+    const methodIdPart = (methodsData?.methods?.find(m => m.id === selectedMethodId)?.id) || 'method';
+    const safeMethod = safeForFilename(methodIdPart);
+    const leadPart = (selectedLead != null) ? `L${selectedLead}` : '';
+    const tabPart = tabIndex === 0 ? 'distribution' : 'criteria';
+    return [datePart, entityPart, safeMethod, leadPart, tabPart].filter(Boolean).join('_');
+  };
+  const findCurrentChartSVG = () => {
+    const el = tabIndex === 0 ? precipRef.current : critRef.current;
+    return el ? el.querySelector('svg') : null;
+  };
+  const exportSVG = () => {
+    const svg = findCurrentChartSVG();
+    if (!svg) return;
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const serializer = new XMLSerializer();
+    withTemporaryContainer(clone, () => {
+      const svgStr = serializer.serializeToString(clone);
+      downloadBlob(new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'}), `${buildExportFilenamePrefix() || 'distribution'}.svg`);
+    });
+  };
+  const exportPNG = async () => {
+    const svg = findCurrentChartSVG();
+    if (!svg) return;
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const {width, height} = getSVGSize(clone);
+    const serializer = new XMLSerializer();
+    let svgStr;
+    withTemporaryContainer(clone, () => {
+      svgStr = serializer.serializeToString(clone);
+    });
+    const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+      const scale = 3;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      downloadBlob(blob, `${buildExportFilenamePrefix() || 'distribution'}.png`);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+  const exportPDF = async () => {
+    const svg = findCurrentChartSVG();
+    if (!svg) return;
+    let jsPDFLib, svg2pdfModule;
+    try {
+      jsPDFLib = await import('jspdf');
+      svg2pdfModule = await import('svg2pdf.js');
+    } catch {
+      return;
+    }
+    const jsPDF = jsPDFLib.jsPDF || jsPDFLib.default || jsPDFLib;
+    const svg2pdf = svg2pdfModule.svg2pdf || svg2pdfModule.default || svg2pdfModule;
+    if (!jsPDF || !svg2pdf) return;
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.appendChild(clone);
+    document.body.appendChild(container);
+    try {
+      try { inlineAllStyles(clone); } catch {}
+      let {width: svgW, height: svgH} = getSVGSize(clone);
       try {
-        const resp = await getAnalogyCriteria(workspace, activeForecastDate, selectedMethodId, cfgId, selectedStationId, selectedLead);
-        if (cancelled) return;
-        let list = [];
-        if (Array.isArray(resp)) list = resp;
-        else if (resp && Array.isArray(resp.criteria)) list = resp.criteria;
-        else if (resp && Array.isArray(resp.analogs)) list = resp.analogs.map(a => a.criteria ?? a.score ?? a.criterion).filter(v => v != null);
-        else if (resp && Array.isArray(resp.values)) list = resp.values;
-        else if (resp && Array.isArray(resp.data)) list = resp.data;
-        setCriteriaValues(list.map((v, i) => ({
-          index: i + 1,
-          value: (typeof v === 'object' && v.value != null) ? v.value : v
-        })).filter(x => x.value != null));
-      } catch (e) {
-        setCriteriaValues(null);
-      } finally {
-        if (!cancelled) setCriteriaLoading(false);
+        const bbox = clone.getBBox();
+        if (bbox && Number.isFinite(bbox.width) && Number.isFinite(bbox.height) && bbox.width > 0 && bbox.height > 0) {
+          const pad = 2;
+          svgW = bbox.width + 2 * pad;
+          svgH = bbox.height + 2 * pad;
+          clone.setAttribute('viewBox', `${bbox.x - pad} ${bbox.y - pad} ${svgW} ${svgH}`);
+        } else {
+          clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+        }
+      } catch {
+        clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
       }
+      clone.setAttribute('width', String(Math.round(svgW)));
+      clone.setAttribute('height', String(Math.round(svgH)));
+      const pdf = new jsPDF({ unit: 'px', format: [Math.round(svgW), Math.round(svgH)], orientation: svgW > svgH ? 'landscape' : 'portrait' });
+      await svg2pdf(clone, pdf, {x: 0, y: 0, width: Math.round(svgW), height: Math.round(svgH)});
+      pdf.save(`${buildExportFilenamePrefix() || 'distribution'}.pdf`);
+    } finally {
+      document.body.removeChild(container);
     }
+  };
 
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, workspace, activeForecastDate, selectedMethodId, selectedConfigId, selectedStationId, selectedLead, methodsData]);
+  // Draw precipitation distribution
+  useEffect(() => {
+    // removed: drawing moved to PrecipitationDistributionChart
+  }, []);
+
+  // Draw criteria distribution
+  useEffect(() => {
+    // removed: drawing moved to CriteriaDistributionChart
+  }, []);
 
   // Fetch 20/60/90 percentiles for markers
   useEffect(() => {
@@ -493,12 +542,36 @@ export default function DistributionsModal({open, onClose}) {
     };
   }, [open, workspace, activeForecastDate, selectedMethodId, selectedStationId, methodsData]);
 
+  // Relevant entity ids for selected method+config
+  const relIdsKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId ? `dist_relIds|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}` : null;
+  const { data: relevantIdsSet } = useCachedRequest(
+    relIdsKey,
+    async () => normalizeRelevantEntityIds(await getRelevantEntities(workspace, activeForecastDate, selectedMethodId, resolvedConfigId)),
+    [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, open],
+    { enabled: !!relIdsKey, initialData: new Set(), ttlMs: SHORT_TTL }
+  );
+
+  // Prefer default station to be relevant
+  useEffect(() => {
+    if (!open) return;
+    const list = Array.isArray(stations) ? stations : [];
+    if (!list.length) return;
+    const rel = relevantIdsSet instanceof Set ? relevantIdsSet : new Set();
+    const isSelValid = selectedStationId != null && list.some(s => s.id === selectedStationId);
+    if (isSelValid) return;
+    const firstRelevant = list.find(s => rel.has(s.id));
+    if (firstRelevant) setSelectedStationId(firstRelevant.id);
+    else if (!selectedStationId) setSelectedStationId(list[0].id);
+  }, [open, stations, relevantIdsSet]);
+
+  useEffect(() => { /* ensure setOptions referenced */ if (!open) setOptions(o=>o); }, [open]);
+
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
             sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '1100px'}}}>
       <DialogTitle sx={{pr: 5}}>
         {t('distributionPlots.title') || 'Distribution plots'}
-        <IconButton aria-label={t('modalAnalogs.close') || 'Close'} onClick={onClose} size="small"
+        <IconButton aria-label={t('detailsAnalogsModal.close') || 'Close'} onClick={onClose} size="small"
                     sx={{position: 'absolute', right: 8, top: 8}}>
           <CloseIcon fontSize="small"/>
         </IconButton>
@@ -507,32 +580,32 @@ export default function DistributionsModal({open, onClose}) {
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 3}}>
             <FormControl fullWidth size="small">
-              <InputLabel id="dist-method-label">{t('modalAnalogs.method')}</InputLabel>
+              <InputLabel id="dist-method-label">{t('detailsAnalogsModal.method')}</InputLabel>
               <Select variant="standard" labelId="dist-method-label" value={selectedMethodId ?? ''}
-                      label={t('modalAnalogs.method')}
+                      label={t('detailsAnalogsModal.method')}
                       onChange={(e) => {
                         setSelectedMethodId(e.target.value);
                         setSelectedConfigId(null);
                         relevantRef.current.clear();
                         setRelevantMapVersion(v => v + 1);
                       }}>
-                {methodsLoading && <MenuItem value=""><em>{t('modalAnalogs.loading')}</em></MenuItem>}
+                {methodsLoading && <MenuItem value=""><em>{t('detailsAnalogsModal.loading')}</em></MenuItem>}
                 {!methodsLoading && methodOptions.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noMethods')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noMethods')}</em></MenuItem>}
                 {methodOptions.map(m => (<MenuItem key={m.id} value={m.id}>{m.name || m.id}</MenuItem>))}
               </Select>
             </FormControl>
 
             <FormControl fullWidth size="small">
-              <InputLabel id="dist-config-label">{t('modalAnalogs.config')}</InputLabel>
+              <InputLabel id="dist-config-label">{t('detailsAnalogsModal.config')}</InputLabel>
               <Select variant="standard" labelId="dist-config-label" value={selectedConfigId ?? ''}
-                      label={t('modalAnalogs.config')}
+                      label={t('detailsAnalogsModal.config')}
                       onChange={(e) => setSelectedConfigId(e.target.value)} renderValue={(v) => {
                 const cfg = configsForSelectedMethod.find(c => c.id === v);
                 return cfg ? (cfg.name || cfg.id) : '';
               }}>
                 {configsForSelectedMethod.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noConfigs')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noConfigs')}</em></MenuItem>}
                 {configsForSelectedMethod.map(cfg => (
                   <MenuItem key={cfg.id} value={cfg.id}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -541,7 +614,7 @@ export default function DistributionsModal({open, onClose}) {
                         <Typography variant="caption" sx={{
                           color: 'primary.main',
                           fontWeight: 600
-                        }}>({t('modalAnalogs.relevant')})</Typography>
+                        }}>({t('detailsAnalogsModal.relevant')})</Typography>
                       )}
                     </Box>
                   </MenuItem>
@@ -550,26 +623,26 @@ export default function DistributionsModal({open, onClose}) {
             </FormControl>
 
             <FormControl fullWidth size="small">
-              <InputLabel id="dist-entity-label">{t('modalAnalogs.entity')}</InputLabel>
+              <InputLabel id="dist-entity-label">{t('detailsAnalogsModal.entity')}</InputLabel>
               <Select variant="standard" labelId="dist-entity-label" value={selectedStationId ?? ''}
-                      label={t('modalAnalogs.entity')}
+                      label={t('detailsAnalogsModal.entity')}
                       onChange={(e) => setSelectedStationId(e.target.value)}
                       MenuProps={{PaperProps: {style: {maxHeight: 320}}}}>
-                {stationsLoading && <MenuItem value=""><em>{t('modalAnalogs.loadingEntities')}</em></MenuItem>}
+                {stationsLoading && <MenuItem value=""><em>{t('detailsAnalogsModal.loadingEntities')}</em></MenuItem>}
                 {!stationsLoading && stations.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noEntities')}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noEntities')}</em></MenuItem>}
                 {stations.map(s => (<MenuItem key={s.id} value={s.id}>{s.name || s.id}</MenuItem>))}
               </Select>
             </FormControl>
 
             <FormControl fullWidth size="small">
-              <InputLabel id="dist-lead-label">{t('modalAnalogs.lead')}</InputLabel>
+              <InputLabel id="dist-lead-label">{t('detailsAnalogsModal.lead')}</InputLabel>
               <Select variant="standard" labelId="dist-lead-label" value={selectedLead ?? ''}
-                      label={t('modalAnalogs.lead')}
+                      label={t('detailsAnalogsModal.lead')}
                       onChange={(e) => setSelectedLead(e.target.value === '' ? null : Number(e.target.value))}>
-                {leadsLoading && <MenuItem value=""><em>{t('modalAnalogs.loadingAnalogs')}</em></MenuItem>}
+                {leadsLoading && <MenuItem value=""><em>{t('detailsAnalogsModal.loadingAnalogs') || 'Loading...'}</em></MenuItem>}
                 {!leadsLoading && leads.length === 0 &&
-                  <MenuItem value=""><em>{t('modalAnalogs.noLeads') || 'No lead times'}</em></MenuItem>}
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.noLeads') || 'No lead times'}</em></MenuItem>}
                 {leads.map(l => (<MenuItem key={String(l.lead) + (l.label || '')}
                                            value={l.lead}>{l.label || (l.lead != null ? `${l.lead}h` : '')}</MenuItem>))}
               </Select>
@@ -603,26 +676,53 @@ export default function DistributionsModal({open, onClose}) {
               <Box sx={{mt: 1}}>
                 {analogLoading &&
                   <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={20}/><Typography
-                    variant="caption">{t('modalAnalogs.loadingAnalogs') || 'Loading...'}</Typography></Box>}
+                    variant="caption">{t('detailsAnalogsModal.loadingAnalogs') || 'Loading...'}</Typography></Box>}
                 {analogError && <Typography variant="caption"
-                                            sx={{color: '#b00020'}}>{t('modalAnalogs.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
+                                            sx={{color: '#b00020'}}>{t('detailsAnalogsModal.errorLoadingAnalogs') || 'Failed to load analogs'}</Typography>}
                 {!analogLoading && !analogError && (!analogValues || (Array.isArray(analogValues) && analogValues.length === 0)) && (
                   <Typography variant="caption"
                               sx={{color: '#666'}}>{t('distributionPlots.noAnalogs') || 'No analog values for the selected method/config/entity/lead.'}</Typography>
                 )}
-                <div ref={precipRef} style={{width: '100%', height: 360, minHeight: 240}}/>
+                <PrecipitationDistributionChart
+                  ref={precipRef}
+                  analogValues={analogValues}
+                  bestAnalogsData={bestAnalogsData}
+                  percentileMarkers={percentileMarkers}
+                  referenceValues={referenceValues}
+                  options={options}
+                  selectedMethodId={selectedMethodId}
+                  selectedConfigId={selectedConfigId}
+                  selectedLead={selectedLead}
+                  leads={leads}
+                  activeForecastDate={activeForecastDate}
+                  stationName={stationName}
+                  t={t}
+                  renderTick={renderTick}
+                />
               </Box>
             </TabPanel>
             <TabPanel value={tabIndex} index={1}>
               <Box sx={{mt: 1}}>
                 {(criteriaLoading) &&
                   <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}><CircularProgress size={20}/><Typography
-                    variant="caption">{t('modalAnalogs.loadingAnalogs') || 'Loading...'}</Typography></Box>}
+                    variant="caption">{t('detailsAnalogsModal.loadingAnalogs') || 'Loading...'}</Typography></Box>}
                 {!criteriaLoading && (!criteriaValues || (Array.isArray(criteriaValues) && criteriaValues.length === 0)) && (
                   <Typography variant="caption"
                               sx={{color: '#666'}}>{t('distributionPlots.noCriteria') || 'No criteria values available for the selected selection.'}</Typography>
                 )}
-                <div ref={critRef} style={{width: '100%', height: 360, minHeight: 240}}/>
+                <CriteriaDistributionChart
+                  ref={critRef}
+                  criteriaValues={criteriaValues}
+                  analogValues={analogValues}
+                  selectedMethodId={selectedMethodId}
+                  selectedConfigId={selectedConfigId}
+                  selectedLead={selectedLead}
+                  leads={leads}
+                  activeForecastDate={activeForecastDate}
+                  stationName={stationName}
+                  t={t}
+                  renderTick={renderTick}
+                />
               </Box>
             </TabPanel>
           </Box>

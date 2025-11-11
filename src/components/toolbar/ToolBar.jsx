@@ -15,16 +15,10 @@ export default function ToolBar() {
 
   const handleDetailsAnalogsModalClose = (result) => {
     setDetailsAnalogsModalOpen(false);
-    if (result && typeof result === 'object') {
-      console.log('Analogs modal selection:', result);
-    }
   };
 
   const handleDistributionsModalClose = (result) => {
     setDistributionsModalOpen(false);
-    if (result && typeof result === 'object') {
-      console.log('Distributions modal selection:', result);
-    }
   };
 
   const {t} = useTranslation();
