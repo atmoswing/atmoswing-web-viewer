@@ -21,6 +21,7 @@ import MapTooltip from './MapTooltip.jsx';
 import useDarkMode from './hooks/useDarkMode.js';
 import useMapInit from './hooks/useMapInit.js';
 import useOverlayConfigLayers from './hooks/useOverlayConfigLayers.js';
+import useOverlayGlobalLayers from './hooks/useOverlayGlobalLayers.js';
 import useForecastPoints from './hooks/useForecastPoints.js';
 import useMapInteractions from './hooks/useMapInteractions.js';
 import useProjectionRegistration from './hooks/useProjectionRegistration.js';
@@ -56,6 +57,8 @@ export default function MapViewer() {
 
   // Overlay layers from workspace config
   useOverlayConfigLayers({mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef});
+  // Global overlay layers (non-workspace specific)
+  useOverlayGlobalLayers({mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar});
 
   const [legendStops, setLegendStops] = useState([]);
   const [legendMax, setLegendMax] = useState(1);
