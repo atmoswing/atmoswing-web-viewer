@@ -1,10 +1,10 @@
 import React from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';
-import {useSynthesis} from '../../contexts/ForecastsContext.jsx';
-import {valueToColorCSS} from '../../utils/colorUtils.js';
-import {isSameDay, makeDayKey, SUB_HOURS} from '../../utils/targetDateUtils.js';
-import {formatDateDDMMYYYY} from '../../utils/formattingUtils.js';
+import {useSynthesis} from '@/contexts/ForecastsContext.jsx';
+import {valueToColorCSS} from '@/utils/colorUtils.js';
+import {isSameDay, makeDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
+import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
 
 export default function ToolbarSquares() {
   const {dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate} = useSynthesis();
@@ -82,4 +82,3 @@ export default function ToolbarSquares() {
     </div>
   );
 }
-

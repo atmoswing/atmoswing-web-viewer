@@ -21,29 +21,29 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import {useForecastSession} from '../../contexts/ForecastSessionContext.jsx';
+import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
 import {
   getAnalogs,
   getEntities,
   getMethodsAndConfigs,
   getRelevantEntities,
   getSeriesValuesPercentiles
-} from '../../services/api.js';
+} from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
 import {
   compareEntitiesByName,
   formatCriteria,
   formatDateLabel,
   formatPrecipitation
-} from '../../utils/formattingUtils.js';
-import {clearCachedRequests, useCachedRequest} from '../../hooks/useCachedRequest.js';
+} from '@/utils/formattingUtils.js';
+import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {
   extractTargetDatesArray,
   normalizeAnalogsResponse,
   normalizeEntitiesResponse,
   normalizeRelevantEntityIds
-} from '../../utils/apiNormalization.js';
-import {DEFAULT_TTL, SHORT_TTL} from '../../utils/cacheTTLs.js';
+} from '@/utils/apiNormalization.js';
+import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 export default function DetailsAnalogsModal({open, onClose}) {
   const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();

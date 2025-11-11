@@ -1,9 +1,9 @@
 import * as React from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import {useTranslation} from 'react-i18next';
-import {useConfig} from '../../contexts/ConfigContext.jsx';
-import {useWorkspace} from '../../contexts/WorkspaceContext.jsx';
-import {useSnackbar} from '../../contexts/SnackbarContext.jsx';
+import {useConfig} from '@/contexts/ConfigContext.jsx';
+import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
+import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
 import {SnackbarItem} from './SnackbarItem.jsx';
 
 export default function AppSnackbars() {

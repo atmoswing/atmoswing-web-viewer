@@ -1,9 +1,9 @@
 import Panel from './Panel.jsx';
 import React, {useCallback, useMemo} from 'react';
-import {useMethods, useSynthesis} from '../../contexts/ForecastsContext.jsx';
-import {valueToColorCSS} from '../../utils/colorUtils.js';
-import {isSameDay, makeDayKey, parseDayKey, SUB_HOURS} from '../../utils/targetDateUtils.js';
-import {formatDateDDMMYYYY} from '../../utils/formattingUtils.js';
+import {useMethods, useSynthesis} from '@/contexts/ForecastsContext.jsx';
+import {valueToColorCSS} from '@/utils/colorUtils.js';
+import {isSameDay, makeDayKey, parseDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
+import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
 import {useTranslation} from 'react-i18next';
 import PanelStatus from './PanelStatus.jsx';
 

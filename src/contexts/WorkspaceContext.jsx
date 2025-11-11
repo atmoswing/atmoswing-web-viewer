@@ -1,9 +1,9 @@
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
-import {getLastForecastDate, getMethodsAndConfigs} from '../services/api.js';
+import {getLastForecastDate, getMethodsAndConfigs} from '@/services/api.js';
 import {useConfig} from './ConfigContext.jsx';
-import {onWorkspacePopState, readWorkspaceFromUrl, writeWorkspaceToUrl} from '../utils/urlWorkspaceUtils.js';
-import {clearCachedRequests, useCachedRequest} from '../hooks/useCachedRequest.js';
-import {DEFAULT_TTL} from '../utils/cacheTTLs.js';
+import {onWorkspacePopState, readWorkspaceFromUrl, writeWorkspaceToUrl} from '@/utils/urlWorkspaceUtils.js';
+import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const WorkspaceContext = createContext();
 

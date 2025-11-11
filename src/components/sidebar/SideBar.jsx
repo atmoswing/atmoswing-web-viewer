@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {useConfig} from '../../contexts/ConfigContext.jsx';
+import {useConfig} from '@/contexts/ConfigContext.jsx';
 import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
 import {PanelAnalogDates, PanelDisplay, PanelForecasts, PanelStations, PanelSynthesis} from "../panels";
 

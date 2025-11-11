@@ -1,10 +1,10 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useWorkspace} from './WorkspaceContext.jsx';
-import {getMethodsAndConfigs} from '../services/api.js';
-import {useCachedRequest} from '../hooks/useCachedRequest.js';
-import {normalizeMethodsAndConfigs} from '../utils/apiNormalization.js';
-import {DEFAULT_TTL} from '../utils/cacheTTLs.js';
+import {getMethodsAndConfigs} from '@/services/api.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {normalizeMethodsAndConfigs} from '@/utils/apiNormalization.js';
+import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const MethodsContext = createContext({});
 

@@ -1,7 +1,7 @@
 import React from 'react';
 
-import FrameDistributionsIcon from '../../assets/toolbar/frame_distributions.svg?react';
-import FrameAnalogsIcon from '../../assets/toolbar/frame_analogs.svg?react';
+import FrameDistributionsIcon from '@/assets/toolbar/frame_distributions.svg?react';
+import FrameAnalogsIcon from '@/assets/toolbar/frame_analogs.svg?react';
 
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';

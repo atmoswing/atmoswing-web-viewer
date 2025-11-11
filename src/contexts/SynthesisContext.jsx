@@ -1,11 +1,11 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
-import {getSynthesisPerMethod, getSynthesisTotal} from '../services/api.js';
-import {parseForecastDate} from '../utils/forecastDateUtils.js';
-import {isSameDay, isSameInstant} from '../utils/targetDateUtils.js';
-import {useCachedRequest} from '../hooks/useCachedRequest.js';
-import {normalizePerMethodSynthesis} from '../utils/apiNormalization.js';
-import {DEFAULT_TTL} from '../utils/cacheTTLs.js';
+import {getSynthesisPerMethod, getSynthesisTotal} from '@/services/api.js';
+import {parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {isSameDay, isSameInstant} from '@/utils/targetDateUtils.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {normalizePerMethodSynthesis} from '@/utils/apiNormalization.js';
+import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const SynthesisContext = createContext({});
 

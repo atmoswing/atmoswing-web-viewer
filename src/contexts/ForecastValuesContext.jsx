@@ -2,12 +2,12 @@ import React, {createContext, useContext, useEffect, useMemo, useState} from 're
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {useSynthesis} from './SynthesisContext.jsx';
-import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '../services/api.js';
-import {computeLeadHours, hasTargetDate} from '../utils/targetDateUtils.js';
-import {isMethodSelectionValid, keyForForecastValues, methodExists} from '../utils/contextGuards.js';
-import {useCachedRequest} from '../hooks/useCachedRequest.js';
-import {normalizeForecastValuesResponse} from '../utils/apiNormalization.js';
-import {SHORT_TTL} from '../utils/cacheTTLs.js';
+import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '@/services/api.js';
+import {computeLeadHours, hasTargetDate} from '@/utils/targetDateUtils.js';
+import {isMethodSelectionValid, keyForForecastValues, methodExists} from '@/utils/contextGuards.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {normalizeForecastValuesResponse} from '@/utils/apiNormalization.js';
+import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 const ForecastValuesContext = createContext({});
 

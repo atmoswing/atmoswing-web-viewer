@@ -13,4 +13,3 @@ export default function PanelStatus({loading, error, empty, messages}) {
   if (!text) return null;
   return <span className="panel-secondary-text">{text}</span>;
 }
-

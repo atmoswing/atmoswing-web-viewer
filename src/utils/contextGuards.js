@@ -1,5 +1,5 @@
 // Common guard / helper functions shared across context providers to reduce duplication.
-import {composeKey} from '../services/apiHelpers.js';
+import {composeKey} from '@/services/apiHelpers.js';
 
 // Validate a selectedMethodConfig belongs to current workspace (if scoped)
 export function isMethodSelectionValid(selectedMethodConfig, workspace) {
@@ -31,4 +31,3 @@ export function keyForEntities(workspace, forecastDate, methodId, configId) {
 export function keyForForecastValues(workspace, forecastDate, methodId, configId, leadHours, percentile, normalizationRef) {
   return composeKey(workspace, forecastDate, methodId, configId || 'agg', leadHours, percentile, normalizationRef || 'raw');
 }
-
