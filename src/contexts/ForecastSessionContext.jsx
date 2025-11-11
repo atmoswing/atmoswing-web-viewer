@@ -1,9 +1,9 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
-import {formatForecastDateForApi, parseForecastDate} from '../utils/forecastDateUtils.js';
-import {getLastForecastDate, getSynthesisTotal, hasForecastDate} from '../services/api.js';
-import {normalizeHasForecastDate, normalizeSynthesisHasLeads} from '../utils/apiNormalization.js';
-import {useCachedRequest as useCachedRequestHook} from '../hooks/useCachedRequest.js';
+import {formatForecastDateForApi, parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {getLastForecastDate, getSynthesisTotal, hasForecastDate} from '@/services/api.js';
+import {normalizeHasForecastDate, normalizeSynthesisHasLeads} from '@/utils/apiNormalization.js';
+import {useCachedRequest as useCachedRequestHook} from '@/hooks/useCachedRequest.js';
 import config from '@/config.js';
 
 const SHORT_TTL = 1000 * 60 * 5; // 5 minutes (for cached requests)

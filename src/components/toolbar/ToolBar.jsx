@@ -5,7 +5,7 @@ import FrameAnalogsIcon from '@/assets/toolbar/frame_analogs.svg?react';
 
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';
-import {DetailsAnalogsModal, DistributionsModal} from '../modals';
+import {DetailsAnalogsModal, DistributionsModal} from '@/components/modals';
 import ToolbarSquares from './ToolbarSquares.jsx';
 import ToolbarCenter from './ToolbarCenter.jsx';
 

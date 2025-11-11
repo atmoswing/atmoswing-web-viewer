@@ -18,7 +18,7 @@ import {
   Tabs,
   Tab
 } from '@mui/material';
-import {useForecastSession} from '../../contexts/ForecastSessionContext.jsx';
+import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
 import {
   getMethodsAndConfigs,
   getEntities,
@@ -28,11 +28,11 @@ import {
   getAnalogValuesPercentiles,
   getReferenceValues,
   getRelevantEntities
-} from '../../services/api.js';
+} from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 // add caching + normalizers + shared components
-import { useCachedRequest, clearCachedRequests } from '../../hooks/useCachedRequest.js';
+import { useCachedRequest, clearCachedRequests } from '@/hooks/useCachedRequest.js';
 import {
   extractTargetDatesArray,
   normalizeAnalogCriteriaArray,
@@ -41,8 +41,8 @@ import {
   normalizeEntitiesResponse,
   normalizeReferenceValues,
   normalizeRelevantEntityIds
-} from '../../utils/apiNormalization.js';
-import {DEFAULT_TTL, SHORT_TTL} from '../../utils/cacheTTLs.js';
+} from '@/utils/apiNormalization.js';
+import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import ExportMenu from './common/ExportMenu.jsx';
 import { safeForFilename, inlineAllStyles, getSVGSize, withTemporaryContainer, downloadBlob } from './common/exportUtils.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';

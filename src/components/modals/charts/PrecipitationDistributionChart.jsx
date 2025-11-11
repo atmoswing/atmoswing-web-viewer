@@ -1,6 +1,6 @@
 import React, { forwardRef, useEffect } from 'react';
 import * as d3 from 'd3';
-import { SELECTED_RPS, TEN_YEAR_COLOR } from '../common/plotConstants.js';
+import { SELECTED_RPS, TEN_YEAR_COLOR } from '@/components/modals/common/plotConstants.js';
 
 // Precipitation (predictand) cumulative distribution chart
 const PrecipitationDistributionChart = forwardRef(function PrecipitationDistributionChart({
@@ -192,4 +192,3 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
 });
 
 export default PrecipitationDistributionChart;
-

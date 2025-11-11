@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import config, {normalizeRuntimeConfig, updateConfig} from '../config.js';
+import config, {normalizeRuntimeConfig, updateConfig} from '@/config.js';
 
 const ConfigContext = createContext();
 

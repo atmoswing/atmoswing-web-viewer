@@ -4,14 +4,14 @@ import {useMemo} from 'react';
 import {DataGrid} from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import {useTranslation} from 'react-i18next';
-import {useForecastSession, useMethods} from '../../contexts/ForecastsContext.jsx';
-import {getAnalogDates, getAnalogyCriteria} from '../../services/api.js';
-import {useSynthesis} from '../../contexts/SynthesisContext.jsx';
-import {computeLeadHours} from '../../utils/targetDateUtils.js';
-import {formatCriteria, formatDateDDMMYYYY} from '../../utils/formattingUtils.js';
-import {normalizeAnalogCriteriaArray, normalizeAnalogDatesArray} from '../../utils/apiNormalization.js';
-import {useCachedRequest} from '../../hooks/useCachedRequest.js';
-import {SHORT_TTL} from '../../utils/cacheTTLs.js';
+import {useForecastSession, useMethods} from '@/contexts/ForecastsContext.jsx';
+import {getAnalogDates, getAnalogyCriteria} from '@/services/api.js';
+import {useSynthesis} from '@/contexts/SynthesisContext.jsx';
+import {computeLeadHours} from '@/utils/targetDateUtils.js';
+import {formatCriteria, formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
+import {normalizeAnalogCriteriaArray, normalizeAnalogDatesArray} from '@/utils/apiNormalization.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 export default function PanelAnalogDates(props) {
   const {t} = useTranslation();

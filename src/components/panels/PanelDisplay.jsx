@@ -5,7 +5,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import {useForecastParameters} from '../../contexts/ForecastsContext.jsx';
+import {useForecastParameters} from '@/contexts/ForecastsContext.jsx';
 
 export default function PanelDisplay(props) {
   const {t} = useTranslation();

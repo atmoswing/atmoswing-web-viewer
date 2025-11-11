@@ -14,24 +14,23 @@ import {
   Typography
 } from '@mui/material';
 import Popper from '@mui/material/Popper';
-import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '../../contexts/ForecastsContext.jsx';
+import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
 import {
   getReferenceValues,
   getRelevantEntities,
   getSeriesBestAnalogs,
   getSeriesValuesPercentiles,
   getSeriesValuesPercentilesHistory
-} from '../../services/api.js';
-import {parseForecastDate} from '../../utils/forecastDateUtils.js';
-import {useTranslation} from 'react-i18next';
-import {useCachedRequest, clearCachedRequests} from '../../hooks/useCachedRequest.js';
-import {DEFAULT_TTL, SHORT_TTL} from '../../utils/cacheTTLs.js';
+} from '@/services/api.js';
+import {parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {useCachedRequest, clearCachedRequests} from '@/hooks/useCachedRequest.js';
+import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {
   normalizeReferenceValues,
   normalizeSeriesBestAnalogs,
   normalizeSeriesValuesPercentiles,
   normalizeSeriesValuesPercentilesHistory
-} from '../../utils/apiNormalization.js';
+} from '@/utils/apiNormalization.js';
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
 import {DEFAULT_PCTS, FULL_PCTS} from './common/plotConstants.js';
