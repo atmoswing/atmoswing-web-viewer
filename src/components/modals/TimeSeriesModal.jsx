@@ -35,6 +35,7 @@ import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
 import {DEFAULT_PCTS, FULL_PCTS} from './common/plotConstants.js';
 import { safeForFilename, downloadBlob, inlineAllStyles, getSVGSize, withTemporaryContainer } from './common/exportUtils.js';
+import { useTranslation } from 'react-i18next';
 
 export default function TimeSeriesModal() {
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
