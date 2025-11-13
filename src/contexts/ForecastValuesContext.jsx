@@ -76,6 +76,15 @@ export function ForecastValuesProvider({children}) {
     }
   }, [key, valuesData, valuesReqLoading, valuesReqError]);
 
+  // Clear all data when workspace changes
+  useEffect(() => {
+    setForecastValuesNorm({});
+    setForecastValues({});
+    setForecastLoading(false);
+    setForecastError(null);
+    setForecastUnavailable(false);
+  }, [workspace]);
+
   const value = useMemo(() => ({
     forecastValues,
     forecastValuesNorm,

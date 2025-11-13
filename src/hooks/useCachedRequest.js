@@ -42,6 +42,8 @@ export function useCachedRequest(key, fetchFn, deps, options = {}) {
         setLoading(false);
         return;
       }
+      // Not from cache, reset to initial data
+      setData(initialData);
       try {
         const result = await fetchFn();
         if (cancelled || localReqId !== reqIdRef.current) return;
@@ -84,4 +86,3 @@ export function clearCachedRequests(prefix = null) {
     if (k.startsWith(prefix)) GLOBAL_CACHE.delete(k);
   });
 }
-

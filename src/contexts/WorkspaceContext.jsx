@@ -122,15 +122,11 @@ export function WorkspaceProvider({children}) {
     if (next === workspace) return;
     const isValid = workspaces.some(w => w.key === next);
     if (!isValid) return;
+    clearCachedRequests();
     setInvalidWorkspaceKey(null);
     setWorkspaceState(next);
     writeWorkspaceToUrl(next);
   }, [workspace, workspaces]);
-
-  // Clear all cached requests when workspace changes to avoid cross-workspace leakage
-  useEffect(() => {
-    clearCachedRequests();
-  }, [workspace]);
 
   const value = useMemo(() => ({
     workspace,
