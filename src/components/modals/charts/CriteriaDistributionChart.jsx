@@ -71,8 +71,8 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
     g.append('g').call(yAxis);
     g.selectAll('path.domain').remove();
 
-    svg.append('text').attr('x', (margin.left + innerW / 2)).attr('y', height - 6).attr('text-anchor', 'middle').text(t('modalAnalogs.analogsList') || 'Analogues');
-    svg.append('text').attr('transform', 'rotate(-90)').attr('x', -(margin.top + innerH / 2)).attr('y', 14).attr('text-anchor', 'middle').text(t('modalAnalogs.colCriteria') || 'Criteria');
+    svg.append('text').attr('x', (margin.left + innerW / 2)).attr('y', height - 6).attr('text-anchor', 'middle').text(t('detailsAnalogsModal.analogsList') || 'Analogues');
+    svg.append('text').attr('transform', 'rotate(-90)').attr('x', -(margin.top + innerH / 2)).attr('y', 14).attr('text-anchor', 'middle').text(t('detailsAnalogsModal.colCriteria') || 'Criteria');
   }, [criteriaValues, analogValues, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, stationName, t, renderTick]);
 
   // Cleanup on unmount: clear container content

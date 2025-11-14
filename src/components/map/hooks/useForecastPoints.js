@@ -77,7 +77,7 @@ export default function useForecastPoints(
       const normVal = forecastValuesNorm[ent.id];
       const rawVal = forecastValues ? forecastValues[ent.id] : undefined;
       const [r, g, b] = valueToColor(normVal, maxVal);
-      const isRelevant = !relevantEntities || relevantEntities.has(ent.id);
+      const isRelevant = !relevantEntities || !(relevantEntities instanceof Set) || relevantEntities.has(ent.id);
       const opacity = isRelevant ? FORECAST_POINT_OPACITY_RELEVANT : FORECAST_POINT_OPACITY_DIM;
       const radius = isRelevant ? FORECAST_POINT_RADIUS_RELEVANT : FORECAST_POINT_RADIUS_NORMAL;
       const strokeColor = isRelevant ? FORECAST_POINT_STROKE_COLOR_RELEVANT : FORECAST_POINT_STROKE_COLOR_DIM;

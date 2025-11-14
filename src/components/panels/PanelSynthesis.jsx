@@ -22,7 +22,7 @@ function SelectionMarker({size = 6, color = '#2a2a2a'}) {
   return <div style={s}/>;
 }
 
-function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate}) {
+function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate, isMethodSelected}) {
   const hours = React.useMemo(() => SUB_HOURS, []);
   return (
     <div style={{display: 'flex', width: '100%', height: '100%'}} onClick={e => e.stopPropagation()}>
@@ -37,7 +37,7 @@ function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate}) {
           }}/>;
         }
         const color = valueToColorCSS(typeof seg.valueNorm === 'number' ? seg.valueNorm : 0, 1);
-        const selected = selectedDate && seg.date.getTime() === selectedDate.getTime();
+        const selected = isMethodSelected && selectedDate && seg.date.getTime() === selectedDate.getTime();
         return (
           <div
             key={idx}
@@ -200,6 +200,7 @@ export default function PanelSynthesis(props) {
                       segmentsByHour={segByHour}
                       methodLabel={methodName[methodId] || methodId}
                       selectedDate={selectedTargetDate}
+                      isMethodSelected={isMethodSelected}
                       onSelect={(dt) => handleSelect(methodId, dt, true)}
                     />
                   )}
