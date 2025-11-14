@@ -28,13 +28,13 @@ import useProjectionRegistration from './hooks/useProjectionRegistration.js';
 
 export default function MapViewer() {
   const {t} = useTranslation();
-  const {entities, entitiesWorkspace, entitiesLoading, relevantEntities} = useEntities();
+  const {entities, entitiesWorkspace, entitiesLoading, relevantEntities, entitiesKey} = useEntities();
   const {forecastValues, forecastValuesNorm, forecastLoading, forecastUnavailable} = useForecastValues();
   const {percentile, normalizationRef} = useForecastParameters();
   const {selectedTargetDate} = useSynthesis();
   const {workspace} = useWorkspace();
   const {setSelectedEntityId} = useSelectedEntity();
-  const {baseDateSearchFailed, clearBaseDateSearchFailed} = useForecastSession();
+  const {baseDateSearchFailed, clearBaseDateSearchFailed, workspace: sessionWorkspace} = useForecastSession();
   const runtimeConfig = useConfig();
   const {enqueueSnackbar} = useSnackbar();
   const ENTITIES_SOURCE_EPSG = runtimeConfig?.ENTITIES_SOURCE_EPSG || 'EPSG:4326';
@@ -70,8 +70,9 @@ export default function MapViewer() {
     mapReady,
     entities,
     entitiesWorkspace,
+    entitiesKey,
     relevantEntities,
-    workspace,
+    workspace: sessionWorkspace,
     forecastValuesNorm,
     forecastValues,
     forecastUnavailable,

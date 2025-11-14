@@ -77,8 +77,9 @@ export function EntitiesProvider({children}) {
     entitiesLoading,
     entitiesError,
     relevantEntities,
-    entitiesWorkspace: workspace
-  }), [entities, entitiesLoading, entitiesError, relevantEntities, workspace]);
+    entitiesWorkspace: workspace,
+    entitiesKey
+  }), [entities, entitiesLoading, entitiesError, relevantEntities, workspace, entitiesKey]);
 
   return <EntitiesContext.Provider value={value}>{children}</EntitiesContext.Provider>;
 }

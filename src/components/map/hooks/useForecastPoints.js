@@ -24,40 +24,49 @@ export default function useForecastPoints(
     mapReady,
     entities,
     entitiesWorkspace,
+    entitiesKey,
     relevantEntities,
     workspace,
     forecastValuesNorm,
     forecastValues,
     forecastUnavailable,
     forecastLayerRef,
-    mapRef, // added mapRef
+    mapRef,
     setLegendStops,
     setLegendMax
   }
 ) {
   const lastFittedWorkspaceRef = useRef(null);
+  const lastRenderedKeyRef = useRef(null);
 
   useEffect(() => {
     if (ENTITIES_SOURCE_EPSG !== 'EPSG:4326' && !proj4.defs[ENTITIES_SOURCE_EPSG]) return;
     if (!mapReady) return;
     if (!forecastLayerRef.current) return;
+
+    // Clear layer when forecast is unavailable
     if (forecastUnavailable) {
       forecastLayerRef.current.getSource().clear();
       setLegendStops([]);
+      lastRenderedKeyRef.current = null;
+      return;
     }
-    if (entitiesWorkspace && entitiesWorkspace !== workspace) {
+
+    // Clear layer when entities key changes (workspace/date/method/config changed)
+    if (entitiesKey && lastRenderedKeyRef.current && lastRenderedKeyRef.current !== entitiesKey) {
       forecastLayerRef.current.getSource().clear();
       setLegendStops([]);
       lastFittedWorkspaceRef.current = null;
+      lastRenderedKeyRef.current = null;
+    }
+
+    // Only proceed if we have entities and a valid key
+    if (!entitiesKey || !entities || entities.length === 0) {
       return;
     }
     const layer = forecastLayerRef.current;
     const source = layer.getSource();
     source.clear();
-    if (!entities || entities.length === 0) {
-      setLegendStops([]);
-      return;
-    }
     const maxVal = 1; // simplified scaling placeholder
     setLegendMax(maxVal);
     const stops = buildLegendStops(maxVal);
@@ -105,6 +114,10 @@ export default function useForecastPoints(
       source.addFeature(feat);
     });
 
+    // Mark this entities key as successfully rendered
+    lastRenderedKeyRef.current = entitiesKey;
+
+    // Fit map extent only once per workspace when we have valid bounds
     if (workspace && lastFittedWorkspaceRef.current !== workspace && isFinite(minX) && isFinite(minY) && isFinite(maxX) && isFinite(maxY) && minX < maxX && minY < maxY) {
       const view = mapRef?.current?.getView?.();
       if (view) {
@@ -112,5 +125,5 @@ export default function useForecastPoints(
         lastFittedWorkspaceRef.current = workspace;
       }
     }
-  }, [ENTITIES_SOURCE_EPSG, mapReady, entities, entitiesWorkspace, relevantEntities, workspace, forecastValuesNorm, forecastValues, forecastUnavailable, forecastLayerRef, mapRef, setLegendStops, setLegendMax]);
+  }, [ENTITIES_SOURCE_EPSG, mapReady, entities, entitiesWorkspace, entitiesKey, relevantEntities, workspace, forecastValuesNorm, forecastValues, forecastUnavailable, forecastLayerRef, mapRef, setLegendStops, setLegendMax]);
 }
