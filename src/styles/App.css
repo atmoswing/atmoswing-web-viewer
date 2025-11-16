@@ -72,6 +72,7 @@
   cursor: default;
   opacity: 0.4;
 }
+
 /* Gray out only when there are some sub-daily values present */
 .square-subdaily.has-subs .square-subdaily-seg.placeholder {
   background: #444 !important;
@@ -151,10 +152,12 @@
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: #444;
   border-radius: 3px;
 }
+
 /* For Firefox */
 .sidebar {
   scrollbar-width: thin;
@@ -221,7 +224,7 @@
 }
 
 .sidebar .Mui-selected {
-    background: rgb(25 118 210 / 20%) !important;
+  background: rgb(25 118 210 / 20%) !important;
 }
 
 .panel-header {

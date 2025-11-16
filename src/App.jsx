@@ -1,35 +1,38 @@
-import React from 'react';
+import React, {lazy, memo, Suspense} from 'react';
 
-import './styles/App.css'
+import '@/styles/App.css'
 
-import SideBar from "./components/SideBar.jsx";
-import ToolBar from "./components/ToolBar.jsx";
-import MapViewer from "./components/MapViewer.jsx";
-import {WorkspaceProvider} from './contexts/WorkspaceContext.jsx';
-import {ForecastsProvider} from './contexts/ForecastsContext.jsx';
-import ModalForecastSeries from './components/ModalForecastSeries.jsx';
+import SideBar from '@/components/sidebar/SideBar.jsx';
+import ToolBar from '@/components/toolbar/ToolBar.jsx';
+import MapViewer from '@/components/map/MapViewer.jsx';
+import AppSnackbars from '@/components/snackbars/AppSnackbars.jsx';
+import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 
-function MapArea() {
-    return (
-        <main className="map-area">
-            <MapViewer />
-        </main>
-    );
-}
+// Lazy heavy modal
+const TimeSeriesModal = lazy(() => import('@/components/modals/TimeSeriesModal.jsx'));
+
+const MapArea = memo(function MapArea() {
+  return (
+    <main className="map-area">
+      <MapViewer/>
+    </main>
+  );
+});
 
 export default function App() {
-    return (
-        <div className="app-layout">
-            <WorkspaceProvider>
-                <ForecastsProvider>
-                    <SideBar />
-                    <div className="main-content">
-                        <ToolBar />
-                        <MapArea />
-                        <ModalForecastSeries />
-                    </div>
-                </ForecastsProvider>
-            </WorkspaceProvider>
+  return (
+    <div className="app-layout">
+      <ErrorBoundary>
+        <SideBar/>
+        <div className="main-content">
+          <ToolBar/>
+          <MapArea/>
+          <Suspense fallback={null}>
+            <TimeSeriesModal/>
+          </Suspense>
         </div>
-    );
+        <AppSnackbars/>
+      </ErrorBoundary>
+    </div>
+  );
 }

@@ -1,68 +1,69 @@
 import config from "../config";
+import {appendQuery, buildNormalizeQuery, buildPercentilesQuery} from "./apiHelpers";
 
 // In-flight request de-duplication: endpoint -> Promise
 const inflight = new Map();
 
 async function doFetch(fullUrl, endpoint) {
-    const maxRetries = 3;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        let res;
-        let networkError = null;
-        try {
-            res = await fetch(fullUrl, {cache: 'no-store'});
-        } catch (e) {
-            networkError = e;
-        }
-        if (networkError) {
-            if (attempt < maxRetries) {
-                await new Promise(r => setTimeout(r, 200 * (2 ** attempt)));
-                continue;
-            }
-            throw networkError;
-        }
-        if (!res.ok) {
-            const status = res.status;
-            if ((status === 500 || status === 502 || status === 503 || status === 504) && attempt < maxRetries) {
-                await new Promise(r => setTimeout(r, 200 * (2 ** attempt)));
-                continue;
-            }
-            let snippet = '';
-            try {
-                snippet = (await res.clone().text()).slice(0, 400);
-            } catch {
-                // ignore snippet errors
-            }
-            if (config.API_DEBUG) {
-                console.groupCollapsed(`[API] ERROR ${status} ${endpoint}`);
-                console.log('URL:', fullUrl);
-                res.headers.forEach((v, k) => console.log('Header:', k, v));
-                console.log('Body snippet:', snippet);
-                console.groupEnd();
-            }
-            throw new Error(`API error: ${status} ${res.statusText}`);
-        }
-        if (config.API_DEBUG) {
-            console.groupCollapsed(`[API] 200 ${endpoint}`);
-            res.headers.forEach((v, k) => console.log('Header:', k, v));
-            console.groupEnd();
-        }
-        return await res.json();
+  const maxRetries = 3;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    let res;
+    let networkError = null;
+    try {
+      res = await fetch(fullUrl, {cache: 'no-store'});
+    } catch (e) {
+      networkError = e;
     }
+    if (networkError) {
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 200 * (2 ** attempt)));
+        continue;
+      }
+      throw networkError;
+    }
+    if (!res.ok) {
+      const status = res.status;
+      if ((status === 500 || status === 502 || status === 503 || status === 504) && attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 200 * (2 ** attempt)));
+        continue;
+      }
+      let snippet = '';
+      try {
+        snippet = (await res.clone().text()).slice(0, 400);
+      } catch {
+        // ignore snippet errors
+      }
+      if (config.API_DEBUG) {
+        console.groupCollapsed(`[API] ERROR ${status} ${endpoint}`);
+        console.log('URL:', fullUrl);
+        res.headers.forEach((v, k) => console.log('Header:', k, v));
+        console.log('Body snippet:', snippet);
+        console.groupEnd();
+      }
+      throw new Error(`API error: ${status} ${res.statusText}`);
+    }
+    if (config.API_DEBUG) {
+      console.groupCollapsed(`[API] 200 ${endpoint}`);
+      res.headers.forEach((v, k) => console.log('Header:', k, v));
+      console.groupEnd();
+    }
+    return await res.json();
+  }
 }
 
 function buildUrl(endpoint) {
-    const base = config.API_BASE_URL || '';
-    if (!base && config.API_DEBUG) {
-        console.warn('[API] Empty API_BASE_URL; requests are relative to current origin');
-    }
-    return `${base}${endpoint}`;
+  const base = config.API_BASE_URL || '';
+  if (!base && config.API_DEBUG) {
+    console.warn('[API] Empty API_BASE_URL; requests are relative to current origin');
+  }
+  return `${base}${endpoint}`;
 }
 
 async function request(endpoint) {
-    if (inflight.has(endpoint)) return inflight.get(endpoint);
-    const p = doFetch(buildUrl(endpoint), endpoint).finally(() => inflight.delete(endpoint));
-    inflight.set(endpoint, p);
-    return p;
+  if (inflight.has(endpoint)) return inflight.get(endpoint);
+  const p = doFetch(buildUrl(endpoint), endpoint).finally(() => inflight.delete(endpoint));
+  inflight.set(endpoint, p);
+  return p;
 }
 
 // --- Metadata ---
@@ -78,36 +79,35 @@ export const getRelevantEntities = (region, date, methodId, configId) => request
 export const getAnalogDates = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/analog-dates`);
 export const getAnalogyCriteria = (region, date, methodId, configId, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/analogy-criteria`);
 export const getEntitiesValuesPercentile = (region, date, methodId, configId, lead, perc, normalize) => {
-    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/entities-values-percentile/${perc}${qs}`);
+  const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${lead}/entities-values-percentile/${perc}`;
+  return request(appendQuery(path, buildNormalizeQuery(normalize)));
 };
 export const getReferenceValues = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/reference-values`);
 export const getSeriesBestAnalogs = (region, date, methodId, configId, entity) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-best-analogs`);
 export const getSeriesValuesPercentiles = (region, date, methodId, configId, entity, percentiles) => {
-    const qs = (percentiles && percentiles.length) ? `?${percentiles.map(p => `percentiles=${encodeURIComponent(p)}`).join('&')}` : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles${qs}`);
+  const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles`;
+  return request(appendQuery(path, buildPercentilesQuery(percentiles)));
 };
 export const getSeriesValuesPercentilesHistory = (region, date, methodId, configId, entity, number = 3) => {
-    const qs = number ? `?number=${encodeURIComponent(number)}` : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history${qs}`);
+  const qs = number ? `number=${encodeURIComponent(number)}` : '';
+  const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/series-values-percentiles-history`;
+  return request(appendQuery(path, qs));
 };
 export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analogs`);
 export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
 export const getAnalogValuesPercentiles = (region, date, methodId, configId, entity, lead, percentiles) => {
-    const qs = (percentiles && percentiles.length)
-        ? `?${percentiles.map(p => `percentiles=${encodeURIComponent(p)}`).join('&')}`
-        : '';
-    return request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles${qs}`);
+  const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`;
+  return request(appendQuery(path, buildPercentilesQuery(percentiles)));
 };
 export const getAnalogValuesBest = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-best`);
 
 // --- Aggregations ---
 export const getAggregatedEntitiesValues = (region, date, methodId, lead, perc, normalize) => {
-    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/aggregations/${region}/${encodeURIComponent(date)}/${methodId}/${lead}/entities-values-percentile/${perc}${qs}`);
+  const path = `/aggregations/${region}/${encodeURIComponent(date)}/${methodId}/${lead}/entities-values-percentile/${perc}`;
+  return request(appendQuery(path, buildNormalizeQuery(normalize)));
 };
 export const getSynthesisPerMethod = (region, date, perc) => request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-per-method/${perc}`);
 export const getSynthesisTotal = (region, date, perc, normalize) => {
-    const qs = normalize ? `?normalize=${encodeURIComponent(normalize)}` : '';
-    return request(`/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-total/${perc}${qs}`);
+  const path = `/aggregations/${region}/${encodeURIComponent(date)}/series-synthesis-total/${perc}`;
+  return request(appendQuery(path, buildNormalizeQuery(normalize)));
 };

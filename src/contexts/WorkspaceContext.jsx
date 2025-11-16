@@ -1,76 +1,145 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
-import { getLastForecastDate, getMethodsAndConfigs } from '../services/api.js';
+import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import {getLastForecastDate, getMethodsAndConfigs} from '@/services/api.js';
 import {useConfig} from './ConfigContext.jsx';
+import {onWorkspacePopState, readWorkspaceFromUrl, writeWorkspaceToUrl} from '@/utils/urlWorkspaceUtils.js';
+import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const WorkspaceContext = createContext();
 
-export function WorkspaceProvider({ children }) {
-    const config = useConfig();
-    const workspaces = useMemo(() => (config?.workspaces?.map(ws => ({
-        key: ws.key,
-        name: ws.name
-    })) || []), [config]);
+export function WorkspaceProvider({children}) {
+  const config = useConfig();
+  const workspaces = useMemo(() => (config?.workspaces?.map(ws => ({
+    key: ws.key,
+    name: ws.name
+  })) || []), [config]);
 
-    const [workspace, setWorkspace] = useState(workspaces[0]?.key || '');
-    const [workspaceData, setWorkspaceData] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const requestIdRef = useRef(0);
-    const methodsReqIdRef = useRef(0); // controls second phase
+  const [workspace, setWorkspaceState] = useState('');
+  const [workspaceData, setWorkspaceData] = useState(null);
+  const [invalidWorkspaceKey, setInvalidWorkspaceKey] = useState(null);
 
-    useEffect(() => {
-        if (!workspace && workspaces.length > 0) {
-            setWorkspace(workspaces[0].key);
-        } else if (workspace && workspaces.length > 0 && !workspaces.find(w => w.key === workspace)) {
-            setWorkspace(workspaces[0].key);
+  // Synchronize initial workspace selection with URL and available workspaces
+  useEffect(() => {
+    const availableKeys = workspaces.map(w => w.key);
+    if (availableKeys.length === 0) return;
+    const urlWs = readWorkspaceFromUrl();
+    const hasUrl = !!urlWs;
+    const hasUrlWs = hasUrl && availableKeys.includes(urlWs);
+    if (hasUrlWs) {
+      setInvalidWorkspaceKey(null);
+      if (workspace !== urlWs) setWorkspaceState(urlWs);
+    } else if (hasUrl) {
+      setInvalidWorkspaceKey(urlWs);
+      if (!workspace || !availableKeys.includes(workspace)) {
+        const first = availableKeys[0];
+        if (first) {
+          setWorkspaceState(first);
+          writeWorkspaceToUrl(first);
         }
-    }, [workspaces, workspace]);
-
-    useEffect(() => {
-        let cancelled = false;
-        async function load() {
-            if (!workspace) { setWorkspaceData(null); return; }
-            const currentId = ++requestIdRef.current;
-            setWorkspaceData(null);
-            setLoading(true);
-            setError(null);
-            try {
-                // Phase 1: fetch last forecast date
-                const date = await getLastForecastDate(workspace);
-                if (cancelled || currentId !== requestIdRef.current) return;
-                setWorkspaceData({ date, __workspace: workspace });
-                // Phase 2: fetch methods/configs
-                const methodsId = ++methodsReqIdRef.current;
-                try {
-                    const methodsAndConfigs = await getMethodsAndConfigs(workspace, date.last_forecast_date);
-                    if (cancelled || currentId !== requestIdRef.current || methodsId !== methodsReqIdRef.current) return;
-                    setWorkspaceData(prev => (prev && prev.date === date ? { ...prev, methodsAndConfigs } : prev));
-                } catch {
-                    // Non-fatal; MethodsProvider will attempt its own fetch
-                }
-            } catch (e) {
-                if (cancelled || currentId !== requestIdRef.current) return;
-                setError(e);
-                setWorkspaceData(null);
-            } finally {
-                if (!(cancelled || currentId !== requestIdRef.current)) {
-                    setLoading(false);
-                }
-            }
+      }
+    } else {
+      setInvalidWorkspaceKey(null);
+      if (!workspace || !availableKeys.includes(workspace)) {
+        const first = availableKeys[0];
+        if (first) {
+          setWorkspaceState(first);
+          writeWorkspaceToUrl(first);
         }
-        load();
-        return () => { cancelled = true; };
-    }, [workspace]);
+      }
+    }
+  }, [workspaces, workspace]);
 
-    const value = useMemo(() => ({
-        workspace,
-        setWorkspace,
-        workspaceData,
-        loading,
-        error
-    }), [workspace, workspaceData, loading, error]);
+  // Keep URL in sync whenever workspace state changes and is valid
+  useEffect(() => {
+    if (!workspace) return;
+    const isValid = workspaces.some(w => w.key === workspace);
+    if (isValid) {
+      const currentParam = readWorkspaceFromUrl();
+      if (currentParam !== workspace) writeWorkspaceToUrl(workspace);
+    }
+  }, [workspace, workspaces]);
 
-    return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
+  // React to browser navigation (back/forward) updating workspace from URL
+  useEffect(() => {
+    return onWorkspacePopState((urlWs) => {
+      const availableKeys = workspaces.map(w => w.key);
+      if (availableKeys.length === 0) return;
+      const hasUrl = !!urlWs;
+      const isValid = hasUrl && availableKeys.includes(urlWs);
+      if (isValid) {
+        setInvalidWorkspaceKey(null);
+        if (urlWs !== workspace) setWorkspaceState(urlWs);
+      } else if (hasUrl) {
+        setInvalidWorkspaceKey(urlWs);
+        const first = availableKeys[0];
+        if (first && first !== workspace) setWorkspaceState(first);
+      } else {
+        setInvalidWorkspaceKey(null);
+      }
+    });
+  }, [workspace, workspaces]);
+
+  // Phase 1: fetch last forecast date
+  const lastDateKey = workspace ? `last_date|${workspace}` : null;
+  const {data: lastDateResp, loading: loadingPhase1, error: errorPhase1} = useCachedRequest(
+    lastDateKey,
+    async () => {
+      if (!workspace) return null;
+      return await getLastForecastDate(workspace);
+    },
+    [workspace],
+    {enabled: !!workspace, initialData: null, ttlMs: DEFAULT_TTL}
+  );
+
+  // Phase 2: methods/configs prefetch via cached request (optional optimization)
+  const methodsPrefetchKey = workspace && lastDateResp?.last_forecast_date ? `workspace_methods|${workspace}|${lastDateResp.last_forecast_date}` : null;
+  const {data: prefetchMethods} = useCachedRequest(
+    methodsPrefetchKey,
+    async () => {
+      if (!workspace || !lastDateResp?.last_forecast_date) return null;
+      const resp = await getMethodsAndConfigs(workspace, lastDateResp.last_forecast_date);
+      // keep raw shape; normalization happens later in MethodsContext for tree
+      return resp ?? null;
+    },
+    [workspace, lastDateResp?.last_forecast_date],
+    {enabled: !!methodsPrefetchKey, initialData: null, ttlMs: DEFAULT_TTL}
+  );
+
+  // Consolidate workspaceData whenever phase1 or prefetch changes
+  useEffect(() => {
+    if (!workspace) {
+      setWorkspaceData(null);
+      return;
+    }
+    if (!lastDateResp) {
+      setWorkspaceData(null);
+      return;
+    }
+    setWorkspaceData({date: lastDateResp, __workspace: workspace, methodsAndConfigs: prefetchMethods || undefined});
+  }, [workspace, lastDateResp, prefetchMethods]);
+
+  const setWorkspace = React.useCallback((next) => {
+    if (next === workspace) return;
+    const isValid = workspaces.some(w => w.key === next);
+    if (!isValid) return;
+    clearCachedRequests();
+    setInvalidWorkspaceKey(null);
+    setWorkspaceState(next);
+    writeWorkspaceToUrl(next);
+  }, [workspace, workspaces]);
+
+  const value = useMemo(() => ({
+    workspace,
+    setWorkspace,
+    workspaceData,
+    loading: loadingPhase1,
+    error: errorPhase1,
+    invalidWorkspaceKey
+  }), [workspace, setWorkspace, workspaceData, loadingPhase1, errorPhase1, invalidWorkspaceKey]);
+
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
-export function useWorkspace() { return useContext(WorkspaceContext); }
+export function useWorkspace() {
+  return useContext(WorkspaceContext);
+}

@@ -1,151 +1,96 @@
-import React, {createContext, useContext, useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
-import {getEntities, getRelevantEntities} from '../services/api.js';
+import {getEntities, getRelevantEntities} from '@/services/api.js';
+import {deriveConfigId, isMethodSelectionValid, keyForEntities, keyForRelevantEntities, methodExists} from '@/utils/contextGuards.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {normalizeEntitiesResponse, normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
+import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const EntitiesContext = createContext({});
 
 export function EntitiesProvider({children}) {
-    const {workspace, activeForecastDate, resetVersion} = useForecastSession();
-    const {selectedMethodConfig, methodConfigTree, methodsLoading} = useMethods();
+  const {workspace, activeForecastDate, resetVersion} = useForecastSession();
+  const {selectedMethodConfig, methodConfigTree, methodsLoading} = useMethods();
 
-    const [entities, setEntities] = useState([]);
-    const [entitiesLoading, setEntitiesLoading] = useState(false);
-    const [entitiesError, setEntitiesError] = useState(null);
-    const [relevantEntities, setRelevantEntities] = useState(null);
+  const [entities, setEntities] = useState([]);
+  const [entitiesLoading, setEntitiesLoading] = useState(false);
+  const [entitiesError, setEntitiesError] = useState(null);
+  const [relevantEntities, setRelevantEntities] = useState(null);
 
-    const versionRef = useRef(0);
-    const entitiesReqIdRef = useRef(0);
-    const relevantReqIdRef = useRef(0);
-    const entitiesCacheRef = useRef(new Map());
-    const relevantCacheRef = useRef(new Map());
-    const prevWorkspaceRef = useRef(workspace);
+  const prevWorkspaceRef = useRef(workspace);
+  const prevConfigRef = useRef(selectedMethodConfig?.config?.id || null);
 
-    const refreshEntities = useCallback(() => {
-        versionRef.current += 1;
-        setEntitiesError(null);
-    }, []);
+  // Clear derived state on session reset or workspace change
+  useEffect(() => {
+    if (prevWorkspaceRef.current !== workspace) {
+      setEntities([]);
+      setRelevantEntities(null);
+      prevWorkspaceRef.current = workspace;
+    }
+  }, [workspace]);
 
-    // Clear caches on session reset or workspace change
-    useEffect(() => {
-        if (prevWorkspaceRef.current !== workspace) {
-            entitiesCacheRef.current.clear();
-            relevantCacheRef.current.clear();
-            setEntities([]);
-            setRelevantEntities(null);
-            prevWorkspaceRef.current = workspace;
-        }
-    }, [workspace]);
+  useEffect(() => {
+    const currConfigId = selectedMethodConfig?.config?.id || null;
+    if (prevConfigRef.current !== currConfigId) {
+      setRelevantEntities(null);
+      prevConfigRef.current = currConfigId;
+    }
+  }, [selectedMethodConfig]);
 
-    useEffect(() => {
-        entitiesCacheRef.current.clear();
-        relevantCacheRef.current.clear();
-        setEntities([]);
-        setRelevantEntities(null);
-    }, [resetVersion]);
+  useEffect(() => {
+    setEntities([]);
+    setRelevantEntities(null);
+  }, [resetVersion]);
 
-    // Fetch entities
-    useEffect(() => {
-        let cancelled = false;
-        const reqId = ++entitiesReqIdRef.current;
-        const fetchWorkspace = workspace;
-        async function run() {
-            if (methodsLoading) return;
-            if (!fetchWorkspace || !activeForecastDate || !selectedMethodConfig?.method) {
-                setEntities([]);
-                return;
-            }
-            // Guard against cross-workspace method selection
-            if (selectedMethodConfig._workspace && selectedMethodConfig._workspace !== fetchWorkspace) {
-                setEntities([]);
-                return;
-            }
-            const methodId = selectedMethodConfig.method.id;
-            if (!methodConfigTree.find(m => m.id === methodId)) { setEntities([]); return; }
-            let configId = selectedMethodConfig.config?.id;
-            if (!configId) {
-                const m = methodConfigTree.find(m => m.id === methodId);
-                configId = m?.children?.[0]?.id;
-                if (!configId) { setEntities([]); return; }
-            }
-            const key = `${fetchWorkspace}|${activeForecastDate}|${methodId}|${configId}`;
-            const cached = entitiesCacheRef.current.get(key);
-            if (cached) { setEntities(cached); return; }
-            setEntitiesLoading(true);
-            setEntitiesError(null);
-            try {
-                const resp = await getEntities(fetchWorkspace, activeForecastDate, methodId, configId);
-                if (cancelled || reqId !== entitiesReqIdRef.current) return;
-                // Ignore if workspace changed mid-flight
-                if (fetchWorkspace !== workspace) return;
-                const list = resp?.entities || resp || [];
-                setEntities(list);
-                entitiesCacheRef.current.set(key, list);
-            } catch (e) {
-                if (!cancelled && reqId === entitiesReqIdRef.current) {
-                    setEntities([]);
-                    setEntitiesError(e);
-                }
-            } finally {
-                if (!cancelled && reqId === entitiesReqIdRef.current) setEntitiesLoading(false);
-            }
-        }
-        run();
-        return () => { cancelled = true; };
-    }, [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree, methodsLoading, versionRef.current]);
+  const effectiveConfigId = deriveConfigId(selectedMethodConfig, methodConfigTree);
+  const canQueryEntities = !!workspace && !!activeForecastDate && !methodsLoading && isMethodSelectionValid(selectedMethodConfig, workspace) && !!effectiveConfigId && methodExists(methodConfigTree, selectedMethodConfig?.method?.id);
 
-    // Fetch relevant entities (only when an explicit configuration is selected)
-    useEffect(() => {
-        let cancelled = false;
-        const reqId = ++relevantReqIdRef.current;
-        const fetchWorkspace = workspace;
-        async function run() {
-            if (!fetchWorkspace || !activeForecastDate || !selectedMethodConfig?.method) {
-                setRelevantEntities(null);
-                return;
-            }
-            // If user selected only the method (no config), clear any previous relevant subset
-            if (!selectedMethodConfig.config) {
-                setRelevantEntities(null);
-                return;
-            }
-            if (selectedMethodConfig._workspace && selectedMethodConfig._workspace !== fetchWorkspace) {
-                setRelevantEntities(null);
-                return;
-            }
-            const methodId = selectedMethodConfig.method.id;
-            const configId = selectedMethodConfig.config.id;
-            if (!methodConfigTree.find(m => m.id === methodId)) { setRelevantEntities(null); return; }
-            const key = `${fetchWorkspace}|${activeForecastDate}|${methodId}|${configId}`;
-            const cached = relevantCacheRef.current.get(key);
-            if (cached) { setRelevantEntities(cached); return; }
-            try {
-                const resp = await getRelevantEntities(fetchWorkspace, activeForecastDate, methodId, configId);
-                if (cancelled || reqId !== relevantReqIdRef.current) return;
-                if (fetchWorkspace !== workspace) return;
-                let ids = [];
-                if (Array.isArray(resp)) ids = (typeof resp[0] === 'object') ? resp.map(r => r.id ?? r.entity_id).filter(v => v != null) : resp; else if (resp && typeof resp === 'object') ids = resp.entity_ids || resp.entities_ids || resp.ids || (Array.isArray(resp.entities) ? resp.entities.map(e => e.id) : []);
-                const setIds = new Set(ids);
-                relevantCacheRef.current.set(key, setIds);
-                setRelevantEntities(setIds);
-            } catch {
-                if (!cancelled && reqId === relevantReqIdRef.current) setRelevantEntities(null);
-            }
-        }
-        run();
-        return () => { cancelled = true; };
-    }, [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree]);
+  const entitiesKey = canQueryEntities ? keyForEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId) : null;
 
-    const value = useMemo(() => ({
-        entities,
-        entitiesLoading,
-        entitiesError,
-        refreshEntities,
-        relevantEntities,
-        entitiesWorkspace: workspace
-    }), [entities, entitiesLoading, entitiesError, refreshEntities, relevantEntities, workspace]);
+  const {data: entitiesData, loading: entitiesReqLoading, error: entitiesReqError} = useCachedRequest(
+    entitiesKey,
+    async () => {
+      const resp = await getEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId);
+      return normalizeEntitiesResponse(resp);
+    },
+    [workspace, activeForecastDate, selectedMethodConfig, effectiveConfigId, methodConfigTree, methodsLoading],
+    {enabled: !!entitiesKey, initialData: [], ttlMs: DEFAULT_TTL}
+  );
 
-    return <EntitiesContext.Provider value={value}>{children}</EntitiesContext.Provider>;
+  useEffect(() => {
+    setEntities(entitiesData || []);
+    setEntitiesLoading(!!entitiesReqLoading);
+    setEntitiesError(entitiesReqError || null);
+  }, [entitiesData, entitiesReqLoading, entitiesReqError]);
+
+  const canQueryRelevant = canQueryEntities && !!selectedMethodConfig?.config?.id;
+  const relevantKey = canQueryRelevant ? keyForRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id) : null;
+
+  const {data: relevantData} = useCachedRequest(
+    relevantKey,
+    async () => {
+      const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id);
+      return normalizeRelevantEntityIds(resp);
+    },
+    [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree],
+    {enabled: !!relevantKey, initialData: null, ttlMs: DEFAULT_TTL}
+  );
+
+  useEffect(() => {
+    setRelevantEntities(relevantData || null);
+  }, [relevantData]);
+
+  const value = useMemo(() => ({
+    entities,
+    entitiesLoading,
+    entitiesError,
+    relevantEntities,
+    entitiesWorkspace: workspace,
+    entitiesKey
+  }), [entities, entitiesLoading, entitiesError, relevantEntities, workspace, entitiesKey]);
+
+  return <EntitiesContext.Provider value={value}>{children}</EntitiesContext.Provider>;
 }
 
 export const useEntities = () => useContext(EntitiesContext);
