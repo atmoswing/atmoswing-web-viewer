@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install deps
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN rm -f package-lock.json && npm install
 
 # Build
 COPY . .
