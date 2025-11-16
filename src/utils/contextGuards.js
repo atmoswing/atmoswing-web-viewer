@@ -28,6 +28,10 @@ export function keyForEntities(workspace, forecastDate, methodId, configId) {
   return composeKey(workspace, forecastDate, methodId, configId);
 }
 
+export function keyForRelevantEntities(workspace, forecastDate, methodId, configId) {
+  return composeKey('rel', workspace, forecastDate, methodId, configId);
+}
+
 export function keyForForecastValues(workspace, forecastDate, methodId, configId, leadHours, percentile, normalizationRef) {
   return composeKey(workspace, forecastDate, methodId, configId || 'agg', leadHours, percentile, normalizationRef || 'raw');
 }

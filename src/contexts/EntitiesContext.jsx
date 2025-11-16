@@ -2,7 +2,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {getEntities, getRelevantEntities} from '@/services/api.js';
-import {deriveConfigId, isMethodSelectionValid, keyForEntities, methodExists} from '@/utils/contextGuards.js';
+import {deriveConfigId, isMethodSelectionValid, keyForEntities, keyForRelevantEntities, methodExists} from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {normalizeEntitiesResponse, normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
@@ -19,6 +19,7 @@ export function EntitiesProvider({children}) {
   const [relevantEntities, setRelevantEntities] = useState(null);
 
   const prevWorkspaceRef = useRef(workspace);
+  const prevConfigRef = useRef(selectedMethodConfig?.config?.id || null);
 
   // Clear derived state on session reset or workspace change
   useEffect(() => {
@@ -28,6 +29,14 @@ export function EntitiesProvider({children}) {
       prevWorkspaceRef.current = workspace;
     }
   }, [workspace]);
+
+  useEffect(() => {
+    const currConfigId = selectedMethodConfig?.config?.id || null;
+    if (prevConfigRef.current !== currConfigId) {
+      setRelevantEntities(null);
+      prevConfigRef.current = currConfigId;
+    }
+  }, [selectedMethodConfig]);
 
   useEffect(() => {
     setEntities([]);
@@ -56,7 +65,7 @@ export function EntitiesProvider({children}) {
   }, [entitiesData, entitiesReqLoading, entitiesReqError]);
 
   const canQueryRelevant = canQueryEntities && !!selectedMethodConfig?.config?.id;
-  const relevantKey = canQueryRelevant ? keyForEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id) : null;
+  const relevantKey = canQueryRelevant ? keyForRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id) : null;
 
   const {data: relevantData} = useCachedRequest(
     relevantKey,
