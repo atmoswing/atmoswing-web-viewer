@@ -13,16 +13,16 @@ export default function PanelStations(props) {
   const {entities, entitiesLoading, entitiesError} = useEntities();
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
 
-  // Ensure selection is valid for current entities list
+  // Ensure selection is valid for current entities list, but don't clear during loading or when list is empty
   React.useEffect(() => {
-    if (!entities || entities.length === 0) {
-      if (selectedEntityId != null) setSelectedEntityId(null);
-      return;
-    }
+    // If still loading or there was an error, don't modify the selection here
+    if (entitiesLoading) return;
+    if (!entities || entities.length === 0) return; // avoid clearing just because list is empty (could be transient)
+
     if (selectedEntityId != null && !entities.some(e => e.id === selectedEntityId)) {
       setSelectedEntityId(null);
     }
-  }, [entities, selectedEntityId, setSelectedEntityId]);
+  }, [entities, entitiesLoading, selectedEntityId, setSelectedEntityId]);
 
   const validStation = React.useMemo(() => {
     if (!entities || entities.length === 0) return '';
