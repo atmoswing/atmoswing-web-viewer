@@ -126,11 +126,14 @@ export default function MethodConfigSelector(
   useEffect(() => {
     if (!open || !stations.length) return;
     const updates = {};
-    if (!selectedStationId) {
+    if (selectedStationId == null) {
+      // No entity selected, pick the first
       updates.entityId = stations[0].id;
     } else if (!stations.find(e => e.id === selectedStationId)) {
-      updates.entityId = null;
+      // Previously selected entity is no longer available, pick the first
+      updates.entityId = stations[0].id;
     }
+    // Otherwise, keep the current selectedStationId (it's still valid)
     if (Object.keys(updates).length > 0) {
       onChange({...value, ...updates});
     }
@@ -176,10 +179,20 @@ export default function MethodConfigSelector(
 
   const leads = useMemo(() => Array.isArray(leadsRaw) ? leadsRaw : [], [leadsRaw]);
 
-  // Set default lead
+  // Set default lead and maintain validity
   useEffect(() => {
-    if ((selectedLead == null || selectedLead === '') && leads.length) {
-      onChange({...value, lead: leads[0].lead});
+    if (!leads.length) return;
+    const updates = {};
+    if (selectedLead == null || selectedLead === '') {
+      // No lead selected, pick the first
+      updates.lead = leads[0].lead;
+    } else if (!leads.find(l => l.lead === selectedLead)) {
+      // Previously selected lead is no longer available, pick the first
+      updates.lead = leads[0].lead;
+    }
+    // Otherwise, keep the current selectedLead (it's still valid)
+    if (Object.keys(updates).length > 0) {
+      onChange({...value, ...updates});
     }
   }, [leads, selectedLead, onChange, value]);
 
@@ -263,10 +276,16 @@ export default function MethodConfigSelector(
   };
 
   const handleMethodChange = (e) => {
+    const newMethodId = e.target.value;
+    const newMethod = methodOptions.find(m => m.id === newMethodId);
+
+    // Keep current config if it exists in the new method's configurations, otherwise reset
+    const configStillValid = newMethod?.configurations?.some(c => c.id === selectedConfigId);
+
     onChange({
       ...value,
-      methodId: e.target.value,
-      configId: null
+      methodId: newMethodId,
+      configId: configStillValid ? selectedConfigId : null
     });
     relevantRef.current.clear();
     setRelevantMapVersion(v => v + 1);
