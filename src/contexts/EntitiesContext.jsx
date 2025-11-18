@@ -2,7 +2,13 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {getEntities, getRelevantEntities} from '@/services/api.js';
-import {deriveConfigId, isMethodSelectionValid, keyForEntities, keyForRelevantEntities, methodExists} from '@/utils/contextGuards.js';
+import {
+  deriveConfigId,
+  isMethodSelectionValid,
+  keyForEntities,
+  keyForRelevantEntities,
+  methodExists
+} from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {normalizeEntitiesResponse, normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';

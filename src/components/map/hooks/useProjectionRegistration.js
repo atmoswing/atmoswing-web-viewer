@@ -15,7 +15,8 @@ export default function useProjectionRegistration(epsg) {
     if (!proj4.defs[epsg] && PREDEFINED[epsg]) proj4.defs(epsg, PREDEFINED[epsg]);
     try {
       register(proj4);
-    } catch { /* registration may throw if already registered */ }
+    } catch { /* registration may throw if already registered */
+    }
     lastRegisteredProjRef.current = epsg;
   }, [epsg]);
   return lastRegisteredProjRef;

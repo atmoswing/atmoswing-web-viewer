@@ -52,12 +52,16 @@ export function compareEntitiesByName(a, b) {
 
 /**
  * Format a Date into label: DD.MM.YYYY[ HH:MM] if time exists.
+ * @param {Date|string|number} date
+ * @returns {string}
  */
 export function formatDateLabel(date) {
-  if (!(date instanceof Date) || isNaN(date)) return '';
-  const base = formatDateDDMMYYYY(date);
-  const hh = date.getHours();
-  const mm = date.getMinutes();
+  if (!date && date !== 0) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (!(d instanceof Date) || isNaN(d)) return '';
+  const base = formatDateDDMMYYYY(d);
+  const hh = d.getHours();
+  const mm = d.getMinutes();
   if (hh || mm) {
     return `${base} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
   }

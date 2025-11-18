@@ -91,7 +91,8 @@ export default function MapViewer() {
     const id = setTimeout(() => {
       try {
         clearBaseDateSearchFailed();
-      } catch { /* intentionally ignore clear error */ }
+      } catch { /* intentionally ignore clear error */
+      }
     }, 2000);
     return () => clearTimeout(id);
   }, [baseDateSearchFailed, clearBaseDateSearchFailed]);

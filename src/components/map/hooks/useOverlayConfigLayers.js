@@ -29,11 +29,13 @@ export default function useOverlayConfigLayers(
       layersCollection.getArray()
         .filter(l => l && l.get && l.get('__fromWorkspaceConfig'))
         .forEach(l => layersCollection.remove(l));
-    } catch { /* removing old overlay layers: best-effort */ }
+    } catch { /* removing old overlay layers: best-effort */
+    }
 
     const ws = runtimeConfig?.workspaces?.find(w => w.key === workspace);
     const items = (ws && Array.isArray(ws.shapefiles)) ? ws.shapefiles : [];
-    if (!items.length) return () => {};
+    if (!items.length) return () => {
+    };
 
     const lineStyle = new Style({stroke: new Stroke({color: 'rgba(0, 102, 255, 0.9)', width: 2})});
     const polygonStyle = new Style({
@@ -67,7 +69,10 @@ export default function useOverlayConfigLayers(
 
       resolveOverlayStyle(item, styleFn).then(sfn => {
         if (cancelled) return;
-        try { layer.setStyle(sfn); } catch { /* ignore style set failure */ }
+        try {
+          layer.setStyle(sfn);
+        } catch { /* ignore style set failure */
+        }
       });
 
       const lower = String(url).toLowerCase();
@@ -92,7 +97,10 @@ export default function useOverlayConfigLayers(
             if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e);
           });
         // Attach controller to layer for potential manual abort later
-        try { layer.set('__abortController', controller); } catch { /* best-effort */ }
+        try {
+          layer.set('__abortController', controller);
+        } catch { /* best-effort */
+        }
       } else if (lower.endsWith('.zip') || lower.endsWith('.shp')) {
         // shpjs doesn't support AbortController; use cancelled flag
         shp(url)
@@ -126,7 +134,8 @@ export default function useOverlayConfigLayers(
           if (ctrl && typeof ctrl.abort === 'function') ctrl.abort();
           layersCollection.remove(l);
         });
-      } catch { /* cleanup errors ignored */ }
+      } catch { /* cleanup errors ignored */
+      }
     };
   }, [mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef]);
 }

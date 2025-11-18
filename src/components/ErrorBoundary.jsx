@@ -14,7 +14,8 @@ export class ErrorBoundary extends React.Component {
     if (this.props.onError) {
       try {
         this.props.onError(error, info);
-      } catch { /* swallow error from onError handler */ }
+      } catch { /* swallow error from onError handler */
+      }
     }
     if (import.meta.env.MODE !== 'production') {
       console.error('[ErrorBoundary]', error, info);

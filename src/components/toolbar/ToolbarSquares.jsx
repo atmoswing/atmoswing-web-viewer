@@ -41,6 +41,7 @@ export default function ToolbarSquares() {
               <>
                 <div>{t('toolbar.selectLeadTime', {defaultValue: 'Select lead time'})} {label}</div>
                 <div>{t('toolbar.colorSynthesis', {defaultValue: 'Color: synthesis of all methods'})}</div>
+                <div>{t('synthesis.normalizedValues', {defaultValue: 'Valeurs normalisées'})} (P/P10, q90)</div>
               </>
             }
             arrow

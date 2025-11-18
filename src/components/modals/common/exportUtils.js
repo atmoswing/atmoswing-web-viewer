@@ -37,15 +37,19 @@ export function inlineAllStyles(svg) {
     try {
       const cs = getComputedStyle(el);
       const styleProps = [
-        'fill','stroke','stroke-width','stroke-opacity','fill-opacity','font-size','font-family','font-weight','opacity','text-anchor','stroke-linecap','stroke-linejoin','stroke-dasharray','background','background-color'
+        'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'font-size', 'font-family', 'font-weight', 'opacity', 'text-anchor', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'background', 'background-color'
       ];
       let inline = '';
-      styleProps.forEach(p => { const v = cs.getPropertyValue(p); if (v) inline += `${p}:${v};`; });
+      styleProps.forEach(p => {
+        const v = cs.getPropertyValue(p);
+        if (v) inline += `${p}:${v};`;
+      });
       if (inline) {
         const prev = el.getAttribute('style') || '';
         el.setAttribute('style', prev + inline);
       }
-    } catch { /* ignore style computation failures */ }
+    } catch { /* ignore style computation failures */
+    }
     for (let i = 0; i < el.children.length; i++) recurse(el.children[i]);
   };
   recurse(svg);
@@ -84,7 +88,10 @@ export function withTemporaryContainer(node, cb) {
   container.appendChild(node);
   document.body.appendChild(container);
   try {
-    try { inlineAllStyles(node); } catch { /* ignore */ }
+    try {
+      inlineAllStyles(node);
+    } catch { /* ignore */
+    }
     return cb && cb();
   } finally {
     document.body.removeChild(container);

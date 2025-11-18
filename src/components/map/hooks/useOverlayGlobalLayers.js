@@ -4,13 +4,13 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import {Stroke, Style} from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
-import {loadWmtsCapabilities, createWmtsTileLayer} from '@/components/map/utils/loadWmtsCapabilities.js';
+import {createWmtsTileLayer, loadWmtsCapabilities} from '@/components/map/utils/loadWmtsCapabilities.js';
 import config from '@/config.js';
 
 // Build a simple style function for line features based on categorical attribute -> color map
 function makeCategoricalLineStyle(valueAttr, colors = {}, width = 2) {
   const cache = new Map();
-  const makeStyle = (color) => new Style({ stroke: new Stroke({ color, width }) });
+  const makeStyle = (color) => new Style({stroke: new Stroke({color, width})});
   return (feature) => {
     try {
       const v = feature.get(valueAttr);
@@ -23,7 +23,15 @@ function makeCategoricalLineStyle(valueAttr, colors = {}, width = 2) {
   };
 }
 
-export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar}) {
+export default function useOverlayGlobalLayers(
+  {
+    mapReady,
+    runtimeConfig,
+    overlayGroupRef,
+    layerSwitcherRef,
+    enqueueSnackbar
+  }
+) {
   useEffect(() => {
     if (!mapReady) return;
     const group = overlayGroupRef.current;
@@ -38,13 +46,19 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
       layersCollection.getArray()
         .filter(l => l && l.get && l.get('__fromGlobalOverlayConfig'))
         .forEach(l => {
-          try { const t = l.get('__refreshTimer'); if (t) clearInterval(t); } catch { /* ignore */ }
+          try {
+            const t = l.get('__refreshTimer');
+            if (t) clearInterval(t);
+          } catch { /* ignore */
+          }
           layersCollection.remove(l);
         });
-    } catch { /* ignore */ }
+    } catch { /* ignore */
+    }
 
     const items = runtimeConfig?.overlayLayers || [];
-    if (!items.length) return () => {};
+    if (!items.length) return () => {
+    };
 
     (async () => {
       // Preload WMTS capabilities for all configured providers/items (base+overlay)
@@ -60,7 +74,7 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
           if (item.source === 'wmts' && item.wmtsLayer) {
             const source = createWmtsTileLayer(item, wmtsOptionsCache);
             if (source) {
-              const layer = new TileLayer({ title, visible: !!item.visible, source });
+              const layer = new TileLayer({title, visible: !!item.visible, source});
               layer.set('__fromGlobalOverlayConfig', true);
               createdLayers.push(layer);
               layersCollection.push(layer);
@@ -68,18 +82,18 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
           } else if (item.source === 'geojson' && item.url) {
             const src = new VectorSource();
             const styleFn = makeCategoricalLineStyle(item.valueAttr || 'value', item.colors || {}, Number(item.lineWidth || 2));
-            const layer = new VectorLayer({ title, visible: !!item.visible, source: src, style: styleFn });
+            const layer = new VectorLayer({title, visible: !!item.visible, source: src, style: styleFn});
             layer.set('__fromGlobalOverlayConfig', true);
             createdLayers.push(layer);
             layersCollection.push(layer);
 
             const loadOnce = async (signal) => {
               try {
-                const res = await fetch(item.url, { cache: 'no-store', signal });
+                const res = await fetch(item.url, {cache: 'no-store', signal});
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const json = await res.json();
                 const fmt = new GeoJSON();
-                const feats = fmt.readFeatures(json, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+                const feats = fmt.readFeatures(json, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
                 src.clear();
                 src.addFeatures(feats);
               } catch (e) {
@@ -89,7 +103,10 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
             };
 
             const controller = new AbortController();
-            try { layer.set('__abortController', controller); } catch { /* ignore */ }
+            try {
+              layer.set('__abortController', controller);
+            } catch { /* ignore */
+            }
             loadOnce(controller.signal);
 
             // Optional refresh
@@ -98,11 +115,21 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
               const timer = setInterval(() => {
                 if (cancelled) return; // best-effort guard
                 const c = new AbortController();
-                try { const prev = layer.get('__abortController'); if (prev) prev.abort(); } catch { /* ignore */ }
-                try { layer.set('__abortController', c); } catch { /* ignore */ }
+                try {
+                  const prev = layer.get('__abortController');
+                  if (prev) prev.abort();
+                } catch { /* ignore */
+                }
+                try {
+                  layer.set('__abortController', c);
+                } catch { /* ignore */
+                }
                 loadOnce(c.signal);
               }, minutes * 60 * 1000);
-              try { layer.set('__refreshTimer', timer); } catch { /* ignore */ }
+              try {
+                layer.set('__refreshTimer', timer);
+              } catch { /* ignore */
+              }
             }
           } else {
             if (config.API_DEBUG) console.warn('Unsupported overlay config item', item);
@@ -113,7 +140,10 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
       }
 
       if (!cancelled && layerSwitcherRef?.current) {
-        try { layerSwitcherRef.current.renderPanel(); } catch { /* ignore */ }
+        try {
+          layerSwitcherRef.current.renderPanel();
+        } catch { /* ignore */
+        }
       }
     })();
 
@@ -121,11 +151,20 @@ export default function useOverlayGlobalLayers({mapReady, runtimeConfig, overlay
       cancelled = true;
       try {
         createdLayers.forEach(l => {
-          try { const t = l.get && l.get('__refreshTimer'); if (t) clearInterval(t); } catch { /* ignore */ }
-          try { const ctrl = l.get && l.get('__abortController'); if (ctrl && ctrl.abort) ctrl.abort(); } catch { /* ignore */ }
+          try {
+            const t = l.get && l.get('__refreshTimer');
+            if (t) clearInterval(t);
+          } catch { /* ignore */
+          }
+          try {
+            const ctrl = l.get && l.get('__abortController');
+            if (ctrl && ctrl.abort) ctrl.abort();
+          } catch { /* ignore */
+          }
           layersCollection.remove(l);
         });
-      } catch { /* ignore */ }
+      } catch { /* ignore */
+      }
     };
   }, [mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar]);
 }
