@@ -3,7 +3,7 @@ import {Button, Menu, MenuItem} from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PropTypes from 'prop-types';
 
-export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF}) {
+export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx}) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const openMenu = (e) => setAnchorEl(e.currentTarget);
@@ -31,6 +31,7 @@ export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF}) {
         onClick={openMenu}
         aria-controls={open ? 'forecast-series-export' : undefined}
         aria-haspopup="true"
+        sx={sx}
       >
         {t('seriesModal.export')}
       </Button>
@@ -54,5 +55,6 @@ ExportMenu.propTypes = {
   onExportPNG: PropTypes.func.isRequired,
   onExportSVG: PropTypes.func.isRequired,
   onExportPDF: PropTypes.func.isRequired,
+  sx: PropTypes.object,
 };
 

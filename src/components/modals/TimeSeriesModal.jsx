@@ -416,6 +416,7 @@ export default function TimeSeriesModal() {
             }}>
       <DialogTitle sx={{pr: 5}}>
         {stationName ? `${stationName}` : ''}
+        <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} sx={{marginLeft: 5}}/>
         <IconButton aria-label={t('seriesModal.close')} onClick={handleClose} size="small"
                     sx={{position: 'absolute', right: 8, top: 8}}>
           <CloseIcon fontSize="small"/>
@@ -445,9 +446,6 @@ export default function TimeSeriesModal() {
                                                    onChange={handleOptionChange('previousForecasts')}/>}
                                 label={<Typography variant="body2">{t('seriesModal.previousForecasts')}</Typography>}/>
             </FormGroup>
-            <Box sx={{display: 'flex', justifyContent: 'center', mt: 1}}>
-              <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF}/>
-            </Box>
           </Box>
         )}
         <Box sx={{

@@ -615,6 +615,7 @@ export default function DistributionsModal({open, onClose}) {
             sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '1100px'}}}>
       <DialogTitle sx={{pr: 5}}>
         {t('distributionPlots.title') || 'Distribution plots'}
+        <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} sx={{marginLeft: 5}}/>
         <IconButton aria-label={t('detailsAnalogsModal.close') || 'Close'} onClick={onClose} size="small"
                     sx={{position: 'absolute', right: 8, top: 8}}>
           <CloseIcon fontSize="small"/>
@@ -706,11 +707,6 @@ export default function DistributionsModal({open, onClose}) {
                                   label={t('seriesModal.allReturnPeriods')}/>
               </FormGroup>
             )}
-
-            {/* Export button */}
-            <Box sx={{display: 'flex', justifyContent: 'center', mt: 1}}>
-              <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF}/>
-            </Box>
           </Box>
           <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>
             <Tabs value={tabIndex} onChange={(e, v) => setTabIndex(v)}>
