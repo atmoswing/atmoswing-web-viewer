@@ -1,3 +1,9 @@
+/**
+ * @module main
+ * @description Application entry point that initializes React and renders the app.
+ * Sets up StrictMode, providers, and Suspense boundary.
+ */
+
 import React, {StrictMode, Suspense} from 'react';
 import {createRoot} from 'react-dom/client';
 import Providers from '@/providers/Providers.jsx';

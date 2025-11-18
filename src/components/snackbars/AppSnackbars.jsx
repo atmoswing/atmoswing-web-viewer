@@ -1,3 +1,8 @@
+/**
+ * @module components/snackbars/AppSnackbars
+ * @description Global snackbar manager component rendering queued snackbars and workspace validity alerts.
+ */
+
 import * as React from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import {useTranslation} from 'react-i18next';
@@ -7,6 +12,11 @@ import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
 import {SnackbarItem} from './SnackbarItem.jsx';
 
 export default function AppSnackbars() {
+  /**
+   * AppSnackbars component.
+   * @returns {React.ReactElement}
+   */
+
   const {t} = useTranslation();
   const config = useConfig();
   const {invalidWorkspaceKey} = useWorkspace();

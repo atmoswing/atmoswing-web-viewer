@@ -1,3 +1,9 @@
+/**
+ * @module components/map/hooks/useOverlayConfigLayers
+ * @description Hook for loading and managing workspace-specific overlay layers (shapefiles).
+ * Dynamically adds/removes overlay layers based on workspace configuration.
+ */
+
 import {useEffect} from 'react';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -8,6 +14,26 @@ import {ensureProjDefined} from '@/components/map/utils/olProjectionUtils.js';
 import {resolveOverlayStyle} from '@/components/map/utils/olStyleUtils.js';
 import config from '@/config.js';
 
+ /**
+ * Hook that manages workspace-specific overlay layers on the map.
+ * Loads shapefiles defined in workspace configuration and adds them as vector layers.
+ * Automatically cleans up layers when workspace changes.
+ *
+ * @param {Object} params - Hook parameters
+ * @param {boolean} params.mapReady - Whether map is initialized
+ * @param {Object} params.runtimeConfig - Runtime configuration with workspace definitions
+ * @param {string} params.workspace - Current workspace key
+ * @param {React.RefObject} params.overlayGroupRef - Ref to overlay layer group
+ * @param {React.RefObject} params.layerSwitcherRef - Ref to layer switcher control
+ * @example
+ * useOverlayConfigLayers({
+ *   mapReady: true,
+ *   runtimeConfig: config,
+ *   workspace: 'demo',
+ *   overlayGroupRef,
+ *   layerSwitcherRef
+ * });
+ */
 export default function useOverlayConfigLayers(
   {
     mapReady,

@@ -1,5 +1,12 @@
 /**
+ * @module components/modals/common/exportUtils
+ * @description Utility helpers for exporting charts: safe filename generation, SVG style inlining, dimension extraction and temporary DOM mounting.
+ */
+
+/**
  * Sanitize a string for safe use as a filename (drops/normalizes problematic characters)
+ * @param {string} s - Input string
+ * @returns {string} Sanitized filename-friendly string
  */
 export function safeForFilename(s) {
   if (!s) return 'unknown';
@@ -15,6 +22,9 @@ export function safeForFilename(s) {
 
 /**
  * Trigger a download of a Blob with the given filename
+ * @param {Blob} blob - Data blob
+ * @param {string} filename - Filename to save
+ * @returns {void}
  */
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -30,6 +40,8 @@ export function downloadBlob(blob, filename) {
 /**
  * Inline computed style properties into all nodes of a given SVG element.
  * Helpful to preserve appearance when exporting SVG/PNG/PDF without external CSS.
+ * @param {SVGElement} svg - Root SVG element to inline styles into
+ * @returns {void}
  */
 export function inlineAllStyles(svg) {
   const recurse = (el) => {
@@ -57,6 +69,8 @@ export function inlineAllStyles(svg) {
 
 /**
  * Determine pixel size of an SVG element using width/height or viewBox fallback.
+ * @param {SVGElement} svg - SVG element
+ * @returns {{width:number,height:number}} Dimensions object
  */
 export function getSVGSize(svg) {
   const widthAttr = svg.getAttribute('width');
@@ -77,6 +91,9 @@ export function getSVGSize(svg) {
 /**
  * Temporarily mount a node (e.g., cloned SVG) in a hidden container in the DOM
  * to allow layout/style computations, then run a callback and cleanup.
+ * @param {Node} node - DOM node to mount temporarily
+ * @param {Function} cb - Callback executed while node is mounted
+ * @returns {*} Return value of callback
  */
 export function withTemporaryContainer(node, cb) {
   const container = document.createElement('div');
@@ -97,4 +114,3 @@ export function withTemporaryContainer(node, cb) {
     document.body.removeChild(container);
   }
 }
-

@@ -1,3 +1,9 @@
+/**
+ * @module components/modals/DistributionsModal
+ * @description Modal displaying precipitation and criteria distributions for a selected method/config/entity/lead.
+ * Provides percentile markers, reference return periods, best analog overlays and export options.
+ */
+
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -57,6 +63,13 @@ function TabPanel({children, value, index, ...other}) {
 }
 
 export default function DistributionsModal({open, onClose}) {
+  /**
+   * DistributionsModal component.
+   * @param {Object} props
+   * @param {boolean} props.open - Whether modal is open
+   * @param {Function} props.onClose - Close callback
+   * @returns {React.ReactElement}
+   */
   const {workspace, activeForecastDate} = useForecastSession();
   const {t} = useTranslation();
 

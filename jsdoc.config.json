@@ -1,0 +1,21 @@
+{
+  "source": {
+    "include": ["src"],
+    "includePattern": "\\.(js|jsx)$",
+    "excludePattern": "(node_modules|dist|build)"
+  },
+  "opts": {
+    "destination": "./docs",
+    "recurse": true,
+    "readme": "./README.md",
+    "template": "node_modules/docdash"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "cleverLinks": true,
+    "monospaceLinks": false
+  }
+}
+

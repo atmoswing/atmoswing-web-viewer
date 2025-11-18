@@ -1,6 +1,19 @@
+/**
+ * @module components/map/MapTooltip
+ * @description Floating tooltip overlay displaying entity name and raw value at pointer position.
+ */
+
 import React from 'react';
 
 export default function MapTooltip({tooltip, label}) {
+  /**
+   * MapTooltip component.
+   * @param {Object} props
+   * @param {{x:number,y:number,name:string,valueRaw:number}} [props.tooltip] - Tooltip data (null to hide)
+   * @param {string} props.label - Value label prefix
+   * @returns {React.ReactElement|null}
+   */
+
   if (!tooltip) return null;
   return (
     <div style={{
@@ -20,4 +33,3 @@ export default function MapTooltip({tooltip, label}) {
     </div>
   );
 }
-

@@ -1,3 +1,9 @@
+/**
+ * @module components/modals/TimeSeriesModal
+ * @description Modal displaying time series percentiles, best analogs, reference return periods and previous forecast histories.
+ * Supports exporting charts (SVG/PNG/PDF) and dynamic configuration resolution for selected entity.
+ */
+
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import Dialog from '@mui/material/Dialog';
@@ -37,6 +43,10 @@ import {
 import {useTranslation} from 'react-i18next';
 
 export default function TimeSeriesModal() {
+  /**
+   * TimeSeriesModal component (no props - visibility controlled via selectedEntityId presence).
+   * @returns {React.ReactElement|null}
+   */
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
   const {selectedMethodConfig, methodConfigTree} = useMethods();
   const {workspace, activeForecastDate} = useForecastSession();

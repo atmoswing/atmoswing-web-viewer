@@ -1,3 +1,8 @@
+/**
+ * @module components/modals/DetailsAnalogsModal
+ * @description Modal presenting a detailed list of analogs for a selected method/config/entity/lead with criteria and precipitation values.
+ */
+
 import React, {useEffect, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -22,6 +27,14 @@ import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
 
 export default function DetailsAnalogsModal({open, onClose}) {
+  /**
+   * DetailsAnalogsModal component.
+   * @param {Object} props
+   * @param {boolean} props.open - Whether modal is visible
+   * @param {Function} props.onClose - Close callback
+   * @returns {React.ReactElement}
+   */
+
   const {workspace, activeForecastDate} = useForecastSession();
   const {t} = useTranslation();
 
@@ -139,4 +152,3 @@ export default function DetailsAnalogsModal({open, onClose}) {
     </Dialog>
   );
 }
-

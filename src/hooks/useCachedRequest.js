@@ -1,15 +1,40 @@
-// Generic cached request hook: provides shared in-memory caching across instances.
-// API: useCachedRequest(key, fetchFn, deps, { enabled=true, initialData=null, ttlMs=null })
-// Returns: { data, loading, error, refresh, fromCache, cacheHit }
-// - key: unique string identifying the resource. If null/undefined, fetch is skipped.
-// - fetchFn: async function returning data.
-// - ttlMs: optional time-to-live. If provided and stale, refetch occurs.
-// - refresh(): forces refetch bypassing cache.
-// Caching is global (module-level) per key.
+/**
+ * @module hooks/useCachedRequest
+ * @description Generic cached request hook that provides shared in-memory caching across hook instances.
+ */
+
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-const GLOBAL_CACHE = new Map(); // key -> { timestamp, data }
+/**
+ * Global cache storage. Maps cache keys to objects containing timestamp and data.
+ * @type {Map<string, {timestamp: number, data: any}>}
+ */
+const GLOBAL_CACHE = new Map();
 
+/**
+ * Custom hook for making cached API requests with automatic deduplication.
+ *
+ * @param {string|null} key - Unique cache key. If null/undefined, fetch is skipped
+ * @param {Function} fetchFn - Async function that returns the data
+ * @param {Array} deps - Dependency array for the effect
+ * @param {Object} options - Configuration options
+ * @param {boolean} [options.enabled=true] - Whether the request is enabled
+ * @param {*} [options.initialData=null] - Initial data value
+ * @param {number|null} [options.ttlMs=null] - Time-to-live in milliseconds. If provided and cache is stale, refetch occurs
+ * @returns {Object} Request state object
+ * @returns {*} returns.data - The fetched data
+ * @returns {boolean} returns.loading - Whether the request is in progress
+ * @returns {Error|null} returns.error - Error object if request failed
+ * @returns {Function} returns.refresh - Function to force refetch bypassing cache
+ * @returns {boolean} returns.fromCache - Whether data was served from cache
+ * @example
+ * const { data, loading, error, refresh } = useCachedRequest(
+ *   'forecast-entities',
+ *   () => getEntities(region, date, methodId, configId),
+ *   [region, date, methodId, configId],
+ *   { ttlMs: 60000 }
+ * );
+ */
 export function useCachedRequest(key, fetchFn, deps, options = {}) {
   const {enabled = true, initialData = null, ttlMs = null} = options;
   const [data, setData] = useState(initialData);

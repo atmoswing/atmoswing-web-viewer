@@ -1,3 +1,9 @@
+/**
+ * @module components/map/hooks/useOverlayGlobalLayers
+ * @description Hook for loading and managing global (non-workspace-specific) overlay layers.
+ * Supports WMTS and GeoJSON sources with optional periodic refresh.
+ */
+
 import {useEffect} from 'react';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
@@ -23,6 +29,26 @@ function makeCategoricalLineStyle(valueAttr, colors = {}, width = 2) {
   };
 }
 
+/**
+ * Hook that loads global overlay layers defined in runtime configuration.
+ * Handles WMTS capabilities adoption, dynamic GeoJSON fetching, refresh timers,
+ * abort controllers, and layer switcher panel updates.
+ *
+ * @param {Object} params - Hook parameters
+ * @param {boolean} params.mapReady - Whether map is initialized
+ * @param {Object} params.runtimeConfig - Runtime configuration object
+ * @param {React.RefObject} params.overlayGroupRef - Ref to overlay layer group
+ * @param {React.RefObject} params.layerSwitcherRef - Ref to layer switcher control
+ * @param {Function} [params.enqueueSnackbar] - Optional notification callback
+ * @example
+ * useOverlayGlobalLayers({
+ *   mapReady: true,
+ *   runtimeConfig,
+ *   overlayGroupRef,
+ *   layerSwitcherRef,
+ *   enqueueSnackbar: (msg) => console.warn(msg)
+ * });
+ */
 export default function useOverlayGlobalLayers(
   {
     mapReady,
@@ -168,4 +194,3 @@ export default function useOverlayGlobalLayers(
     };
   }, [mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar]);
 }
-

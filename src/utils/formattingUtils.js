@@ -1,10 +1,19 @@
-// Generic formatting helpers
+/**
+ * @module utils/formattingUtils
+ * @description Generic formatting utilities for dates, numbers, and entity names.
+ * Provides consistent formatting across the application for display purposes.
+ */
 
 /**
- * Format a Date or date-like value to DD.MM.YYYY (e.g., 05.11.2025).
+ * Format a Date or date-like value to DD.MM.YYYY format (e.g., 05.11.2025).
  * Returns empty string on invalid input.
- * @param {Date|string|number} dateLike
- * @returns {string}
+ *
+ * @param {Date|string|number} dateLike - Date object, timestamp, or date string
+ * @returns {string} Formatted date string or empty string if invalid
+ * @example
+ * formatDateDDMMYYYY(new Date('2025-11-05')) // Returns: "05.11.2025"
+ * formatDateDDMMYYYY('2025-11-05') // Returns: "05.11.2025"
+ * formatDateDDMMYYYY(null) // Returns: ""
  */
 export function formatDateDDMMYYYY(dateLike) {
   if (!dateLike && dateLike !== 0) return '';
@@ -17,8 +26,14 @@ export function formatDateDDMMYYYY(dateLike) {
 }
 
 /**
- * Format precipitation value: numeric with one decimal, '-' if null/undefined, '0' if zero.
- * Accepts string/number; returns string.
+ * Formats precipitation value to string with one decimal place.
+ *
+ * @param {number|string|null} value - Precipitation value to format
+ * @returns {string} Formatted string: number with 1 decimal, '0' for zero, '-' for null/undefined
+ * @example
+ * formatPrecipitation(25.67) // Returns: "25.7"
+ * formatPrecipitation(0) // Returns: "0"
+ * formatPrecipitation(null) // Returns: "-"
  */
 export function formatPrecipitation(value) {
   if (value == null) return '-';
@@ -29,7 +44,13 @@ export function formatPrecipitation(value) {
 }
 
 /**
- * Format a generic criteria/score number with 2 decimals; '-' if null/undefined.
+ * Formats a criteria/score value to string with two decimal places.
+ *
+ * @param {number|string|null} value - Criteria value to format
+ * @returns {string} Formatted string with 2 decimals, or '-' for null/undefined
+ * @example
+ * formatCriteria(0.12345) // Returns: "0.12"
+ * formatCriteria(null) // Returns: "-"
  */
 export function formatCriteria(value) {
   if (value == null) return '-';
@@ -39,8 +60,16 @@ export function formatCriteria(value) {
 }
 
 /**
- * Compare two entity-like objects {name?, id?} by name (fallback to id), case-insensitive.
- * Returns -1/0/1
+ * Compares two entity objects by name for sorting, case-insensitive.
+ * Falls back to comparing by id if name is not available.
+ *
+ * @param {Object} a - First entity with name and/or id
+ * @param {Object} b - Second entity with name and/or id
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if equal
+ * @example
+ * const entities = [{name: "Station B"}, {name: "Station A"}];
+ * entities.sort(compareEntitiesByName);
+ * // Results in: [{name: "Station A"}, {name: "Station B"}]
  */
 export function compareEntitiesByName(a, b) {
   const aName = (a?.name ?? a?.id ?? '').toString().toLowerCase();
@@ -51,9 +80,14 @@ export function compareEntitiesByName(a, b) {
 }
 
 /**
- * Format a Date into label: DD.MM.YYYY[ HH:MM] if time exists.
- * @param {Date|string|number} date
- * @returns {string}
+ * Formats a Date into a display label with optional time component.
+ * Includes time (HH:MM) only if hours or minutes are non-zero.
+ *
+ * @param {Date|string|number} date - Date object, timestamp, or date string
+ * @returns {string} Formatted string "DD.MM.YYYY" or "DD.MM.YYYY HH:MM"
+ * @example
+ * formatDateLabel(new Date('2025-11-05T00:00')) // Returns: "05.11.2025"
+ * formatDateLabel(new Date('2025-11-05T14:30')) // Returns: "05.11.2025 14:30"
  */
 export function formatDateLabel(date) {
   if (!date && date !== 0) return '';

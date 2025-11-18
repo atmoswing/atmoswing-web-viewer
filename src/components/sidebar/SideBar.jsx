@@ -1,3 +1,8 @@
+/**
+ * @module components/sidebar/SideBar
+ * @description Application sidebar containing workspace selector and forecast-related panels.
+ */
+
 import React from 'react';
 
 import {useConfig} from '@/contexts/ConfigContext.jsx';
@@ -6,6 +11,10 @@ import {PanelAnalogDates, PanelDisplay, PanelForecasts, PanelStations, PanelSynt
 
 
 export default function SideBar() {
+  /**
+   * SideBar component.
+   * @returns {React.ReactElement}
+   */
   const config = useConfig();
   const workspaceOptions = config?.workspaces?.map(ws => ({key: ws.key, name: ws.name})) || [];
 

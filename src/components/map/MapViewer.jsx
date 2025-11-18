@@ -1,3 +1,9 @@
+/**
+ * @module components/map/MapViewer
+ * @description Main map viewer component using OpenLayers for forecast visualization.
+ * Displays forecast points, supports entity selection, and manages map layers.
+ */
+
 import 'ol/ol.css';
 import 'ol-layerswitcher/dist/ol-layerswitcher.css';
 import '@/styles/map.css';

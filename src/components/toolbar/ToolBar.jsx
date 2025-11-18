@@ -1,3 +1,8 @@
+/**
+ * @module components/toolbar/ToolBar
+ * @description Main application toolbar providing access to distribution and analog details modals and central navigation controls.
+ */
+
 import React from 'react';
 
 import FrameDistributionsIcon from '@/assets/toolbar/frame_distributions.svg?react';
@@ -10,6 +15,11 @@ import ToolbarSquares from './ToolbarSquares.jsx';
 import ToolbarCenter from './ToolbarCenter.jsx';
 
 export default function ToolBar() {
+  /**
+   * ToolBar component.
+   * @returns {React.ReactElement}
+   */
+
   const [detailsAnalogsModalOpen, setDetailsAnalogsModalOpen] = React.useState(false);
   const [distributionsModalOpen, setDistributionsModalOpen] = React.useState(false);
 

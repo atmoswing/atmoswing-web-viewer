@@ -1,3 +1,9 @@
+/**
+ * @module components/map/hooks/useForecastPoints
+ * @description Hook for rendering forecast points on the map with color-coded values.
+ * Handles entity visualization, relevance highlighting, legend updates, and map extent fitting.
+ */
+
 import {useEffect, useRef} from 'react';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
@@ -18,6 +24,38 @@ import {
   FORECAST_POINT_STROKE_WIDTH
 } from '@/components/map/mapConstants.js';
 
+/**
+ * Hook that renders forecast entities as colored points on the OpenLayers map.
+ * Updates point colors based on forecast values, highlights relevant entities,
+ * manages legend stops, and fits map extent to data.
+ *
+ * @param {Object} params - Hook parameters
+ * @param {string} params.ENTITIES_SOURCE_EPSG - EPSG code for entity coordinates
+ * @param {boolean} params.mapReady - Whether map is initialized
+ * @param {Array} params.entities - Array of entity objects with coordinates
+ * @param {string} params.entitiesWorkspace - Workspace key for entities
+ * @param {string} params.entitiesKey - Cache key for current entities
+ * @param {Set} params.relevantEntities - Set of relevant entity IDs
+ * @param {string} params.workspace - Current workspace
+ * @param {Object} params.forecastValuesNorm - Normalized forecast values by entity ID
+ * @param {Object} params.forecastValues - Raw forecast values by entity ID
+ * @param {boolean} params.forecastUnavailable - Whether forecast data is unavailable
+ * @param {React.RefObject} params.forecastLayerRef - Ref to forecast vector layer
+ * @param {React.RefObject} params.mapRef - Ref to OpenLayers map instance
+ * @param {Function} params.setLegendStops - Setter for legend gradient stops
+ * @param {Function} params.setLegendMax - Setter for legend maximum value
+ * @example
+ * useForecastPoints({
+ *   ENTITIES_SOURCE_EPSG: 'EPSG:4326',
+ *   mapReady: true,
+ *   entities: [...],
+ *   forecastValuesNorm: { 1: 0.5, 2: 0.8 },
+ *   forecastLayerRef,
+ *   mapRef,
+ *   setLegendStops,
+ *   setLegendMax
+ * });
+ */
 export default function useForecastPoints(
   {
     ENTITIES_SOURCE_EPSG,
