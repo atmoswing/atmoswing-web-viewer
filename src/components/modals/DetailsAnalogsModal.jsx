@@ -19,7 +19,7 @@ import {formatCriteria, formatDateLabel, formatPrecipitation} from '@/utils/form
 import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {normalizeAnalogsResponse} from '@/utils/apiNormalization.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
-import ModalMethodConfigSelector, {useModalSelectionData} from './common/ModalMethodConfigSelector.jsx';
+import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
 
 export default function DetailsAnalogsModal({open, onClose}) {
   const {workspace, activeForecastDate} = useForecastSession();
@@ -82,7 +82,7 @@ export default function DetailsAnalogsModal({open, onClose}) {
       </DialogTitle>
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
-          <ModalMethodConfigSelector
+          <MethodConfigSelector
             cachePrefix="modal_"
             open={open}
             value={selection}

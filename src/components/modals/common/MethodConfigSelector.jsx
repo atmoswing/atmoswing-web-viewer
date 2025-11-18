@@ -36,7 +36,7 @@ import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js
  * @param {Function} onChange - Callback when selection changes
  * @param {React.ReactNode} children - Optional additional form controls to render below the standard ones
  */
-export default function ModalMethodConfigSelector(
+export default function MethodConfigSelector(
   {
     cachePrefix = 'modal_',
     open,

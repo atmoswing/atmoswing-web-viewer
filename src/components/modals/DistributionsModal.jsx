@@ -44,7 +44,7 @@ import {
 } from './common/exportUtils.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
-import ModalMethodConfigSelector, {useModalSelectionData} from './common/ModalMethodConfigSelector.jsx';
+import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
 
 function TabPanel({children, value, index, ...other}) {
   return (
@@ -395,7 +395,7 @@ export default function DistributionsModal({open, onClose}) {
       </DialogTitle>
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
-          <ModalMethodConfigSelector
+          <MethodConfigSelector
             cachePrefix="dist_"
             open={open}
             value={selection}
@@ -414,7 +414,7 @@ export default function DistributionsModal({open, onClose}) {
                                   label={t('seriesModal.allReturnPeriods')}/>
               </FormGroup>
             )}
-          </ModalMethodConfigSelector>
+          </MethodConfigSelector>
           <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>
             <Tabs value={tabIndex} onChange={(e, v) => setTabIndex(v)}>
               <Tab label={t('distributionPlots.predist') || 'Predictands distribution'}/>
