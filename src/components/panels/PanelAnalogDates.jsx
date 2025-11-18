@@ -20,21 +20,26 @@ export default function PanelAnalogDates(props) {
   const {selectedLead, leadResolution, dailyLeads, subDailyLeads, selectedTargetDate} = useSynthesis();
 
   const columns = useMemo(() => ([
-    {field: 'rank', headerName: t('analog.columns.rank'), flex: 0.12, minWidth: 60},
+    {
+      field: 'rank',
+      headerName: t('analog.columns.rank'),
+      flex: 0.12,
+      minWidth: 60
+    },
     {
       field: 'date',
       headerName: t('analog.columns.date'),
       flex: 0.6,
       minWidth: 120,
       sortable: false,
-      valueFormatter: (params) => formatDateDDMMYYYY(params.value)
+      valueFormatter: (value) => formatDateDDMMYYYY(value)
     },
     {
       field: 'criteria',
       headerName: t('analog.columns.criteria'),
       flex: 0.28,
       minWidth: 100,
-      valueFormatter: (params) => formatCriteria(params.value)
+      valueFormatter: (value) => formatCriteria(value)
     },
   ]), [t]);
 
