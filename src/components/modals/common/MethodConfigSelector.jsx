@@ -226,6 +226,27 @@ export default function MethodConfigSelector(
     return m?.configurations || [];
   }, [methodOptions, selectedMethodId]);
 
+  // Ensure selected values exist in available options, otherwise use empty string
+  const safeMethodId = useMemo(() => {
+    if (selectedMethodId == null) return '';
+    return methodOptions.find(m => m.id === selectedMethodId) ? selectedMethodId : '';
+  }, [selectedMethodId, methodOptions]);
+
+  const safeConfigId = useMemo(() => {
+    if (selectedConfigId == null) return '';
+    return configsForSelectedMethod.find(c => c.id === selectedConfigId) ? selectedConfigId : '';
+  }, [selectedConfigId, configsForSelectedMethod]);
+
+  const safeStationId = useMemo(() => {
+    if (selectedStationId == null) return '';
+    return stations.find(s => s.id === selectedStationId) ? selectedStationId : '';
+  }, [selectedStationId, stations]);
+
+  const safeLead = useMemo(() => {
+    if (selectedLead == null) return '';
+    return leads.find(l => l.lead === selectedLead) ? selectedLead : '';
+  }, [selectedLead, leads]);
+
   // Render helpers
   const renderConfigLabel = (cfg) => {
     const relevant = !!relevantRef.current.get(cfg.id);
@@ -271,7 +292,7 @@ export default function MethodConfigSelector(
         <Select
           variant="standard"
           labelId="selector-method-label"
-          value={selectedMethodId ?? ''}
+          value={safeMethodId}
           label={t('detailsAnalogsModal.method')}
           onChange={handleMethodChange}
         >
@@ -298,7 +319,7 @@ export default function MethodConfigSelector(
         <Select
           variant="standard"
           labelId="selector-config-label"
-          value={selectedConfigId ?? ''}
+          value={safeConfigId}
           label={t('detailsAnalogsModal.config')}
           onChange={handleConfigChange}
           renderValue={(v) => {
@@ -324,7 +345,7 @@ export default function MethodConfigSelector(
         <Select
           variant="standard"
           labelId="selector-entity-label"
-          value={selectedStationId ?? ''}
+          value={safeStationId}
           label={t('detailsAnalogsModal.entity')}
           onChange={handleEntityChange}
           MenuProps={{PaperProps: {style: {maxHeight: 320}}}}
@@ -352,7 +373,7 @@ export default function MethodConfigSelector(
         <Select
           variant="standard"
           labelId="selector-lead-label"
-          value={selectedLead ?? ''}
+          value={safeLead}
           label={t('detailsAnalogsModal.lead')}
           onChange={handleLeadChange}
         >
