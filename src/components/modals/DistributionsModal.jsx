@@ -12,27 +12,27 @@ import {
   FormControlLabel,
   FormGroup,
   InputLabel,
-  Select,
   MenuItem,
-  Typography,
+  Select,
+  Tab,
   Tabs,
-  Tab
+  Typography
 } from '@mui/material';
 import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
 import {
-  getMethodsAndConfigs,
-  getEntities,
   getAnalogValues,
-  getAnalogyCriteria,
-  getSeriesValuesPercentiles,
   getAnalogValuesPercentiles,
+  getAnalogyCriteria,
+  getEntities,
+  getMethodsAndConfigs,
   getReferenceValues,
-  getRelevantEntities
+  getRelevantEntities,
+  getSeriesValuesPercentiles
 } from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 // add caching + normalizers + shared components
-import { useCachedRequest, clearCachedRequests } from '@/hooks/useCachedRequest.js';
+import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {
   extractTargetDatesArray,
   normalizeAnalogCriteriaArray,
@@ -44,7 +44,13 @@ import {
 } from '@/utils/apiNormalization.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import ExportMenu from './common/ExportMenu.jsx';
-import { safeForFilename, inlineAllStyles, getSVGSize, withTemporaryContainer, downloadBlob } from './common/exportUtils.js';
+import {
+  downloadBlob,
+  getSVGSize,
+  inlineAllStyles,
+  safeForFilename,
+  withTemporaryContainer
+} from './common/exportUtils.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 
@@ -111,11 +117,11 @@ export default function DistributionsModal({open, onClose}) {
 
   // Methods & configs via cache
   const methodsKey = open && workspace && activeForecastDate ? `dist_methods|${workspace}|${activeForecastDate}` : null;
-  const { data: methodsResp, loading: methodsLoading } = useCachedRequest(
+  const {data: methodsResp, loading: methodsLoading} = useCachedRequest(
     methodsKey,
     async () => await getMethodsAndConfigs(workspace, activeForecastDate),
     [workspace, activeForecastDate, open],
-    { enabled: !!methodsKey, initialData: null, ttlMs: DEFAULT_TTL }
+    {enabled: !!methodsKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
   useEffect(() => {
     if (!open) return;
@@ -134,15 +140,15 @@ export default function DistributionsModal({open, onClose}) {
     return selectedConfigId || (m?.configurations?.[0]?.id ?? null);
   }, [methodsResp, selectedMethodId, selectedConfigId]);
   const entitiesKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId ? `dist_entities|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}` : null;
-  const { data: stationsRaw, loading: stationsLoading } = useCachedRequest(
+  const {data: stationsRaw, loading: stationsLoading} = useCachedRequest(
     entitiesKey,
     async () => normalizeEntitiesResponse(await getEntities(workspace, activeForecastDate, selectedMethodId, resolvedConfigId)),
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, open],
-    { enabled: !!entitiesKey, initialData: [], ttlMs: DEFAULT_TTL }
+    {enabled: !!entitiesKey, initialData: [], ttlMs: DEFAULT_TTL}
   );
   useEffect(() => {
     if (!open) return;
-    const sorted = Array.isArray(stationsRaw) ? [...stationsRaw].sort((a,b) => String(a?.name ?? a?.id ?? '').localeCompare(String(b?.name ?? b?.id ?? ''), undefined, {sensitivity: 'base'})) : [];
+    const sorted = Array.isArray(stationsRaw) ? [...stationsRaw].sort((a, b) => String(a?.name ?? a?.id ?? '').localeCompare(String(b?.name ?? b?.id ?? ''), undefined, {sensitivity: 'base'})) : [];
     setStations(sorted);
     if (!selectedStationId && sorted.length) setSelectedStationId(sorted[0].id);
     if (selectedStationId && !sorted.find(s => s.id === selectedStationId)) setSelectedStationId(null);
@@ -150,24 +156,42 @@ export default function DistributionsModal({open, onClose}) {
 
   // Leads via cache
   const leadsKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedStationId ? `dist_leads|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedStationId}` : null;
-  const { data: leadsRaw, loading: leadsLoading } = useCachedRequest(
+  const {data: leadsRaw, loading: leadsLoading} = useCachedRequest(
     leadsKey,
     async () => {
       const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, [20]);
       const rawDates = extractTargetDatesArray(resp);
       let baseDate = null;
       if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) baseDate = forecastBaseDate;
-      if (!baseDate && activeForecastDate) { try { const d = new Date(activeForecastDate); if (!isNaN(d)) baseDate = d; } catch {} }
-      if (!baseDate && resp?.parameters?.forecast_date) { try { const d = new Date(resp.parameters.forecast_date); if (!isNaN(d)) baseDate = d; } catch {} }
+      if (!baseDate && activeForecastDate) {
+        try {
+          const d = new Date(activeForecastDate);
+          if (!isNaN(d)) baseDate = d;
+        } catch {
+        }
+      }
+      if (!baseDate && resp?.parameters?.forecast_date) {
+        try {
+          const d = new Date(resp.parameters.forecast_date);
+          if (!isNaN(d)) baseDate = d;
+        } catch {
+        }
+      }
       return rawDates.map(s => {
-        let d = null; try { d = s ? new Date(s) : null; if (d && isNaN(d)) d = null; } catch { d = null; }
-        const label = d ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}${(d.getHours()||d.getMinutes()) ? ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') : ''}` : String(s);
-        const leadNum = (d && baseDate) ? Math.round((d.getTime() - baseDate.getTime())/3600000) : null;
+        let d = null;
+        try {
+          d = s ? new Date(s) : null;
+          if (d && isNaN(d)) d = null;
+        } catch {
+          d = null;
+        }
+        const label = d ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}${(d.getHours() || d.getMinutes()) ? ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : ''}` : String(s);
+        const leadNum = (d && baseDate) ? Math.round((d.getTime() - baseDate.getTime()) / 3600000) : null;
         return {lead: leadNum, date: d, label};
-      }).filter(x => x.lead != null && !isNaN(x.lead) && x.lead >= 0).sort((a,b) => a.lead - b.lead);
+      }).filter(x => x.lead != null && !isNaN(x.lead) && x.lead >= 0).sort((a, b) => a.lead - b.lead);
     },
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, forecastBaseDate, open],
-    { enabled: !!leadsKey, initialData: [], ttlMs: SHORT_TTL }
+    {enabled: !!leadsKey, initialData: [], ttlMs: SHORT_TTL}
   );
   useEffect(() => {
     setLeads(leadsRaw || []);
@@ -177,11 +201,11 @@ export default function DistributionsModal({open, onClose}) {
   // Analog values via cache
   const analogKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedStationId != null && selectedLead != null ?
     `dist_analogs|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedStationId}|${selectedLead}` : null;
-  const { data: analogResp, loading: analogLoading, error: analogError } = useCachedRequest(
+  const {data: analogResp, loading: analogLoading, error: analogError} = useCachedRequest(
     analogKey,
     async () => normalizeAnalogsResponse(await getAnalogValues(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead)),
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead, open],
-    { enabled: !!analogKey, initialData: [], ttlMs: SHORT_TTL }
+    {enabled: !!analogKey, initialData: [], ttlMs: SHORT_TTL}
   );
   useEffect(() => {
     setAnalogValues(Array.isArray(analogResp) ? analogResp : null);
@@ -190,15 +214,15 @@ export default function DistributionsModal({open, onClose}) {
   // Criteria via cache (per-lead; endpoint does not take entity)
   const criteriaKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedLead != null ?
     `dist_criteria|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedLead}` : null;
-  const { data: criteriaResp, loading: criteriaLoading } = useCachedRequest(
+  const {data: criteriaResp, loading: criteriaLoading} = useCachedRequest(
     criteriaKey,
     async () => normalizeAnalogCriteriaArray(await getAnalogyCriteria(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedLead)),
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedLead, open],
-    { enabled: !!criteriaKey, initialData: null, ttlMs: SHORT_TTL }
+    {enabled: !!criteriaKey, initialData: null, ttlMs: SHORT_TTL}
   );
   useEffect(() => {
     if (Array.isArray(criteriaResp) && criteriaResp.length) {
-      setCriteriaValues(criteriaResp.map((v, i) => ({ index: i + 1, value: v })).filter(x => x.value != null));
+      setCriteriaValues(criteriaResp.map((v, i) => ({index: i + 1, value: v})).filter(x => x.value != null));
     } else {
       setCriteriaValues(null);
     }
@@ -212,7 +236,7 @@ export default function DistributionsModal({open, onClose}) {
         .map(a => (a && a.criteria != null ? Number(a.criteria) : null))
         .filter(v => v != null && Number.isFinite(v));
       if (derived.length) {
-        setCriteriaValues(derived.map((v, i) => ({ index: i + 1, value: v })));
+        setCriteriaValues(derived.map((v, i) => ({index: i + 1, value: v})));
         return;
       }
     }
@@ -222,31 +246,41 @@ export default function DistributionsModal({open, onClose}) {
   // Percentile markers via cache
   const pctsKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedStationId != null && selectedLead != null ?
     `dist_percentiles|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedStationId}|${selectedLead}` : null;
-  const { data: percentilesMap } = useCachedRequest(
+  const {data: percentilesMap} = useCachedRequest(
     pctsKey,
-    async () => normalizeAnalogPercentiles(await getAnalogValuesPercentiles(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead, [20,60,90])),
+    async () => normalizeAnalogPercentiles(await getAnalogValuesPercentiles(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead, [20, 60, 90])),
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, selectedLead, open],
-    { enabled: !!pctsKey, initialData: null, ttlMs: SHORT_TTL }
+    {enabled: !!pctsKey, initialData: null, ttlMs: SHORT_TTL}
   );
-  useEffect(() => { setPercentileMarkers(percentilesMap || null); }, [percentilesMap]);
+  useEffect(() => {
+    setPercentileMarkers(percentilesMap || null);
+  }, [percentilesMap]);
 
   // Reference values via cache
   const refKey = open && (options.tenYearReturn || options.allReturnPeriods) && workspace && activeForecastDate && selectedMethodId && resolvedConfigId && selectedStationId != null ?
     `dist_reference|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}|${selectedStationId}` : null;
-  const { data: refResp } = useCachedRequest(
+  const {data: refResp} = useCachedRequest(
     refKey,
     async () => normalizeReferenceValues(await getReferenceValues(workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId)),
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, selectedStationId, options.tenYearReturn, options.allReturnPeriods, open],
-    { enabled: !!refKey, initialData: null, ttlMs: DEFAULT_TTL }
+    {enabled: !!refKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
-  useEffect(() => { setReferenceValues(refResp || null); }, [refResp]);
+  useEffect(() => {
+    setReferenceValues(refResp || null);
+  }, [refResp]);
 
   // Cleanup on close: reset and clear caches for this modal
   useEffect(() => {
     if (!open) {
       // Clear chart containers immediately for visual cleanup
-      try { if (precipRef.current) d3.select(precipRef.current).selectAll('*').remove(); } catch {}
-      try { if (critRef.current) d3.select(critRef.current).selectAll('*').remove(); } catch {}
+      try {
+        if (precipRef.current) d3.select(precipRef.current).selectAll('*').remove();
+      } catch {
+      }
+      try {
+        if (critRef.current) d3.select(critRef.current).selectAll('*').remove();
+      } catch {
+      }
       setSelectedMethodId(null);
       setSelectedConfigId(null);
       setSelectedStationId(null);
@@ -295,7 +329,8 @@ export default function DistributionsModal({open, onClose}) {
       try {
         const d = new Date(activeForecastDate);
         if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
-      } catch { /* ignore */ }
+      } catch { /* ignore */
+      }
     }
     const entityPart = safeForFilename(stationName || 'entity');
     const methodIdPart = (methodsData?.methods?.find(m => m.id === selectedMethodId)?.id) || 'method';
@@ -376,7 +411,10 @@ export default function DistributionsModal({open, onClose}) {
     container.appendChild(clone);
     document.body.appendChild(container);
     try {
-      try { inlineAllStyles(clone); } catch {}
+      try {
+        inlineAllStyles(clone);
+      } catch {
+      }
       let {width: svgW, height: svgH} = getSVGSize(clone);
       try {
         const bbox = clone.getBBox();
@@ -393,7 +431,11 @@ export default function DistributionsModal({open, onClose}) {
       }
       clone.setAttribute('width', String(Math.round(svgW)));
       clone.setAttribute('height', String(Math.round(svgH)));
-      const pdf = new jsPDF({ unit: 'px', format: [Math.round(svgW), Math.round(svgH)], orientation: svgW > svgH ? 'landscape' : 'portrait' });
+      const pdf = new jsPDF({
+        unit: 'px',
+        format: [Math.round(svgW), Math.round(svgH)],
+        orientation: svgW > svgH ? 'landscape' : 'portrait'
+      });
       await svg2pdf(clone, pdf, {x: 0, y: 0, width: Math.round(svgW), height: Math.round(svgH)});
       pdf.save(`${buildExportFilenamePrefix() || 'distribution'}.pdf`);
     } finally {
@@ -544,11 +586,11 @@ export default function DistributionsModal({open, onClose}) {
 
   // Relevant entity ids for selected method+config
   const relIdsKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfigId ? `dist_relIds|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfigId}` : null;
-  const { data: relevantIdsSet } = useCachedRequest(
+  const {data: relevantIdsSet} = useCachedRequest(
     relIdsKey,
     async () => normalizeRelevantEntityIds(await getRelevantEntities(workspace, activeForecastDate, selectedMethodId, resolvedConfigId)),
     [workspace, activeForecastDate, selectedMethodId, resolvedConfigId, open],
-    { enabled: !!relIdsKey, initialData: new Set(), ttlMs: SHORT_TTL }
+    {enabled: !!relIdsKey, initialData: new Set(), ttlMs: SHORT_TTL}
   );
 
   // Prefer default station to be relevant
@@ -564,7 +606,9 @@ export default function DistributionsModal({open, onClose}) {
     else if (!selectedStationId) setSelectedStationId(list[0].id);
   }, [open, stations, relevantIdsSet]);
 
-  useEffect(() => { /* ensure setOptions referenced */ if (!open) setOptions(o=>o); }, [open]);
+  useEffect(() => { /* ensure setOptions referenced */
+    if (!open) setOptions(o => o);
+  }, [open]);
 
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
@@ -640,7 +684,8 @@ export default function DistributionsModal({open, onClose}) {
               <Select variant="standard" labelId="dist-lead-label" value={selectedLead ?? ''}
                       label={t('detailsAnalogsModal.lead')}
                       onChange={(e) => setSelectedLead(e.target.value === '' ? null : Number(e.target.value))}>
-                {leadsLoading && <MenuItem value=""><em>{t('detailsAnalogsModal.loadingAnalogs') || 'Loading...'}</em></MenuItem>}
+                {leadsLoading &&
+                  <MenuItem value=""><em>{t('detailsAnalogsModal.loadingAnalogs') || 'Loading...'}</em></MenuItem>}
                 {!leadsLoading && leads.length === 0 &&
                   <MenuItem value=""><em>{t('detailsAnalogsModal.noLeads') || 'No lead times'}</em></MenuItem>}
                 {leads.map(l => (<MenuItem key={String(l.lead) + (l.label || '')}
@@ -664,7 +709,7 @@ export default function DistributionsModal({open, onClose}) {
 
             {/* Export button */}
             <Box sx={{display: 'flex', justifyContent: 'center', mt: 1}}>
-              <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} />
+              <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF}/>
             </Box>
           </Box>
           <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>

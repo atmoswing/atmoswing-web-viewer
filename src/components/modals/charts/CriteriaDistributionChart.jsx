@@ -1,19 +1,21 @@
-import React, { forwardRef, useEffect } from 'react';
+import React, {forwardRef, useEffect} from 'react';
 import * as d3 from 'd3';
 
 // Criteria distribution chart component (cumulative / ordered criteria values)
-const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart({
-  criteriaValues,
-  analogValues,
-  selectedMethodId,
-  selectedConfigId,
-  selectedLead,
-  leads,
-  activeForecastDate,
-  stationName,
-  t,
-  renderTick
-}, ref) {
+const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
+  {
+    criteriaValues,
+    analogValues,
+    selectedMethodId,
+    selectedConfigId,
+    selectedLead,
+    leads,
+    activeForecastDate,
+    stationName,
+    t,
+    renderTick
+  },
+  ref) {
   useEffect(() => {
     const container = ref?.current;
     if (!container) return;
@@ -39,7 +41,13 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
       const tgt = leadMatch?.date && !isNaN(leadMatch.date) ? leadMatch.date : null;
       const fmt = d3.timeFormat('%Y-%m-%d');
       const tgtStr = tgt ? fmt(tgt) : (selectedLead != null ? `L${selectedLead}` : '');
-      let fcDate = null; try { fcDate = activeForecastDate ? new Date(activeForecastDate) : null; if (fcDate && isNaN(fcDate)) fcDate = null; } catch { fcDate = null; }
+      let fcDate = null;
+      try {
+        fcDate = activeForecastDate ? new Date(activeForecastDate) : null;
+        if (fcDate && isNaN(fcDate)) fcDate = null;
+      } catch {
+        fcDate = null;
+      }
       const fcStr = fcDate ? fmt(fcDate) : '';
       const foText = fcStr ? t('toolbar.forecastOf', {date: fcStr}) : '';
       const parts = [(stationName || ''), methodIdStr, cfgStr].filter(Boolean);
@@ -47,7 +55,8 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
       if (rightPart) parts.push(rightPart);
       const titleText = parts.join(' — ');
       svg.append('text').attr('x', margin.left + innerW / 2).attr('y', Math.max(12, margin.top - 12)).attr('text-anchor', 'middle').attr('fill', '#222').attr('font-size', 14).attr('font-weight', 600).text(titleText);
-    } catch {}
+    } catch {
+    }
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -82,7 +91,7 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
     };
   }, [ref]);
 
-  return <div ref={ref} style={{width: '100%', height: 360, minHeight: 240}} />;
+  return <div ref={ref} style={{width: '100%', height: 360, minHeight: 240}}/>;
 });
 
 export default CriteriaDistributionChart;

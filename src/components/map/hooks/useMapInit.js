@@ -8,8 +8,8 @@ import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import LayerSwitcher from 'ol-layerswitcher';
-import { loadWmtsCapabilities, createWmtsTileLayer } from '@/components/map/utils/loadWmtsCapabilities.js';
-import { DEFAULT_PROJECTION } from '@/components/map/mapConstants.js';
+import {createWmtsTileLayer, loadWmtsCapabilities} from '@/components/map/utils/loadWmtsCapabilities.js';
+import {DEFAULT_PROJECTION} from '@/components/map/mapConstants.js';
 
 export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
   const containerRef = useRef(null);
@@ -27,7 +27,7 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
     while (containerRef.current.firstChild) containerRef.current.removeChild(containerRef.current.firstChild);
 
     (async () => {
-      const wmtsOptionsCache = await loadWmtsCapabilities(runtimeConfig, (msg) => enqueueSnackbar(msg, {variant:'warning'}));
+      const wmtsOptionsCache = await loadWmtsCapabilities(runtimeConfig, (msg) => enqueueSnackbar(msg, {variant: 'warning'}));
 
       const baseLayersArray = [
         new TileLayer({
@@ -90,10 +90,12 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
             const timer = l && l.get && l.get('__refreshTimer');
             if (timer) clearInterval(timer);
           });
-        } catch { /* clean-up best-effort */ }
+        } catch { /* clean-up best-effort */
+        }
         try {
           if (mapRef.current.__singleClickHandler) mapRef.current.un('singleclick', mapRef.current.__singleClickHandler);
-        } catch { /* handler may already be removed */ }
+        } catch { /* handler may already be removed */
+        }
         mapRef.current.setTarget(null);
         mapRef.current = null;
       }

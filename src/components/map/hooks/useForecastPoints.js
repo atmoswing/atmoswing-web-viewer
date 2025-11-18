@@ -9,13 +9,13 @@ import config from '@/config.js';
 import {buildLegendStops} from '@/components/map/utils/buildLegendStops.js';
 import {
   FIT_PADDING,
-  FORECAST_POINT_RADIUS_RELEVANT,
-  FORECAST_POINT_RADIUS_NORMAL,
-  FORECAST_POINT_STROKE_WIDTH,
-  FORECAST_POINT_STROKE_COLOR_RELEVANT,
-  FORECAST_POINT_STROKE_COLOR_DIM,
+  FORECAST_POINT_OPACITY_DIM,
   FORECAST_POINT_OPACITY_RELEVANT,
-  FORECAST_POINT_OPACITY_DIM
+  FORECAST_POINT_RADIUS_NORMAL,
+  FORECAST_POINT_RADIUS_RELEVANT,
+  FORECAST_POINT_STROKE_COLOR_DIM,
+  FORECAST_POINT_STROKE_COLOR_RELEVANT,
+  FORECAST_POINT_STROKE_WIDTH
 } from '@/components/map/mapConstants.js';
 
 export default function useForecastPoints(
@@ -110,7 +110,8 @@ export default function useForecastPoints(
       feat.setStyle(style);
       try {
         feat.setId(ent.id);
-      } catch { /* setting feature id may fail for some sources */ }
+      } catch { /* setting feature id may fail for some sources */
+      }
       source.addFeature(feat);
     });
 

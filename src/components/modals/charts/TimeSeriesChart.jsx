@@ -1,23 +1,30 @@
 import {useEffect, useMemo} from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
-import {ANALOG_MARKER_COLOR, QUANTILE_COLORS, SELECTED_RPS, TEN_YEAR_COLOR} from '@/components/modals/common/plotConstants.js';
+import {
+  ANALOG_MARKER_COLOR,
+  QUANTILE_COLORS,
+  SELECTED_RPS,
+  TEN_YEAR_COLOR
+} from '@/components/modals/common/plotConstants.js';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
 
-export default function TimeSeriesChart({
-  containerRef,
-  t,
-  series,
-  bestAnalogs,
-  referenceValues,
-  pastForecasts,
-  options,
-  activeForecastDate,
-  selectedMethodConfig,
-  stationName,
-  onHoverShow,
-  onHoverHide,
-}) {
+export default function TimeSeriesChart(
+  {
+    containerRef,
+    t,
+    series,
+    bestAnalogs,
+    referenceValues,
+    pastForecasts,
+    options,
+    activeForecastDate,
+    selectedMethodConfig,
+    stationName,
+    onHoverShow,
+    onHoverHide,
+  }
+) {
   const pctList = useMemo(() => (series?.pctList ?? []), [series]);
   const dates = useMemo(() => (series?.dates ?? []), [series]);
   const percentilesMap = series?.percentiles || {};
@@ -84,7 +91,9 @@ export default function TimeSeriesChart({
 
     // y domain values
     const allValues = [];
-    pctList.forEach(p => (percentilesMap[p] || []).forEach(v => { if (Number.isFinite(v)) allValues.push(v); }));
+    pctList.forEach(p => (percentilesMap[p] || []).forEach(v => {
+      if (Number.isFinite(v)) allValues.push(v);
+    }));
     let tenYearVal = null;
     let rpPairs = [];
     if (referenceValues?.axis?.length && referenceValues?.values?.length) {
@@ -96,7 +105,9 @@ export default function TimeSeriesChart({
     }
     if (options.tenYearReturn && Number.isFinite(tenYearVal)) allValues.push(tenYearVal);
     if (options.bestAnalogs && bestAnalogs?.items?.length) {
-      bestAnalogs.items.forEach(it => it.values?.forEach(v => { if (Number.isFinite(v)) allValues.push(v); }));
+      bestAnalogs.items.forEach(it => it.values?.forEach(v => {
+        if (Number.isFinite(v)) allValues.push(v);
+      }));
     }
     const yMax = allValues.length ? Math.max(...allValues) * 1.08 : 1;
 
@@ -135,9 +146,10 @@ export default function TimeSeriesChart({
           const showWithVirtual = function () {
             try {
               const rect = this.getBoundingClientRect();
-              const virtualEl = { getBoundingClientRect: () => rect };
+              const virtualEl = {getBoundingClientRect: () => rect};
               onHoverShow?.(virtualEl, titleText);
-            } catch { /* ignore */ }
+            } catch { /* ignore */
+            }
           };
 
           plotG.append('path').datum(pd).attr('fill', 'none').attr('stroke', color).attr('stroke-width', HIST_WIDTH).attr('stroke-opacity', HIST_ALPHA).attr('d', lineFn)
@@ -231,9 +243,10 @@ export default function TimeSeriesChart({
               .on('mouseenter', function () {
                 try {
                   const rect = this.getBoundingClientRect();
-                  const virtualEl = { getBoundingClientRect: () => rect };
+                  const virtualEl = {getBoundingClientRect: () => rect};
                   onHoverShow?.(virtualEl, titleText);
-                } catch { /* ignore */ }
+                } catch { /* ignore */
+                }
               })
               .on('mouseleave', () => onHoverHide?.());
           });
@@ -296,13 +309,21 @@ export default function TimeSeriesChart({
     g.append('g').attr('transform', `translate(0,${innerH})`).call(xAxis).selectAll('text').attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
 
     const legendItems = [];
-    if (pctList.includes(50)) legendItems.push({label: t('seriesModal.median'), color: QUANTILE_COLORS.median, dashed: true});
+    if (pctList.includes(50)) legendItems.push({
+      label: t('seriesModal.median'),
+      color: QUANTILE_COLORS.median,
+      dashed: true
+    });
     if (options.mainQuantiles) {
       legendItems.push({label: t('seriesModal.quantile90'), color: QUANTILE_COLORS.p90});
       legendItems.push({label: t('seriesModal.quantile60'), color: QUANTILE_COLORS.p60});
       legendItems.push({label: t('seriesModal.quantile20'), color: QUANTILE_COLORS.p20});
     }
-    if (options.bestAnalogs) legendItems.push({label: t('seriesModal.bestAnalogs'), color: ANALOG_MARKER_COLOR, marker: true});
+    if (options.bestAnalogs) legendItems.push({
+      label: t('seriesModal.bestAnalogs'),
+      color: ANALOG_MARKER_COLOR,
+      marker: true
+    });
 
     const extraLegendGap = 40;
     const legendY = margin.top + innerH + extraLegendGap;
@@ -359,7 +380,7 @@ export default function TimeSeriesChart({
 }
 
 TimeSeriesChart.propTypes = {
-  containerRef: PropTypes.shape({ current: PropTypes.any }),
+  containerRef: PropTypes.shape({current: PropTypes.any}),
   t: PropTypes.func.isRequired,
   series: PropTypes.object,
   bestAnalogs: PropTypes.object,

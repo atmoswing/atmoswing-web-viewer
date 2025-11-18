@@ -9,9 +9,18 @@ export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF}) {
   const openMenu = (e) => setAnchorEl(e.currentTarget);
   const closeMenu = () => setAnchorEl(null);
 
-  const doPNG = () => { closeMenu(); onExportPNG?.(); };
-  const doSVG = () => { closeMenu(); onExportSVG?.(); };
-  const doPDF = () => { closeMenu(); onExportPDF?.(); };
+  const doPNG = () => {
+    closeMenu();
+    onExportPNG?.();
+  };
+  const doSVG = () => {
+    closeMenu();
+    onExportSVG?.();
+  };
+  const doPDF = () => {
+    closeMenu();
+    onExportPDF?.();
+  };
 
   return (
     <>

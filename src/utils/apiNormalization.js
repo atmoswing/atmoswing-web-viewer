@@ -39,24 +39,27 @@ export function normalizeAnalogsResponse(resp) {
 
   return arr.map((it, i) => {
     if (typeof it === 'number') {
-      return { rank: i + 1, date: null, value: it, criteria: null };
+      return {rank: i + 1, date: null, value: it, criteria: null};
     }
     const rank = it?.rank ?? it?.analog ?? (i + 1);
     const date = it?.date ?? it?.analog_date ?? it?.analog_date_str ?? it?.dt ?? it?.date_str ?? it?.target_date ?? null;
     // Prefer explicit numeric keys but fall back to common aliases
     let v = (it && it.value != null) ? it.value
       : (it && it.precip_value != null ? it.precip_value
-      : (it && it.value_mm != null ? it.value_mm
-      : (it && it.amount != null ? it.amount : null)));
+        : (it && it.value_mm != null ? it.value_mm
+          : (it && it.amount != null ? it.amount : null)));
     if (v == null && it && typeof it === 'object') {
       const aliases = ['val', 'value_mm', 'precip', 'precipitation'];
       for (const k of aliases) {
-        if (it[k] != null && typeof it[k] !== 'object') { v = it[k]; break; }
+        if (it[k] != null && typeof it[k] !== 'object') {
+          v = it[k];
+          break;
+        }
       }
     }
     const value = (typeof v === 'number') ? v : (v == null ? null : Number(v));
     const criteria = it?.criteria ?? it?.score ?? it?.criterion ?? it?.crit ?? null;
-    return { rank, date, value, criteria };
+    return {rank, date, value, criteria};
   });
 }
 

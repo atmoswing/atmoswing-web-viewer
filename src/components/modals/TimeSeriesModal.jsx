@@ -5,14 +5,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-  Box,
-  Checkbox,
-  CircularProgress,
-  FormControlLabel,
-  FormGroup,
-  Typography
-} from '@mui/material';
+import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import Popper from '@mui/material/Popper';
 import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
 import {
@@ -23,7 +16,7 @@ import {
   getSeriesValuesPercentilesHistory
 } from '@/services/api.js';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
-import {useCachedRequest, clearCachedRequests} from '@/hooks/useCachedRequest.js';
+import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {
   normalizeReferenceValues,
@@ -34,8 +27,14 @@ import {
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
 import {DEFAULT_PCTS, FULL_PCTS} from './common/plotConstants.js';
-import { safeForFilename, downloadBlob, inlineAllStyles, getSVGSize, withTemporaryContainer } from './common/exportUtils.js';
-import { useTranslation } from 'react-i18next';
+import {
+  downloadBlob,
+  getSVGSize,
+  inlineAllStyles,
+  safeForFilename,
+  withTemporaryContainer
+} from './common/exportUtils.js';
+import {useTranslation} from 'react-i18next';
 
 export default function TimeSeriesModal() {
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
@@ -254,7 +253,8 @@ export default function TimeSeriesModal() {
       try {
         const d = parseForecastDate(activeForecastDate) || new Date(activeForecastDate);
         if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
-      } catch {}
+      } catch {
+      }
     }
     const entityPart = safeForFilename(stationName || selectedEntityId || 'entity');
     const methodIdPart = selectedMethodConfig?.method ? String(selectedMethodConfig.method.id || selectedMethodConfig.method.name || 'method') : 'method';
@@ -286,13 +286,19 @@ export default function TimeSeriesModal() {
     const {width, height} = getSVGSize(clone);
     const serializer = new XMLSerializer();
     let svgStr;
-    withTemporaryContainer(clone, () => { svgStr = serializer.serializeToString(clone); });
+    withTemporaryContainer(clone, () => {
+      svgStr = serializer.serializeToString(clone);
+    });
     const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
     const url = URL.createObjectURL(svgBlob);
     try {
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
       const scale = 3;
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(width * scale));
@@ -338,7 +344,10 @@ export default function TimeSeriesModal() {
     container.appendChild(clone);
     document.body.appendChild(container);
     try {
-      try { inlineAllStyles(clone); } catch {}
+      try {
+        inlineAllStyles(clone);
+      } catch {
+      }
       let {width: svgW, height: svgH} = getSVGSize(clone);
       try {
         const bbox = clone.getBBox();
@@ -357,7 +366,11 @@ export default function TimeSeriesModal() {
       clone.setAttribute('height', String(Math.round(svgH)));
       const pdfWidth = Math.round(svgW);
       const pdfHeight = Math.round(svgH);
-      const pdf = new jsPDF({ unit: 'px', format: [pdfWidth, pdfHeight], orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait' });
+      const pdf = new jsPDF({
+        unit: 'px',
+        format: [pdfWidth, pdfHeight],
+        orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait'
+      });
       await svg2pdf(clone, pdf, {x: 0, y: 0, width: pdfWidth, height: pdfHeight});
       const prefix = buildExportFilenamePrefix() || 'series';
       const filename = `${prefix}.pdf`;
@@ -376,7 +389,10 @@ export default function TimeSeriesModal() {
       setReferenceValues(null);
       setBestAnalogs(null);
       setPastForecasts(null);
-      try { if (chartRef.current) d3.select(chartRef.current).selectAll('*').remove(); } catch {}
+      try {
+        if (chartRef.current) d3.select(chartRef.current).selectAll('*').remove();
+      } catch {
+      }
       // clear cached series-related keys
       clearCachedRequests('series|');
       clearCachedRequests('series_ref|');
@@ -411,20 +427,26 @@ export default function TimeSeriesModal() {
           <Box sx={{width: 220, flexShrink: 0, borderRight: '1px solid #e0e0e0', pr: 1, overflowY: 'auto'}}>
             <FormGroup>
               <FormControlLabel control={<Checkbox size="small" checked={options.mainQuantiles}
-                                                   onChange={handleOptionChange('mainQuantiles')}/>} label={<Typography variant="body2">{t('seriesModal.mainQuantiles')}</Typography>}/>
+                                                   onChange={handleOptionChange('mainQuantiles')}/>}
+                                label={<Typography variant="body2">{t('seriesModal.mainQuantiles')}</Typography>}/>
               <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles}
-                                                   onChange={handleOptionChange('allQuantiles')}/>} label={<Typography variant="body2">{t('seriesModal.allQuantiles')}</Typography>}/>
+                                                   onChange={handleOptionChange('allQuantiles')}/>}
+                                label={<Typography variant="body2">{t('seriesModal.allQuantiles')}</Typography>}/>
               <FormControlLabel control={<Checkbox size="small" checked={options.bestAnalogs}
-                                                   onChange={handleOptionChange('bestAnalogs')}/>} label={<Typography variant="body2">{t('seriesModal.bestAnalogs')}</Typography>}/>
+                                                   onChange={handleOptionChange('bestAnalogs')}/>}
+                                label={<Typography variant="body2">{t('seriesModal.bestAnalogs')}</Typography>}/>
               <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn}
-                                                   onChange={handleOptionChange('tenYearReturn')}/>} label={<Typography variant="body2">{t('seriesModal.tenYearReturn')}</Typography>}/>
+                                                   onChange={handleOptionChange('tenYearReturn')}/>}
+                                label={<Typography variant="body2">{t('seriesModal.tenYearReturn')}</Typography>}/>
               <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods}
-                                                   onChange={handleOptionChange('allReturnPeriods')}/>} label={<Typography variant="body2">{t('seriesModal.allReturnPeriods')}</Typography>}/>
+                                                   onChange={handleOptionChange('allReturnPeriods')}/>}
+                                label={<Typography variant="body2">{t('seriesModal.allReturnPeriods')}</Typography>}/>
               <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts}
-                                                   onChange={handleOptionChange('previousForecasts')}/>} label={<Typography variant="body2">{t('seriesModal.previousForecasts')}</Typography>}/>
+                                                   onChange={handleOptionChange('previousForecasts')}/>}
+                                label={<Typography variant="body2">{t('seriesModal.previousForecasts')}</Typography>}/>
             </FormGroup>
             <Box sx={{display: 'flex', justifyContent: 'center', mt: 1}}>
-              <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} />
+              <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF}/>
             </Box>
           </Box>
         )}
@@ -440,7 +462,8 @@ export default function TimeSeriesModal() {
           {selectedEntityId && (loading || resolvingConfig) && (
             <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1}}>
               <CircularProgress size={28}/>
-              <Typography variant="caption" sx={{color: '#555'}}>{resolvingConfig ? t('seriesModal.resolvingConfig') : t('seriesModal.loadingSeries')}</Typography>
+              <Typography variant="caption"
+                          sx={{color: '#555'}}>{resolvingConfig ? t('seriesModal.resolvingConfig') : t('seriesModal.loadingSeries')}</Typography>
             </Box>
           )}
           {selectedEntityId && error && !loading && !resolvingConfig && (

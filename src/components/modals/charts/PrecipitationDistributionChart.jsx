@@ -1,23 +1,25 @@
-import React, { forwardRef, useEffect } from 'react';
+import React, {forwardRef, useEffect} from 'react';
 import * as d3 from 'd3';
-import { SELECTED_RPS, TEN_YEAR_COLOR } from '@/components/modals/common/plotConstants.js';
+import {SELECTED_RPS, TEN_YEAR_COLOR} from '@/components/modals/common/plotConstants.js';
 
 // Precipitation (predictand) cumulative distribution chart
-const PrecipitationDistributionChart = forwardRef(function PrecipitationDistributionChart({
-  analogValues,
-  bestAnalogsData,
-  percentileMarkers,
-  referenceValues,
-  options,
-  selectedMethodId,
-  selectedConfigId,
-  selectedLead,
-  leads,
-  activeForecastDate,
-  stationName,
-  t,
-  renderTick
-}, ref) {
+const PrecipitationDistributionChart = forwardRef(function PrecipitationDistributionChart(
+  {
+    analogValues,
+    bestAnalogsData,
+    percentileMarkers,
+    referenceValues,
+    options,
+    selectedMethodId,
+    selectedConfigId,
+    selectedLead,
+    leads,
+    activeForecastDate,
+    stationName,
+    t,
+    renderTick
+  },
+  ref) {
   useEffect(() => {
     const container = ref?.current;
     if (!container) return;
@@ -48,7 +50,12 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
       const fmt = d3.timeFormat('%Y-%m-%d');
       const tgtStr = tgt ? fmt(tgt) : (selectedLead != null ? `L${selectedLead}` : '');
       let fcDate = null;
-      try { fcDate = activeForecastDate ? new Date(activeForecastDate) : null; if (fcDate && isNaN(fcDate)) fcDate = null; } catch { fcDate = null; }
+      try {
+        fcDate = activeForecastDate ? new Date(activeForecastDate) : null;
+        if (fcDate && isNaN(fcDate)) fcDate = null;
+      } catch {
+        fcDate = null;
+      }
       const fcStr = fcDate ? fmt(fcDate) : '';
       const foText = fcStr ? t('toolbar.forecastOf', {date: fcStr}) : '';
       const parts = [(stationName || ''), methodIdStr, cfgStr].filter(Boolean);
@@ -63,7 +70,8 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
         .attr('font-size', 14)
         .attr('font-weight', 600)
         .text(titleText);
-    } catch {}
+    } catch {
+    }
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -86,7 +94,9 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
       }
     }
     if (bestAnalogsData && Array.isArray(bestAnalogsData)) {
-      bestAnalogsData.forEach(b => { if (Number.isFinite(Number(b?.value))) overlayXs.push(Number(b.value)); });
+      bestAnalogsData.forEach(b => {
+        if (Number.isFinite(Number(b?.value))) overlayXs.push(Number(b.value));
+      });
     }
 
     const rawMax = Math.max(...values, ...(overlayXs.length ? overlayXs : [0]));
@@ -119,7 +129,8 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
       [20, 60, 90].forEach(p => {
         const xv = percentileMarkers[p];
         if (!Number.isFinite(Number(xv))) return;
-        const cx = x(Number(xv)); const cy = yCum(p / 100);
+        const cx = x(Number(xv));
+        const cy = yCum(p / 100);
         g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 7).attr('fill', '#0000').attr('stroke', '#444').attr('stroke-width', 1);
         g.append('text').attr('x', cx + 8).attr('y', cy + 8).attr('fill', labelColor).attr('font-size', 12).attr('font-weight', 600).text(`q${p}`);
       });
@@ -145,7 +156,8 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
           if (Number.isFinite(Number(v))) rpMap.set(Number(rp), Number(v));
         });
         const toDraw = SELECTED_RPS.filter(rp => rpMap.has(rp));
-        const asc = toDraw.slice().sort((a, b) => a - b); const n = asc.length;
+        const asc = toDraw.slice().sort((a, b) => a - b);
+        const n = asc.length;
         asc.forEach((rp, idx) => {
           const val = rpMap.get(rp);
           const xPos = x(val);
@@ -163,7 +175,10 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
       const violet = '#7b2cbf';
       const avals = bestAnalogsData.map(b => Number(b.value)).filter(v => Number.isFinite(v)).sort((a, b) => a - b);
       if (avals.length) {
-        const M = avals.length; const irepB = 0.44; const nrepB = 0.12; const divB = 1.0 / (M + nrepB);
+        const M = avals.length;
+        const irepB = 0.44;
+        const nrepB = 0.12;
+        const divB = 1.0 / (M + nrepB);
         const curve = avals.map((v, i) => ({x: v, y: Math.max(0, Math.min(1, (i + 1.0 - irepB) * divB))}));
         const lineB = d3.line().x(d => x(d.x)).y(d => yCum(d.y)).curve(d3.curveMonotoneX);
         g.append('path').datum(curve).attr('fill', 'none').attr('stroke', violet).attr('stroke-width', 2).attr('d', lineB);
@@ -188,7 +203,7 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
     };
   }, [ref]);
 
-  return <div ref={ref} style={{width: '100%', height: 360, minHeight: 240}} />;
+  return <div ref={ref} style={{width: '100%', height: 360, minHeight: 240}}/>;
 });
 
 export default PrecipitationDistributionChart;

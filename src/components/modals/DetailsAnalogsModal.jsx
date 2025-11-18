@@ -30,12 +30,7 @@ import {
   getSeriesValuesPercentiles
 } from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
-import {
-  compareEntitiesByName,
-  formatCriteria,
-  formatDateLabel,
-  formatPrecipitation
-} from '@/utils/formattingUtils.js';
+import {compareEntitiesByName, formatCriteria, formatDateLabel, formatPrecipitation} from '@/utils/formattingUtils.js';
 import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {
   extractTargetDatesArray,

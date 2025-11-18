@@ -1,6 +1,6 @@
-import WMTS, { optionsFromCapabilities } from 'ol/source/WMTS';
+import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
 import WMTSCapabilities from 'ol/format/WMTSCapabilities';
-import { WMTS_MATRIX_SET_DEFAULT } from '@/components/map/mapConstants.js';
+import {WMTS_MATRIX_SET_DEFAULT} from '@/components/map/mapConstants.js';
 
 // Fetch WMTS capabilities and build cache: layerName -> options
 export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, preferStyleForItem) {
@@ -29,18 +29,26 @@ export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, prefer
         const preferredStyle = preferStyleForItem ? preferStyleForItem(item) : item.style;
         if (preferredStyle) {
           try {
-            opts = optionsFromCapabilities(caps, { layer: item.wmtsLayer, matrixSet: WMTS_MATRIX_SET_DEFAULT, style: preferredStyle });
-          } catch { /* try without explicit style below */ }
+            opts = optionsFromCapabilities(caps, {
+              layer: item.wmtsLayer,
+              matrixSet: WMTS_MATRIX_SET_DEFAULT,
+              style: preferredStyle
+            });
+          } catch { /* try without explicit style below */
+          }
         }
         if (!opts) {
           try {
-            opts = optionsFromCapabilities(caps, { layer: item.wmtsLayer, matrixSet: WMTS_MATRIX_SET_DEFAULT });
-          } catch { /* capabilities may not include layer */ }
+            opts = optionsFromCapabilities(caps, {layer: item.wmtsLayer, matrixSet: WMTS_MATRIX_SET_DEFAULT});
+          } catch { /* capabilities may not include layer */
+          }
         }
         if (opts) wmtsOptionsCache[item.wmtsLayer] = opts; else if (enqueueWarning) enqueueWarning(`Failed to load layer ${item.title}: layer not found in capabilities`);
       });
     } catch (error) {
-      items.forEach(item => { if (enqueueWarning) enqueueWarning(`Failed to load layer ${item.title}: ${error.message}`); });
+      items.forEach(item => {
+        if (enqueueWarning) enqueueWarning(`Failed to load layer ${item.title}: ${error.message}`);
+      });
     }
   }
   return wmtsOptionsCache;
