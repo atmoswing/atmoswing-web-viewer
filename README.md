@@ -84,5 +84,18 @@ Examples:
 
 Browser navigation (back/forward) stays in sync with the selected workspace, and changing the workspace from the dropdown updates the URL so links are shareable.
 
+## Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm test -- --coverage
+```
+
 ## License
 See `LICENSE`.
