@@ -3,6 +3,7 @@
 [![Tests](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/test.yml)
 [![Docker Image](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/build-docker-image.yml/badge.svg?branch=main)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/build-docker-image.yml)
 [![Documentation](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml/badge.svg)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml)
+[![codecov](https://codecov.io/gh/atmoswing/atmoswing-web-viewer/graph/badge.svg?token=LFwOPlcsv8)](https://codecov.io/gh/atmoswing/atmoswing-web-viewer)
 
 ## Development
 
