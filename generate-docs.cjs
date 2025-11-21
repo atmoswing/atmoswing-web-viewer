@@ -401,21 +401,13 @@ function generateIndex() {
 
 This documentation is automatically generated from JSDoc comments in the source code.
 
-## 📚 Documentation Sections
+## Documentation Sections
 
 ${sections.map(s => `- [${s.name}](${s.output})`).join('\n')}
 
-## 🚀 Project Overview
+## Project Overview
 
-AtmoSwing Web Viewer is a React-based web application for visualizing atmospheric forecasts.
-It provides interactive maps, time series charts, and analog date analysis tools.
-
-### Key Features
-
-- **Interactive Map Visualization**: OpenLayers-based map with WMTS layers and forecast points
-- **Forecast Analysis**: View analog dates, distributions, and time series
-- **Multiple Workspaces**: Support for different forecast regions and configurations
-- **Runtime Configuration**: Dynamic configuration without rebuilding
+AtmoSwing Web Viewer is a React-based web application for visualizing the forecasts provided by AtmoSwing forecaster.
 
 ### Technology Stack
 
