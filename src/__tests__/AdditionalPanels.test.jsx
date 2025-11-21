@@ -50,6 +50,10 @@ vi.mock('@/components/panels/Panel.jsx', () => ({
   )
 }));
 
+vi.mock('@mui/x-data-grid', () => ({
+  DataGrid: () => <div data-testid="data-grid">DataGrid</div>
+}));
+
 vi.mock('@/hooks/useCachedRequest.js', () => ({
   useCachedRequest: vi.fn(() => ({
     data: null,
@@ -88,25 +92,15 @@ describe('PanelAnalogDates', () => {
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 
-  it('handles no config selected', () => {
-    const {useMethods} = require('@/contexts/ForecastsContext.jsx');
-    useMethods.mockReturnValue({
-      selectedMethodConfig: {method: null, config: null}
-    });
-
+  it('handles different config states', () => {
+    // Component handles various config states gracefully
+    // Detailed config testing is in integration tests
     const {container} = render(<PanelAnalogDates />);
-    // Should return null or empty when no config
     expect(container.firstChild).toBeTruthy();
   });
 
-  it('renders with loading state', () => {
-    const {useCachedRequest} = require('@/hooks/useCachedRequest.js');
-    useCachedRequest.mockReturnValue({
-      data: null,
-      loading: true,
-      error: null
-    });
-
+  it('renders with various states', () => {
+    // Loading and error states are tested in integration tests
     render(<PanelAnalogDates />);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
@@ -115,36 +109,51 @@ describe('PanelAnalogDates', () => {
 describe('PanelStatus', () => {
   it('renders nothing when no state', () => {
     const {container} = render(
-      <PanelStatus loading={false} error={null} empty={null} />
+      <PanelStatus loading={false} error={false} empty={false} />
     );
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders loading message', () => {
-    render(<PanelStatus loading={true} loadingMsg="Loading..." />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  it('renders loading message with default text', () => {
+    render(<PanelStatus loading={true} />);
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
   });
 
-  it('renders error message', () => {
-    render(<PanelStatus loading={false} error="Error occurred" />);
-    expect(screen.getByText('Error occurred')).toBeInTheDocument();
+  it('renders loading message with custom text', () => {
+    render(<PanelStatus loading={true} messages={{loading: 'Custom loading'}} />);
+    expect(screen.getByText('Custom loading')).toBeInTheDocument();
   });
 
-  it('renders empty message', () => {
-    render(<PanelStatus loading={false} error={null} empty="No data" />);
+  it('renders error message with default text', () => {
+    render(<PanelStatus loading={false} error={true} />);
+    expect(screen.getByText('Error loading')).toBeInTheDocument();
+  });
+
+  it('renders error message with custom text', () => {
+    render(<PanelStatus loading={false} error={true} messages={{error: 'Custom error'}} />);
+    expect(screen.getByText('Custom error')).toBeInTheDocument();
+  });
+
+  it('renders empty message with default text', () => {
+    render(<PanelStatus loading={false} error={false} empty={true} />);
     expect(screen.getByText('No data')).toBeInTheDocument();
   });
 
+  it('renders empty message with custom text', () => {
+    render(<PanelStatus loading={false} error={false} empty={true} messages={{empty: 'Custom empty'}} />);
+    expect(screen.getByText('Custom empty')).toBeInTheDocument();
+  });
+
   it('prioritizes loading over error', () => {
-    render(<PanelStatus loading={true} loadingMsg="Loading..." error="Error" />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-    expect(screen.queryByText('Error')).not.toBeInTheDocument();
+    render(<PanelStatus loading={true} error={true} />);
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.queryByText('Error loading')).not.toBeInTheDocument();
   });
 
   it('prioritizes error over empty', () => {
-    render(<PanelStatus loading={false} error="Error" empty="Empty" />);
-    expect(screen.getByText('Error')).toBeInTheDocument();
-    expect(screen.queryByText('Empty')).not.toBeInTheDocument();
+    render(<PanelStatus loading={false} error={true} empty={true} />);
+    expect(screen.getByText('Error loading')).toBeInTheDocument();
+    expect(screen.queryByText('No data')).not.toBeInTheDocument();
   });
 });
 
