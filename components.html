@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Components - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            <h1>Components</h1>
+<h2>Files</h2>
+<ul>
+<li>src/components/ErrorBoundary.jsx</li>
+<li>src/components/toolbar/ToolbarSquares.jsx</li>
+<li>src/components/toolbar/ToolbarCenter.jsx</li>
+<li>src/components/toolbar/ToolBar.jsx</li>
+<li>src/components/snackbars/SnackbarItem.jsx</li>
+<li>src/components/snackbars/AppSnackbars.jsx</li>
+<li>src/components/sidebar/SidebarWorkspaceDropdown.jsx</li>
+<li>src/components/sidebar/SideBar.jsx</li>
+<li>src/components/panels/index.js</li>
+<li>src/components/panels/PanelSynthesis.jsx</li>
+<li>src/components/panels/PanelStatus.jsx</li>
+<li>src/components/panels/PanelStations.jsx</li>
+<li>src/components/panels/PanelForecasts.jsx</li>
+<li>src/components/panels/PanelDisplay.jsx</li>
+<li>src/components/panels/PanelAnalogDates.jsx</li>
+<li>src/components/panels/Panel.jsx</li>
+<li>src/components/modals/index.js</li>
+<li>src/components/modals/TimeSeriesModal.jsx</li>
+<li>src/components/modals/DistributionsModal.jsx</li>
+<li>src/components/modals/DetailsAnalogsModal.jsx</li>
+<li>src/components/modals/common/plotConstants.js</li>
+<li>src/components/modals/common/exportUtils.js</li>
+<li>src/components/modals/common/MethodConfigSelector.jsx</li>
+<li>src/components/modals/common/ExportMenu.jsx</li>
+<li>src/components/modals/charts/TimeSeriesChart.jsx</li>
+<li>src/components/modals/charts/PrecipitationDistributionChart.jsx</li>
+<li>src/components/modals/charts/CriteriaDistributionChart.jsx</li>
+<li>src/components/map/mapConstants.js</li>
+<li>src/components/map/MapViewer.jsx</li>
+<li>src/components/map/MapTooltip.jsx</li>
+<li>src/components/map/MapLegend.jsx</li>
+<li>src/components/map/utils/olStyleUtils.js</li>
+<li>src/components/map/utils/olProjectionUtils.js</li>
+<li>src/components/map/utils/loadWmtsCapabilities.js</li>
+<li>src/components/map/utils/buildLegendStops.js</li>
+<li>src/components/map/hooks/useProjectionRegistration.js</li>
+<li>src/components/map/hooks/useOverlayGlobalLayers.js</li>
+<li>src/components/map/hooks/useOverlayConfigLayers.js</li>
+<li>src/components/map/hooks/useMapInteractions.js</li>
+<li>src/components/map/hooks/useMapInit.js</li>
+<li>src/components/map/hooks/useForecastPoints.js</li>
+<li>src/components/map/hooks/useDarkMode.js</li>
+</ul>
+<hr>
+<h2>Modules</h2>
+<dl>
+<dt><a href="#module_components/ErrorBoundary">components/ErrorBoundary</a></dt>
+<dd><p>React error boundary component that catches JavaScript errors in the component tree.</p>
+</dd>
+<dt><a href="#module_components/toolbar/ToolbarSquares">components/toolbar/ToolbarSquares</a></dt>
+<dd><p>Visual summary of daily and sub-daily synthesis values allowing target date selection.</p>
+</dd>
+<dt><a href="#module_components/toolbar/ToolbarCenter">components/toolbar/ToolbarCenter</a></dt>
+<dd><p>Central toolbar controls for forecast date navigation, manual date selection and restoration.</p>
+</dd>
+<dt><a href="#module_components/toolbar/ToolBar">components/toolbar/ToolBar</a></dt>
+<dd><p>Main application toolbar providing access to distribution and analog details modals and central navigation controls.</p>
+</dd>
+<dt><a href="#module_components/snackbars/SnackbarItem">components/snackbars/SnackbarItem</a></dt>
+<dd><p>Wrapper around MUI Snackbar with configurable origin and auto-hide.</p>
+</dd>
+<dt><a href="#module_components/snackbars/AppSnackbars">components/snackbars/AppSnackbars</a></dt>
+<dd><p>Global snackbar manager component rendering queued snackbars and workspace validity alerts.</p>
+</dd>
+<dt><a href="#module_components/sidebar/SidebarWorkspaceDropdown">components/sidebar/SidebarWorkspaceDropdown</a></dt>
+<dd><p>Dropdown selector for choosing active workspace region.</p>
+</dd>
+<dt><a href="#module_components/sidebar/SideBar">components/sidebar/SideBar</a></dt>
+<dd><p>Application sidebar containing workspace selector and forecast-related panels.</p>
+</dd>
+<dt><a href="#module_components/panels/index">components/panels/index</a></dt>
+<dd><p>Barrel file re-exporting panel components for convenient imports.</p>
+</dd>
+<dt><a href="#module_components/panels/PanelSynthesis">components/panels/PanelSynthesis</a></dt>
+<dd><p>Panel rendering normalized synthesis values per method across daily and sub-daily lead times.
+Allows selecting target date and method; supports sub-daily segmentation when available.</p>
+</dd>
+<dt><a href="#module_components/panels/PanelStatus">components/panels/PanelStatus</a></dt>
+<dd><p>Standardized status text renderer inside a Panel for loading/error/empty states.</p>
+</dd>
+<dt><a href="#module_components/panels/PanelStations">components/panels/PanelStations</a></dt>
+<dd><p>Panel for selecting a forecast station/entity from the available entities list.</p>
+</dd>
+<dt><a href="#module_components/panels/PanelForecasts">components/panels/PanelForecasts</a></dt>
+<dd><p>Panel for selecting forecast method and configuration using a tree view.</p>
+</dd>
+<dt><a href="#module_components/panels/PanelDisplay">components/panels/PanelDisplay</a></dt>
+<dd><p>Panel for adjusting display parameters (percentile &amp; normalization reference).</p>
+</dd>
+<dt><a href="#module_components/panels/PanelAnalogDates">components/panels/PanelAnalogDates</a></dt>
+<dd><p>Panel displaying ranked analog dates with criteria values for the selected method/config and lead time.</p>
+</dd>
+<dt><a href="#module_components/panels/Panel">components/panels/Panel</a></dt>
+<dd><p>Collapsible panel component for sidebar sections.</p>
+</dd>
+<dt><a href="#module_components/modals/index">components/modals/index</a></dt>
+<dd><p>Barrel file re-exporting modal components for convenient imports.</p>
+</dd>
+<dt><a href="#module_components/modals/TimeSeriesModal">components/modals/TimeSeriesModal</a></dt>
+<dd><p>Modal displaying time series percentiles, best analogs, reference return periods and previous forecast histories.
+Supports exporting charts (SVG/PNG/PDF) and dynamic configuration resolution for selected entity.</p>
+</dd>
+<dt><a href="#module_components/modals/DistributionsModal">components/modals/DistributionsModal</a></dt>
+<dd><p>Modal displaying precipitation and criteria distributions for a selected method/config/entity/lead.
+Provides percentile markers, reference return periods, best analog overlays and export options.</p>
+</dd>
+<dt><a href="#module_components/modals/DetailsAnalogsModal">components/modals/DetailsAnalogsModal</a></dt>
+<dd><p>Modal presenting a detailed list of analogs for a selected method/config/entity/lead with criteria and precipitation values.</p>
+</dd>
+<dt><a href="#module_components/modals/common/plotConstants">components/modals/common/plotConstants</a></dt>
+<dd><p>Shared constants and color palettes used by modal charts (time series &amp; distributions).</p>
+</dd>
+<dt><a href="#module_components/modals/common/exportUtils">components/modals/common/exportUtils</a></dt>
+<dd><p>Utility helpers for exporting charts: safe filename generation, SVG style inlining, dimension extraction and temporary DOM mounting.</p>
+</dd>
+<dt><a href="#module_components/modals/common/MethodConfigSelector">components/modals/common/MethodConfigSelector</a></dt>
+<dd><p>Shared modal selection component to pick method, configuration, entity and lead time.
+Handles chained data fetching, validity maintenance and relevance highlighting.</p>
+</dd>
+<dt><a href="#module_components/modals/common/ExportMenu">components/modals/common/ExportMenu</a></dt>
+<dd><p>Small dropdown menu component offering export options (PNG, SVG, PDF).</p>
+</dd>
+<dt><a href="#module_components/modals/charts/TimeSeriesChart">components/modals/charts/TimeSeriesChart</a></dt>
+<dd><p>D3-based time series chart rendering percentile envelopes, best analog markers, return periods and forecast history overlays.</p>
+</dd>
+<dt><a href="#module_components/modals/charts/PrecipitationDistributionChart">components/modals/charts/PrecipitationDistributionChart</a></dt>
+<dd><p>D3-based empirical cumulative distribution chart for precipitation analog values with optional overlays.</p>
+</dd>
+<dt><a href="#module_components/modals/charts/CriteriaDistributionChart">components/modals/charts/CriteriaDistributionChart</a></dt>
+<dd><p>D3-based ordered criteria distribution chart with optional analog criteria fallback.</p>
+</dd>
+<dt><a href="#module_components/map/mapConstants">components/map/mapConstants</a></dt>
+<dd><p>Centralized map-related constants for OpenLayers configuration.
+Avoids magic numbers scattered throughout map components.</p>
+</dd>
+<dt><a href="#module_components/map/MapViewer">components/map/MapViewer</a></dt>
+<dd><p>Main map viewer component using OpenLayers for forecast visualization.
+Displays forecast points, supports entity selection, and manages map layers.</p>
+</dd>
+<dt><a href="#module_components/map/MapTooltip">components/map/MapTooltip</a></dt>
+<dd><p>Floating tooltip overlay displaying entity name and raw value at pointer position.</p>
+</dd>
+<dt><a href="#module_components/map/MapLegend">components/map/MapLegend</a></dt>
+<dd><p>Legend component rendering a horizontal gradient scale for normalized forecast values.</p>
+</dd>
+<dt><a href="#module_components/map/utils/olStyleUtils">components/map/utils/olStyleUtils</a></dt>
+<dd><p>Utilities for OpenLayers style creation and color parsing.
+Supports hex, rgb, rgba, QGIS-style colors, and style configuration objects.</p>
+</dd>
+<dt><a href="#module_components/map/utils/olProjectionUtils">components/map/utils/olProjectionUtils</a></dt>
+<dd><p>Centralized projection utilities for OpenLayers with proj4 integration.</p>
+</dd>
+<dt><a href="#module_components/map/utils/loadWmtsCapabilities">components/map/utils/loadWmtsCapabilities</a></dt>
+<dd><p>Utilities for loading WMTS (Web Map Tile Service) capabilities and creating tile layers.
+Handles fetching capabilities XML, parsing layer options, and caching for reuse.</p>
+</dd>
+<dt><a href="#module_components/map/utils/buildLegendStops">components/map/utils/buildLegendStops</a></dt>
+<dd><p>Generates legend gradient stops for map visualization.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useProjectionRegistration">components/map/hooks/useProjectionRegistration</a></dt>
+<dd><p>React hook for registering custom map projections with OpenLayers.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useOverlayGlobalLayers">components/map/hooks/useOverlayGlobalLayers</a></dt>
+<dd><p>Hook for loading and managing global (non-workspace-specific) overlay layers.
+Supports WMTS and GeoJSON sources with optional periodic refresh.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useOverlayConfigLayers">components/map/hooks/useOverlayConfigLayers</a></dt>
+<dd><p>Hook for loading and managing workspace-specific overlay layers (shapefiles).
+Dynamically adds/removes overlay layers based on workspace configuration.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useMapInteractions">components/map/hooks/useMapInteractions</a></dt>
+<dd><p>Hook for handling map click and pointer interactions with forecast points.
+Manages entity selection on click and tooltip display on hover.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useMapInit">components/map/hooks/useMapInit</a></dt>
+<dd><p>React hook for initializing OpenLayers map with configured layers and controls.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useForecastPoints">components/map/hooks/useForecastPoints</a></dt>
+<dd><p>Hook for rendering forecast points on the map with color-coded values.
+Handles entity visualization, relevance highlighting, legend updates, and map extent fitting.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useDarkMode">components/map/hooks/useDarkMode</a></dt>
+<dd><p>React hook for detecting system dark mode preference.</p>
+</dd>
+</dl>
+
+<p><a name="module_components/ErrorBoundary"></a></p>
+<h2>components/ErrorBoundary</h2>
+<p>React error boundary component that catches JavaScript errors in the component tree.</p>
+<ul>
+<li><a href="#module_components/ErrorBoundary">components/ErrorBoundary</a><ul>
+<li><a href="#module_components/ErrorBoundary.ErrorBoundary">.ErrorBoundary</a> ⇐ <code>React.Component</code><ul>
+<li><a href="#new_module_components/ErrorBoundary.ErrorBoundary_new">new exports.ErrorBoundary(props)</a></li>
+<li><em>instance</em><ul>
+<li><a href="#module_components/ErrorBoundary.ErrorBoundary+componentDidCatch">.componentDidCatch(error, info)</a></li>
+</ul>
+</li>
+<li><em>static</em><ul>
+<li><a href="#module_components/ErrorBoundary.ErrorBoundary.getDerivedStateFromError">.getDerivedStateFromError(error)</a> ⇒ <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/ErrorBoundary.ErrorBoundary"></a></p>
+<h3>components/ErrorBoundary.ErrorBoundary ⇐ <code>React.Component</code></h3>
+<p>Error boundary component that catches and handles React component errors.
+Displays fallback UI and provides retry functionality.</p>
+<p><strong>Kind</strong>: static class of <a href="#module_components/ErrorBoundary"><code>components/ErrorBoundary</code></a><br><strong>Extends</strong>: <code>React.Component</code>  </p>
+<ul>
+<li><a href="#module_components/ErrorBoundary.ErrorBoundary">.ErrorBoundary</a> ⇐ <code>React.Component</code><ul>
+<li><a href="#new_module_components/ErrorBoundary.ErrorBoundary_new">new exports.ErrorBoundary(props)</a></li>
+<li><em>instance</em><ul>
+<li><a href="#module_components/ErrorBoundary.ErrorBoundary+componentDidCatch">.componentDidCatch(error, info)</a></li>
+</ul>
+</li>
+<li><em>static</em><ul>
+<li><a href="#module_components/ErrorBoundary.ErrorBoundary.getDerivedStateFromError">.getDerivedStateFromError(error)</a> ⇒ <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="new_module_components/ErrorBoundary.ErrorBoundary_new"></a></p>
+<h4>new exports.ErrorBoundary(props)</h4>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td>Component props</td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td>Child components to protect</td>
+</tr>
+<tr>
+<td>[props.onError]</td>
+<td><code>function</code></td>
+<td>Optional error handler callback</td>
+</tr>
+<tr>
+<td>[props.fallback]</td>
+<td><code>React.ReactNode</code></td>
+<td>Optional custom fallback UI</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">&lt;ErrorBoundary&gt;
+  &lt;MyComponent /&gt;
+&lt;/ErrorBoundary&gt;
+</code></pre>
+<p><a name="module_components/ErrorBoundary.ErrorBoundary+componentDidCatch"></a></p>
+<h4>errorBoundary.componentDidCatch(error, info)</h4>
+<p>Lifecycle method called after an error is caught.
+Logs the error and calls the optional onError callback.</p>
+<p><strong>Kind</strong>: instance method of <a href="#module_components/ErrorBoundary.ErrorBoundary"><code>ErrorBoundary</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>error</td>
+<td><code>Error</code></td>
+<td>The error that was thrown</td>
+</tr>
+<tr>
+<td>info</td>
+<td><code>Object</code></td>
+<td>Error info with componentStack</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/ErrorBoundary.ErrorBoundary.getDerivedStateFromError"></a></p>
+<h4>ErrorBoundary.getDerivedStateFromError(error) ⇒ <code>Object</code></h4>
+<p>Updates state when an error is caught.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/ErrorBoundary.ErrorBoundary"><code>ErrorBoundary</code></a><br><strong>Returns</strong>: <code>Object</code> - New state object  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>error</td>
+<td><code>Error</code></td>
+<td>The error that was thrown</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/toolbar/ToolbarSquares"></a></p>
+<h2>components/toolbar/ToolbarSquares</h2>
+<p>Visual summary of daily and sub-daily synthesis values allowing target date selection.</p>
+<p><a name="module_components/toolbar/ToolbarCenter"></a></p>
+<h2>components/toolbar/ToolbarCenter</h2>
+<p>Central toolbar controls for forecast date navigation, manual date selection and restoration.</p>
+<p><a name="module_components/toolbar/ToolBar"></a></p>
+<h2>components/toolbar/ToolBar</h2>
+<p>Main application toolbar providing access to distribution and analog details modals and central navigation controls.</p>
+<p><a name="module_components/snackbars/SnackbarItem"></a></p>
+<h2>components/snackbars/SnackbarItem</h2>
+<p>Wrapper around MUI Snackbar with configurable origin and auto-hide.</p>
+<p><a name="module_components/snackbars/AppSnackbars"></a></p>
+<h2>components/snackbars/AppSnackbars</h2>
+<p>Global snackbar manager component rendering queued snackbars and workspace validity alerts.</p>
+<p><a name="module_components/sidebar/SidebarWorkspaceDropdown"></a></p>
+<h2>components/sidebar/SidebarWorkspaceDropdown</h2>
+<p>Dropdown selector for choosing active workspace region.</p>
+<p><a name="module_components/sidebar/SideBar"></a></p>
+<h2>components/sidebar/SideBar</h2>
+<p>Application sidebar containing workspace selector and forecast-related panels.</p>
+<p><a name="module_components/panels/index"></a></p>
+<h2>components/panels/index</h2>
+<p>Barrel file re-exporting panel components for convenient imports.</p>
+<p><a name="module_components/panels/PanelSynthesis"></a></p>
+<h2>components/panels/PanelSynthesis</h2>
+<p>Panel rendering normalized synthesis values per method across daily and sub-daily lead times.
+Allows selecting target date and method; supports sub-daily segmentation when available.</p>
+<p><a name="module_components/panels/PanelStatus"></a></p>
+<h2>components/panels/PanelStatus</h2>
+<p>Standardized status text renderer inside a Panel for loading/error/empty states.</p>
+<p><a name="exp_module_components/panels/PanelStatus--module.exports"></a></p>
+<h3>module.exports(props) ⇒ <code>React.ReactElement</code> | <code>null</code> ⏏</h3>
+<p>Renders a small status line based on loading/error/empty flags.
+Priority order: loading &gt; error &gt; empty.
+Returns null if none are true.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>React.ReactElement</code> | <code>null</code> - Span element or null if no status  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+</tr>
+<tr>
+<td>[props.loading]</td>
+<td><code>boolean</code></td>
+<td>Whether the panel content is loading</td>
+</tr>
+<tr>
+<td>[props.error]</td>
+<td><code>boolean</code></td>
+<td>Whether an error occurred</td>
+</tr>
+<tr>
+<td>[props.empty]</td>
+<td><code>boolean</code></td>
+<td>Whether there is no data to show</td>
+</tr>
+<tr>
+<td>[props.messages]</td>
+<td><code>Object</code></td>
+<td>Optional custom messages</td>
+</tr>
+<tr>
+<td>[props.messages.loading]</td>
+<td><code>string</code></td>
+<td>Loading message override</td>
+</tr>
+<tr>
+<td>[props.messages.error]</td>
+<td><code>string</code></td>
+<td>Error message override</td>
+</tr>
+<tr>
+<td>[props.messages.empty]</td>
+<td><code>string</code></td>
+<td>Empty message override</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/panels/PanelStations"></a></p>
+<h2>components/panels/PanelStations</h2>
+<p>Panel for selecting a forecast station/entity from the available entities list.</p>
+<p><a name="exp_module_components/panels/PanelStations--module.exports"></a></p>
+<h3>module.exports(props) ⇒ <code>React.ReactElement</code> ⏏</h3>
+<p>PanelStations component rendering a dropdown of entities with loading/error/empty states.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+</tr>
+<tr>
+<td>[props.defaultOpen]</td>
+<td><code>boolean</code></td>
+<td>Initial open state of panel</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/panels/PanelForecasts"></a></p>
+<h2>components/panels/PanelForecasts</h2>
+<p>Panel for selecting forecast method and configuration using a tree view.</p>
+<p><a name="exp_module_components/panels/PanelForecasts--module.exports"></a></p>
+<h3>module.exports(props) ⇒ <code>React.ReactElement</code> ⏏</h3>
+<p>PanelForecasts component wrapping the method/config tree inside a collapsible panel.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+</tr>
+<tr>
+<td>[props.defaultOpen]</td>
+<td><code>boolean</code></td>
+<td>Initial open state for panel</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/panels/PanelDisplay"></a></p>
+<h2>components/panels/PanelDisplay</h2>
+<p>Panel for adjusting display parameters (percentile &amp; normalization reference).</p>
+<p><a name="exp_module_components/panels/PanelDisplay--module.exports"></a></p>
+<h3>module.exports(props) ⇒ <code>React.ReactElement</code> ⏏</h3>
+<p>PanelDisplay component rendering controls for percentile and normalization reference selection.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+</tr>
+<tr>
+<td>[props.defaultOpen]</td>
+<td><code>boolean</code></td>
+<td>Initial open state</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/panels/PanelAnalogDates"></a></p>
+<h2>components/panels/PanelAnalogDates</h2>
+<p>Panel displaying ranked analog dates with criteria values for the selected method/config and lead time.</p>
+<p><a name="module_components/panels/Panel"></a></p>
+<h2>components/panels/Panel</h2>
+<p>Collapsible panel component for sidebar sections.</p>
+<p><a name="exp_module_components/panels/Panel--module.exports"></a></p>
+<h3>module.exports(props) ⇒ <code>React.ReactElement</code> ⏏</h3>
+<p>Collapsible panel with toggle header.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>props.title</td>
+<td><code>string</code></td>
+<td></td>
+<td>Panel title</td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td></td>
+<td>Panel content</td>
+</tr>
+<tr>
+<td>[props.defaultOpen]</td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Initial open state</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/index"></a></p>
+<h2>components/modals/index</h2>
+<p>Barrel file re-exporting modal components for convenient imports.</p>
+<p><a name="module_components/modals/TimeSeriesModal"></a></p>
+<h2>components/modals/TimeSeriesModal</h2>
+<p>Modal displaying time series percentiles, best analogs, reference return periods and previous forecast histories.
+Supports exporting charts (SVG/PNG/PDF) and dynamic configuration resolution for selected entity.</p>
+<p><a name="module_components/modals/DistributionsModal"></a></p>
+<h2>components/modals/DistributionsModal</h2>
+<p>Modal displaying precipitation and criteria distributions for a selected method/config/entity/lead.
+Provides percentile markers, reference return periods, best analog overlays and export options.</p>
+<p><a name="module_components/modals/DetailsAnalogsModal"></a></p>
+<h2>components/modals/DetailsAnalogsModal</h2>
+<p>Modal presenting a detailed list of analogs for a selected method/config/entity/lead with criteria and precipitation values.</p>
+<p><a name="module_components/modals/common/plotConstants"></a></p>
+<h2>components/modals/common/plotConstants</h2>
+<p>Shared constants and color palettes used by modal charts (time series &amp; distributions).</p>
+<ul>
+<li><a href="#module_components/modals/common/plotConstants">components/modals/common/plotConstants</a><ul>
+<li><a href="#module_components/modals/common/plotConstants.DEFAULT_PCTS">.DEFAULT_PCTS</a></li>
+<li><a href="#module_components/modals/common/plotConstants.FULL_PCTS">.FULL_PCTS</a></li>
+<li><a href="#module_components/modals/common/plotConstants.SELECTED_RPS">.SELECTED_RPS</a></li>
+<li><a href="#module_components/modals/common/plotConstants.QUANTILE_COLORS">.QUANTILE_COLORS</a></li>
+<li><a href="#module_components/modals/common/plotConstants.TEN_YEAR_COLOR">.TEN_YEAR_COLOR</a></li>
+<li><a href="#module_components/modals/common/plotConstants.ANALOG_MARKER_COLOR">.ANALOG_MARKER_COLOR</a></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/modals/common/plotConstants.DEFAULT_PCTS"></a></p>
+<h3>components/modals/common/plotConstants.DEFAULT_PCTS</h3>
+<p>Default percentile set (main quantiles).</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/modals/common/plotConstants"><code>components/modals/common/plotConstants</code></a><br><a name="module_components/modals/common/plotConstants.FULL_PCTS"></a></p>
+<h3>components/modals/common/plotConstants.FULL_PCTS</h3>
+<p>Full percentile set for detailed view.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/modals/common/plotConstants"><code>components/modals/common/plotConstants</code></a><br><a name="module_components/modals/common/plotConstants.SELECTED_RPS"></a></p>
+<h3>components/modals/common/plotConstants.SELECTED_RPS</h3>
+<p>Selected return periods displayed when overlays enabled.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/modals/common/plotConstants"><code>components/modals/common/plotConstants</code></a><br><a name="module_components/modals/common/plotConstants.QUANTILE_COLORS"></a></p>
+<h3>components/modals/common/plotConstants.QUANTILE_COLORS</h3>
+<p>Quantile line colors mapping.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/modals/common/plotConstants"><code>components/modals/common/plotConstants</code></a><br><a name="module_components/modals/common/plotConstants.TEN_YEAR_COLOR"></a></p>
+<h3>components/modals/common/plotConstants.TEN_YEAR_COLOR</h3>
+<p>Stroke color for ten-year return period overlay.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/modals/common/plotConstants"><code>components/modals/common/plotConstants</code></a><br><a name="module_components/modals/common/plotConstants.ANALOG_MARKER_COLOR"></a></p>
+<h3>components/modals/common/plotConstants.ANALOG_MARKER_COLOR</h3>
+<p>Marker stroke color for best analog points.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/modals/common/plotConstants"><code>components/modals/common/plotConstants</code></a><br><a name="module_components/modals/common/exportUtils"></a></p>
+<h2>components/modals/common/exportUtils</h2>
+<p>Utility helpers for exporting charts: safe filename generation, SVG style inlining, dimension extraction and temporary DOM mounting.</p>
+<ul>
+<li><a href="#module_components/modals/common/exportUtils">components/modals/common/exportUtils</a><ul>
+<li><a href="#module_components/modals/common/exportUtils.safeForFilename">.safeForFilename(s)</a> ⇒ <code>string</code></li>
+<li><a href="#module_components/modals/common/exportUtils.downloadBlob">.downloadBlob(blob, filename)</a> ⇒ <code>void</code></li>
+<li><a href="#module_components/modals/common/exportUtils.inlineAllStyles">.inlineAllStyles(svg)</a> ⇒ <code>void</code></li>
+<li><a href="#module_components/modals/common/exportUtils.getSVGSize">.getSVGSize(svg)</a> ⇒ <code>Object</code></li>
+<li><a href="#module_components/modals/common/exportUtils.withTemporaryContainer">.withTemporaryContainer(node, cb)</a> ⇒ <code>*</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/modals/common/exportUtils.safeForFilename"></a></p>
+<h3>components/modals/common/exportUtils.safeForFilename(s) ⇒ <code>string</code></h3>
+<p>Sanitize a string for safe use as a filename (drops/normalizes problematic characters)</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/modals/common/exportUtils"><code>components/modals/common/exportUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Sanitized filename-friendly string  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>s</td>
+<td><code>string</code></td>
+<td>Input string</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/common/exportUtils.downloadBlob"></a></p>
+<h3>components/modals/common/exportUtils.downloadBlob(blob, filename) ⇒ <code>void</code></h3>
+<p>Trigger a download of a Blob with the given filename</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/modals/common/exportUtils"><code>components/modals/common/exportUtils</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>blob</td>
+<td><code>Blob</code></td>
+<td>Data blob</td>
+</tr>
+<tr>
+<td>filename</td>
+<td><code>string</code></td>
+<td>Filename to save</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/common/exportUtils.inlineAllStyles"></a></p>
+<h3>components/modals/common/exportUtils.inlineAllStyles(svg) ⇒ <code>void</code></h3>
+<p>Inline computed style properties into all nodes of a given SVG element.
+Helpful to preserve appearance when exporting SVG/PNG/PDF without external CSS.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/modals/common/exportUtils"><code>components/modals/common/exportUtils</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>svg</td>
+<td><code>SVGElement</code></td>
+<td>Root SVG element to inline styles into</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/common/exportUtils.getSVGSize"></a></p>
+<h3>components/modals/common/exportUtils.getSVGSize(svg) ⇒ <code>Object</code></h3>
+<p>Determine pixel size of an SVG element using width/height or viewBox fallback.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/modals/common/exportUtils"><code>components/modals/common/exportUtils</code></a><br><strong>Returns</strong>: <code>Object</code> - Dimensions object  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>svg</td>
+<td><code>SVGElement</code></td>
+<td>SVG element</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/common/exportUtils.withTemporaryContainer"></a></p>
+<h3>components/modals/common/exportUtils.withTemporaryContainer(node, cb) ⇒ <code>*</code></h3>
+<p>Temporarily mount a node (e.g., cloned SVG) in a hidden container in the DOM
+to allow layout/style computations, then run a callback and cleanup.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/modals/common/exportUtils"><code>components/modals/common/exportUtils</code></a><br><strong>Returns</strong>: <code>*</code> - Return value of callback  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>node</td>
+<td><code>Node</code></td>
+<td>DOM node to mount temporarily</td>
+</tr>
+<tr>
+<td>cb</td>
+<td><code>function</code></td>
+<td>Callback executed while node is mounted</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/common/MethodConfigSelector"></a></p>
+<h2>components/modals/common/MethodConfigSelector</h2>
+<p>Shared modal selection component to pick method, configuration, entity and lead time.
+Handles chained data fetching, validity maintenance and relevance highlighting.</p>
+<ul>
+<li><a href="#module_components/modals/common/MethodConfigSelector">components/modals/common/MethodConfigSelector</a><ul>
+<li><a href="#exp_module_components/modals/common/MethodConfigSelector--module.exports">module.exports(props)</a> ⇒ <code>React.ReactElement</code> ⏏<ul>
+<li><a href="#module_components/modals/common/MethodConfigSelector--module.exports.useModalSelectionData">.useModalSelectionData(cachePrefix, open, selection)</a> ⇒ <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="exp_module_components/modals/common/MethodConfigSelector--module.exports"></a></p>
+<h3>module.exports(props) ⇒ <code>React.ReactElement</code> ⏏</h3>
+<p>MethodConfigSelector component.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>[props.cachePrefix]</td>
+<td><code>string</code></td>
+<td><code>&quot;&#x27;modal_&#x27;&quot;</code></td>
+<td>Prefix for cache keys to avoid collisions across modals</td>
+</tr>
+<tr>
+<td>props.open</td>
+<td><code>boolean</code></td>
+<td></td>
+<td>Whether the parent modal is open (controls fetching enablement)</td>
+</tr>
+<tr>
+<td>props.value</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Current selection state { methodId, configId, entityId, lead }</td>
+</tr>
+<tr>
+<td>props.onChange</td>
+<td><code>function</code></td>
+<td></td>
+<td>Callback receiving updated selection object</td>
+</tr>
+<tr>
+<td>[props.children]</td>
+<td><code>React.ReactNode</code></td>
+<td></td>
+<td>Optional extra controls rendered beneath standard selectors</td>
+</tr>
+</tbody></table>
+<p><a name="module_components/modals/common/MethodConfigSelector--module.exports.useModalSelectionData"></a></p>
+<h4>module.exports.useModalSelectionData(cachePrefix, open, selection) ⇒ <code>Object</code></h4>
+<p>Hook returning resolved selection data (with fallback config if none explicitly chosen).</p>
+<p><strong>Kind</strong>: static method of <a href="#exp_module_components/modals/common/MethodConfigSelector--module.exports"><code>module.exports</code></a><br><strong>Returns</strong>: <code>Object</code> - Object with resolvedMethodId, resolvedConfigId, resolvedEntityId  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>cachePrefix</td>
+<td><code>string</code></td>
+<td>Cache key namespace prefix</td>
+</tr>
+<tr>
+<td>open</td>
+<td><code>boolean</code></td>
+<td>Whether owning modal is open</td>
+</tr>
+<tr>
+<td>selection</td>
+<td><code>Object</code></td>
+<td>Raw selection { methodId, configId, entityId }</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { resolvedMethodId, resolvedConfigId } = useModalSelectionData(&#39;dist_&#39;, open, selection);
+</code></pre>
+<p><a name="module_components/modals/common/ExportMenu"></a></p>
+<h2>components/modals/common/ExportMenu</h2>
+<p>Small dropdown menu component offering export options (PNG, SVG, PDF).</p>
+<p><a name="module_components/modals/charts/TimeSeriesChart"></a></p>
+<h2>components/modals/charts/TimeSeriesChart</h2>
+<p>D3-based time series chart rendering percentile envelopes, best analog markers, return periods and forecast history overlays.</p>
+<p><a name="module_components/modals/charts/PrecipitationDistributionChart"></a></p>
+<h2>components/modals/charts/PrecipitationDistributionChart</h2>
+<p>D3-based empirical cumulative distribution chart for precipitation analog values with optional overlays.</p>
+<p><a name="module_components/modals/charts/CriteriaDistributionChart"></a></p>
+<h2>components/modals/charts/CriteriaDistributionChart</h2>
+<p>D3-based ordered criteria distribution chart with optional analog criteria fallback.</p>
+<p><a name="module_components/map/mapConstants"></a></p>
+<h2>components/map/mapConstants</h2>
+<p>Centralized map-related constants for OpenLayers configuration.
+Avoids magic numbers scattered throughout map components.</p>
+<ul>
+<li><a href="#module_components/map/mapConstants">components/map/mapConstants</a><ul>
+<li><a href="#module_components/map/mapConstants.DEFAULT_PROJECTION">.DEFAULT_PROJECTION</a></li>
+<li><a href="#module_components/map/mapConstants.WMTS_MATRIX_SET_DEFAULT">.WMTS_MATRIX_SET_DEFAULT</a></li>
+<li><a href="#module_components/map/mapConstants.FIT_PADDING">.FIT_PADDING</a></li>
+<li><a href="#module_components/map/mapConstants.LEGEND_SAMPLES">.LEGEND_SAMPLES</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_RADIUS_RELEVANT">.FORECAST_POINT_RADIUS_RELEVANT</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_RADIUS_NORMAL">.FORECAST_POINT_RADIUS_NORMAL</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_STROKE_WIDTH">.FORECAST_POINT_STROKE_WIDTH</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_STROKE_COLOR_RELEVANT">.FORECAST_POINT_STROKE_COLOR_RELEVANT</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_STROKE_COLOR_DIM">.FORECAST_POINT_STROKE_COLOR_DIM</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_OPACITY_RELEVANT">.FORECAST_POINT_OPACITY_RELEVANT</a></li>
+<li><a href="#module_components/map/mapConstants.FORECAST_POINT_OPACITY_DIM">.FORECAST_POINT_OPACITY_DIM</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_LINE_COLOR">.OVERLAY_LINE_COLOR</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_STROKE_WIDTH">.OVERLAY_STROKE_WIDTH</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_POLYGON_FILL">.OVERLAY_POLYGON_FILL</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_POINT_RADIUS">.OVERLAY_POINT_RADIUS</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_POINT_STROKE_COLOR">.OVERLAY_POINT_STROKE_COLOR</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_POINT_STROKE_WIDTH">.OVERLAY_POINT_STROKE_WIDTH</a></li>
+<li><a href="#module_components/map/mapConstants.OVERLAY_POINT_FILL">.OVERLAY_POINT_FILL</a></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/mapConstants.DEFAULT_PROJECTION"></a></p>
+<h3>components/map/mapConstants.DEFAULT_PROJECTION</h3>
+<p>Default map projection (Web Mercator). @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.WMTS_MATRIX_SET_DEFAULT"></a></p>
+<h3>components/map/mapConstants.WMTS_MATRIX_SET_DEFAULT</h3>
+<p>Default WMTS matrix set identifier. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FIT_PADDING"></a></p>
+<h3>components/map/mapConstants.FIT_PADDING</h3>
+<p>Padding for map extent fitting [top, right, bottom, left] in pixels. @constant {Array<number>}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.LEGEND_SAMPLES"></a></p>
+<h3>components/map/mapConstants.LEGEND_SAMPLES</h3>
+<p>Number of color gradient samples for legend generation. @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_RADIUS_RELEVANT"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_RADIUS_RELEVANT</h3>
+<p>Radius for relevant/highlighted forecast points (pixels). @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_RADIUS_NORMAL"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_RADIUS_NORMAL</h3>
+<p>Radius for normal forecast points (pixels). @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_STROKE_WIDTH"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_STROKE_WIDTH</h3>
+<p>Stroke width for forecast point borders (pixels). @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_STROKE_COLOR_RELEVANT"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_STROKE_COLOR_RELEVANT</h3>
+<p>Stroke color for relevant forecast points. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_STROKE_COLOR_DIM"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_STROKE_COLOR_DIM</h3>
+<p>Stroke color for dimmed forecast points. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_OPACITY_RELEVANT"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_OPACITY_RELEVANT</h3>
+<p>Opacity for relevant forecast points. @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.FORECAST_POINT_OPACITY_DIM"></a></p>
+<h3>components/map/mapConstants.FORECAST_POINT_OPACITY_DIM</h3>
+<p>Opacity for dimmed forecast points. @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_LINE_COLOR"></a></p>
+<h3>components/map/mapConstants.OVERLAY_LINE_COLOR</h3>
+<p>Default line color for overlay layers. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_STROKE_WIDTH"></a></p>
+<h3>components/map/mapConstants.OVERLAY_STROKE_WIDTH</h3>
+<p>Default stroke width for overlay features (pixels). @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_POLYGON_FILL"></a></p>
+<h3>components/map/mapConstants.OVERLAY_POLYGON_FILL</h3>
+<p>Default fill color for overlay polygons. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_POINT_RADIUS"></a></p>
+<h3>components/map/mapConstants.OVERLAY_POINT_RADIUS</h3>
+<p>Default radius for overlay points (pixels). @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_POINT_STROKE_COLOR"></a></p>
+<h3>components/map/mapConstants.OVERLAY_POINT_STROKE_COLOR</h3>
+<p>Default stroke color for overlay points. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_POINT_STROKE_WIDTH"></a></p>
+<h3>components/map/mapConstants.OVERLAY_POINT_STROKE_WIDTH</h3>
+<p>Default stroke width for overlay points (pixels). @constant {number}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/mapConstants.OVERLAY_POINT_FILL"></a></p>
+<h3>components/map/mapConstants.OVERLAY_POINT_FILL</h3>
+<p>Default fill color for overlay points. @constant {string}</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_components/map/mapConstants"><code>components/map/mapConstants</code></a><br><a name="module_components/map/MapViewer"></a></p>
+<h2>components/map/MapViewer</h2>
+<p>Main map viewer component using OpenLayers for forecast visualization.
+Displays forecast points, supports entity selection, and manages map layers.</p>
+<p><a name="module_components/map/MapTooltip"></a></p>
+<h2>components/map/MapTooltip</h2>
+<p>Floating tooltip overlay displaying entity name and raw value at pointer position.</p>
+<p><a name="module_components/map/MapLegend"></a></p>
+<h2>components/map/MapLegend</h2>
+<p>Legend component rendering a horizontal gradient scale for normalized forecast values.</p>
+<p><a name="module_components/map/utils/olStyleUtils"></a></p>
+<h2>components/map/utils/olStyleUtils</h2>
+<p>Utilities for OpenLayers style creation and color parsing.
+Supports hex, rgb, rgba, QGIS-style colors, and style configuration objects.</p>
+<ul>
+<li><a href="#module_components/map/utils/olStyleUtils">components/map/utils/olStyleUtils</a><ul>
+<li><a href="#module_components/map/utils/olStyleUtils.toRGBA">.toRGBA(input, [alphaFallback])</a> ⇒ <code>string</code></li>
+<li><a href="#module_components/map/utils/olStyleUtils.styleFromConfigObj">.styleFromConfigObj([obj])</a> ⇒ <code>function</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/utils/olStyleUtils.toRGBA"></a></p>
+<h3>components/map/utils/olStyleUtils.toRGBA(input, [alphaFallback]) ⇒ <code>string</code></h3>
+<p>Converts various color formats to CSS rgba() string.
+Supports hex, rgb/rgba strings, QGIS-style comma-separated values, and arrays.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/olStyleUtils"><code>components/map/utils/olStyleUtils</code></a><br><strong>Returns</strong>: <code>string</code> - CSS rgba() color string  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>input</td>
+<td><code>string</code> | <code>Array</code></td>
+<td></td>
+<td>Color in various formats</td>
+</tr>
+<tr>
+<td>[alphaFallback]</td>
+<td><code>number</code></td>
+<td><code>1</code></td>
+<td>Default alpha value if not specified</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">toRGBA(&#39;#ff0000&#39;) // Returns: &quot;rgba(255,0,0,1)&quot;
+toRGBA(&#39;255,0,0,128&#39;) // Returns: &quot;rgba(255,0,0,0.5)&quot;
+</code></pre>
+<p><a name="module_components/map/utils/olStyleUtils.styleFromConfigObj"></a></p>
+<h3>components/map/utils/olStyleUtils.styleFromConfigObj([obj]) ⇒ <code>function</code></h3>
+<p>Creates an OpenLayers style function from a configuration object.
+Supports different styles for lines, polygons, and points.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/olStyleUtils"><code>components/map/utils/olStyleUtils</code></a><br><strong>Returns</strong>: <code>function</code> - OpenLayers style function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[obj]</td>
+<td><code>Object</code></td>
+<td><code>{}</code></td>
+<td>Style configuration object</td>
+</tr>
+<tr>
+<td>[obj.line]</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Line style configuration</td>
+</tr>
+<tr>
+<td>[obj.polygon]</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Polygon style configuration</td>
+</tr>
+<tr>
+<td>[obj.point]</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Point/circle style configuration</td>
+</tr>
+<tr>
+<td>[obj.strokeColor]</td>
+<td><code>string</code></td>
+<td></td>
+<td>Fallback stroke color</td>
+</tr>
+<tr>
+<td>[obj.strokeWidth]</td>
+<td><code>number</code></td>
+<td></td>
+<td>Fallback stroke width</td>
+</tr>
+<tr>
+<td>[obj.fillColor]</td>
+<td><code>string</code></td>
+<td></td>
+<td>Fallback fill color</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const style = styleFromConfigObj({
+  line: { stroke: { color: &#39;#ff0000&#39;, width: 3 } },
+  polygon: { fill: { color: &#39;rgba(255,0,0,0.2)&#39; } }
+});
+</code></pre>
+<p><a name="module_components/map/utils/olProjectionUtils"></a></p>
+<h2>components/map/utils/olProjectionUtils</h2>
+<p>Centralized projection utilities for OpenLayers with proj4 integration.</p>
+<ul>
+<li><a href="#module_components/map/utils/olProjectionUtils">components/map/utils/olProjectionUtils</a><ul>
+<li><em>static</em><ul>
+<li><a href="#module_components/map/utils/olProjectionUtils.ensureProjDefined">.ensureProjDefined(epsg)</a></li>
+</ul>
+</li>
+<li><em>inner</em><ul>
+<li><a href="#module_components/map/utils/olProjectionUtils..PREDEFINED">~PREDEFINED</a> : <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/utils/olProjectionUtils.ensureProjDefined"></a></p>
+<h3>components/map/utils/olProjectionUtils.ensureProjDefined(epsg)</h3>
+<p>Ensures a projection is defined in proj4 and registered with OpenLayers.
+Uses predefined definitions for known EPSG codes. Handles registration errors silently.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/olProjectionUtils"><code>components/map/utils/olProjectionUtils</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>epsg</td>
+<td><code>string</code></td>
+<td>EPSG code (e.g., &quot;EPSG:2154&quot;)</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">ensureProjDefined(&#39;EPSG:2154&#39;); // Registers Lambert-93 for France
+</code></pre>
+<p><a name="module_components/map/utils/olProjectionUtils..PREDEFINED"></a></p>
+<h3>components/map/utils/olProjectionUtils~PREDEFINED : <code>Object</code></h3>
+<p>Predefined proj4 projection definitions for common EPSG codes.</p>
+<p><strong>Kind</strong>: inner constant of <a href="#module_components/map/utils/olProjectionUtils"><code>components/map/utils/olProjectionUtils</code></a><br><a name="module_components/map/utils/loadWmtsCapabilities"></a></p>
+<h2>components/map/utils/loadWmtsCapabilities</h2>
+<p>Utilities for loading WMTS (Web Map Tile Service) capabilities and creating tile layers.
+Handles fetching capabilities XML, parsing layer options, and caching for reuse.</p>
+<ul>
+<li><a href="#module_components/map/utils/loadWmtsCapabilities">components/map/utils/loadWmtsCapabilities</a><ul>
+<li><a href="#module_components/map/utils/loadWmtsCapabilities.loadWmtsCapabilities">.loadWmtsCapabilities(runtimeConfig, [enqueueWarning], [preferStyleForItem])</a> ⇒ <code>Promise.&lt;Object&gt;</code></li>
+<li><a href="#module_components/map/utils/loadWmtsCapabilities.createWmtsTileLayer">.createWmtsTileLayer(item, wmtsOptionsCache)</a> ⇒ <code>WMTS</code> | <code>null</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/utils/loadWmtsCapabilities.loadWmtsCapabilities"></a></p>
+<h3>components/map/utils/loadWmtsCapabilities.loadWmtsCapabilities(runtimeConfig, [enqueueWarning], [preferStyleForItem]) ⇒ <code>Promise.&lt;Object&gt;</code></h3>
+<p>Fetches WMTS capabilities from configured providers and builds options cache.
+Processes base layers and overlay layers from runtime config, attempts to load
+capabilities with preferred styles, and returns a cache of layer options.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/loadWmtsCapabilities"><code>components/map/utils/loadWmtsCapabilities</code></a><br><strong>Returns</strong>: <code>Promise.&lt;Object&gt;</code> - Cache object mapping wmtsLayer name to OpenLayers WMTS options  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime configuration with providers and layers</td>
+</tr>
+<tr>
+<td>[enqueueWarning]</td>
+<td><code>function</code></td>
+<td>Optional callback to display warning messages</td>
+</tr>
+<tr>
+<td>[preferStyleForItem]</td>
+<td><code>function</code></td>
+<td>Optional function to determine preferred style for an item</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const cache = await loadWmtsCapabilities(config, (msg) =&gt; console.warn(msg));
+// Returns: { &#39;layerName&#39;: { ...wmtsOptions } }
+</code></pre>
+<p><a name="module_components/map/utils/loadWmtsCapabilities.createWmtsTileLayer"></a></p>
+<h3>components/map/utils/loadWmtsCapabilities.createWmtsTileLayer(item, wmtsOptionsCache) ⇒ <code>WMTS</code> | <code>null</code></h3>
+<p>Creates an OpenLayers WMTS source from cached layer options.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/loadWmtsCapabilities"><code>components/map/utils/loadWmtsCapabilities</code></a><br><strong>Returns</strong>: <code>WMTS</code> | <code>null</code> - OpenLayers WMTS source instance, or null if not found in cache  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>item</td>
+<td><code>Object</code></td>
+<td>Layer configuration item with wmtsLayer property</td>
+</tr>
+<tr>
+<td>wmtsOptionsCache</td>
+<td><code>Object</code></td>
+<td>Cache of WMTS options from loadWmtsCapabilities</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const source = createWmtsTileLayer({ wmtsLayer: &#39;myLayer&#39; }, cache);
+if (source) {
+  const layer = new TileLayer({ source });
+}
+</code></pre>
+<p><a name="module_components/map/utils/buildLegendStops"></a></p>
+<h2>components/map/utils/buildLegendStops</h2>
+<p>Generates legend gradient stops for map visualization.</p>
+<p><a name="module_components/map/utils/buildLegendStops.buildLegendStops"></a></p>
+<h3>components/map/utils/buildLegendStops.buildLegendStops([maxVal], [samples]) ⇒ <code>Array.&lt;Object&gt;</code></h3>
+<p>Builds an array of color stops for a continuous legend gradient.
+Each stop represents a point in the gradient from 0 to maxVal.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/buildLegendStops"><code>components/map/utils/buildLegendStops</code></a><br><strong>Returns</strong>: <code>Array.&lt;Object&gt;</code> - Array of legend stops with {color: string, pct: number}  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[maxVal]</td>
+<td><code>number</code></td>
+<td><code>1</code></td>
+<td>Maximum value for the legend scale</td>
+</tr>
+<tr>
+<td>[samples]</td>
+<td><code>number</code></td>
+<td><code>LEGEND_SAMPLES</code></td>
+<td>Number of gradient samples to generate</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const stops = buildLegendStops(100, 10);
+// Returns: [
+//   {color: &#39;rgb(255,255,255)&#39;, pct: 0},
+//   {color: &#39;rgb(200,255,200)&#39;, pct: 10},
+//   ...
+//   {color: &#39;rgb(255,0,0)&#39;, pct: 100}
+// ]
+</code></pre>
+<p><a name="module_components/map/hooks/useProjectionRegistration"></a></p>
+<h2>components/map/hooks/useProjectionRegistration</h2>
+<p>React hook for registering custom map projections with OpenLayers.</p>
+<ul>
+<li><a href="#module_components/map/hooks/useProjectionRegistration">components/map/hooks/useProjectionRegistration</a><ul>
+<li><a href="#exp_module_components/map/hooks/useProjectionRegistration--module.exports">module.exports(epsg)</a> ⇒ <code>React.RefObject</code> ⏏<ul>
+<li><a href="#module_components/map/hooks/useProjectionRegistration--module.exports..PREDEFINED">~PREDEFINED</a> : <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="exp_module_components/map/hooks/useProjectionRegistration--module.exports"></a></p>
+<h3>module.exports(epsg) ⇒ <code>React.RefObject</code> ⏏</h3>
+<p>Hook that registers a projection with OpenLayers if not already registered.
+Uses predefined proj4 definitions for known EPSG codes.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>React.RefObject</code> - Ref containing the last registered projection  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>epsg</td>
+<td><code>string</code></td>
+<td>EPSG code (e.g., &quot;EPSG:2154&quot;)</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useProjectionRegistration(&#39;EPSG:2154&#39;); // Registers Lambert-93 for France
+</code></pre>
+<p><a name="module_components/map/hooks/useProjectionRegistration--module.exports..PREDEFINED"></a></p>
+<h4>module.exports~PREDEFINED : <code>Object</code></h4>
+<p>Predefined projection definitions for common EPSG codes.</p>
+<p><strong>Kind</strong>: inner constant of <a href="#exp_module_components/map/hooks/useProjectionRegistration--module.exports"><code>module.exports</code></a><br><a name="module_components/map/hooks/useOverlayGlobalLayers"></a></p>
+<h2>components/map/hooks/useOverlayGlobalLayers</h2>
+<p>Hook for loading and managing global (non-workspace-specific) overlay layers.
+Supports WMTS and GeoJSON sources with optional periodic refresh.</p>
+<p><a name="exp_module_components/map/hooks/useOverlayGlobalLayers--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that loads global overlay layers defined in runtime configuration.
+Handles WMTS capabilities adoption, dynamic GeoJSON fetching, refresh timers,
+abort controllers, and layer switcher panel updates.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+<tr>
+<td>params.runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime configuration object</td>
+</tr>
+<tr>
+<td>params.overlayGroupRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to overlay layer group</td>
+</tr>
+<tr>
+<td>params.layerSwitcherRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to layer switcher control</td>
+</tr>
+<tr>
+<td>[params.enqueueSnackbar]</td>
+<td><code>function</code></td>
+<td>Optional notification callback</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useOverlayGlobalLayers({
+  mapReady: true,
+  runtimeConfig,
+  overlayGroupRef,
+  layerSwitcherRef,
+  enqueueSnackbar: (msg) =&gt; console.warn(msg)
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useOverlayConfigLayers"></a></p>
+<h2>components/map/hooks/useOverlayConfigLayers</h2>
+<p>Hook for loading and managing workspace-specific overlay layers (shapefiles).
+Dynamically adds/removes overlay layers based on workspace configuration.</p>
+<p><a name="exp_module_components/map/hooks/useOverlayConfigLayers--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that manages workspace-specific overlay layers on the map.
+Loads shapefiles defined in workspace configuration and adds them as vector layers.
+Automatically cleans up layers when workspace changes.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+<tr>
+<td>params.runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime configuration with workspace definitions</td>
+</tr>
+<tr>
+<td>params.workspace</td>
+<td><code>string</code></td>
+<td>Current workspace key</td>
+</tr>
+<tr>
+<td>params.overlayGroupRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to overlay layer group</td>
+</tr>
+<tr>
+<td>params.layerSwitcherRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to layer switcher control</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useOverlayConfigLayers({
+  mapReady: true,
+  runtimeConfig: config,
+  workspace: &#39;demo&#39;,
+  overlayGroupRef,
+  layerSwitcherRef
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useMapInteractions"></a></p>
+<h2>components/map/hooks/useMapInteractions</h2>
+<p>Hook for handling map click and pointer interactions with forecast points.
+Manages entity selection on click and tooltip display on hover.</p>
+<p><a name="exp_module_components/map/hooks/useMapInteractions--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that sets up map interaction handlers for forecast point selection and tooltips.
+Handles single click for entity selection and pointer move/out for tooltip display.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.mapRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to OpenLayers map instance</td>
+</tr>
+<tr>
+<td>params.forecastLayerRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to forecast vector layer</td>
+</tr>
+<tr>
+<td>params.setSelectedEntityId</td>
+<td><code>function</code></td>
+<td>Function to set selected entity ID</td>
+</tr>
+<tr>
+<td>params.setTooltip</td>
+<td><code>function</code></td>
+<td>Function to set tooltip state (x, y, name, valueRaw)</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useMapInteractions({
+  mapRef,
+  forecastLayerRef,
+  setSelectedEntityId: (id) =&gt; console.log(&#39;Selected:&#39;, id),
+  setTooltip: (tooltip) =&gt; console.log(&#39;Tooltip:&#39;, tooltip),
+  mapReady: true
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useMapInit"></a></p>
+<h2>components/map/hooks/useMapInit</h2>
+<p>React hook for initializing OpenLayers map with configured layers and controls.</p>
+<p><a name="exp_module_components/map/hooks/useMapInit--module.exports"></a></p>
+<h3>module.exports(params) ⇒ <code>Object</code> ⏏</h3>
+<p>Hook that initializes an OpenLayers map with base layers, overlays, and controls.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>Object</code> - Map refs and ready state  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.t</td>
+<td><code>function</code></td>
+<td>Translation function</td>
+</tr>
+<tr>
+<td>params.runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime config with layer definitions</td>
+</tr>
+<tr>
+<td>params.enqueueSnackbar</td>
+<td><code>function</code></td>
+<td>Notification function</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { containerRef, mapRef, mapReady } = useMapInit({ t, runtimeConfig, enqueueSnackbar });
+</code></pre>
+<p><a name="module_components/map/hooks/useForecastPoints"></a></p>
+<h2>components/map/hooks/useForecastPoints</h2>
+<p>Hook for rendering forecast points on the map with color-coded values.
+Handles entity visualization, relevance highlighting, legend updates, and map extent fitting.</p>
+<p><a name="exp_module_components/map/hooks/useForecastPoints--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that renders forecast entities as colored points on the OpenLayers map.
+Updates point colors based on forecast values, highlights relevant entities,
+manages legend stops, and fits map extent to data.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.ENTITIES_SOURCE_EPSG</td>
+<td><code>string</code></td>
+<td>EPSG code for entity coordinates</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+<tr>
+<td>params.entities</td>
+<td><code>Array</code></td>
+<td>Array of entity objects with coordinates</td>
+</tr>
+<tr>
+<td>params.entitiesWorkspace</td>
+<td><code>string</code></td>
+<td>Workspace key for entities</td>
+</tr>
+<tr>
+<td>params.entitiesKey</td>
+<td><code>string</code></td>
+<td>Cache key for current entities</td>
+</tr>
+<tr>
+<td>params.relevantEntities</td>
+<td><code>Set</code></td>
+<td>Set of relevant entity IDs</td>
+</tr>
+<tr>
+<td>params.workspace</td>
+<td><code>string</code></td>
+<td>Current workspace</td>
+</tr>
+<tr>
+<td>params.forecastValuesNorm</td>
+<td><code>Object</code></td>
+<td>Normalized forecast values by entity ID</td>
+</tr>
+<tr>
+<td>params.forecastValues</td>
+<td><code>Object</code></td>
+<td>Raw forecast values by entity ID</td>
+</tr>
+<tr>
+<td>params.forecastUnavailable</td>
+<td><code>boolean</code></td>
+<td>Whether forecast data is unavailable</td>
+</tr>
+<tr>
+<td>params.forecastLayerRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to forecast vector layer</td>
+</tr>
+<tr>
+<td>params.mapRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to OpenLayers map instance</td>
+</tr>
+<tr>
+<td>params.setLegendStops</td>
+<td><code>function</code></td>
+<td>Setter for legend gradient stops</td>
+</tr>
+<tr>
+<td>params.setLegendMax</td>
+<td><code>function</code></td>
+<td>Setter for legend maximum value</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useForecastPoints({
+  ENTITIES_SOURCE_EPSG: &#39;EPSG:4326&#39;,
+  mapReady: true,
+  entities: [...],
+  forecastValuesNorm: { 1: 0.5, 2: 0.8 },
+  forecastLayerRef,
+  mapRef,
+  setLegendStops,
+  setLegendMax
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useDarkMode"></a></p>
+<h2>components/map/hooks/useDarkMode</h2>
+<p>React hook for detecting system dark mode preference.</p>
+<p><a name="exp_module_components/map/hooks/useDarkMode--module.exports"></a></p>
+<h3>module.exports() ⇒ <code>boolean</code> ⏏</h3>
+<p>Hook that detects and tracks the user&#39;s dark mode preference.
+Listens to system preference changes via prefers-color-scheme media query.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>boolean</code> - True if dark mode is preferred, false otherwise<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const isDarkMode = useDarkMode();
+const tileLayer = isDarkMode ? &#39;dark-tiles&#39; : &#39;light-tiles&#39;;
+</code></pre>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

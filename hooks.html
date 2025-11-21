@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hooks - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            <h1>Hooks</h1>
+<h2>Files</h2>
+<ul>
+<li>src/hooks/useCachedRequest.js</li>
+</ul>
+<hr>
+<p><a name="module_hooks/useCachedRequest"></a></p>
+<h2>hooks/useCachedRequest</h2>
+<p>Generic cached request hook that provides shared in-memory caching across hook instances.</p>
+<ul>
+<li><a href="#module_hooks/useCachedRequest">hooks/useCachedRequest</a><ul>
+<li><em>static</em><ul>
+<li><a href="#module_hooks/useCachedRequest.useCachedRequest">.useCachedRequest(key, fetchFn, deps, options)</a> ⇒ <code>Object</code> | <code>*</code> | <code>boolean</code> | <code>Error</code> | <code>null</code> | <code>function</code> | <code>boolean</code></li>
+</ul>
+</li>
+<li><em>inner</em><ul>
+<li><a href="#module_hooks/useCachedRequest..GLOBAL_CACHE">~GLOBAL_CACHE</a> : <code>Map.&lt;string, {timestamp: number, data: any}&gt;</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_hooks/useCachedRequest.useCachedRequest"></a></p>
+<h3>hooks/useCachedRequest.useCachedRequest(key, fetchFn, deps, options) ⇒ <code>Object</code> | <code>*</code> | <code>boolean</code> | <code>Error</code> | <code>null</code> | <code>function</code> | <code>boolean</code></h3>
+<p>Custom hook for making cached API requests with automatic deduplication.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_hooks/useCachedRequest"><code>hooks/useCachedRequest</code></a><br><strong>Returns</strong>: <code>Object</code> - Request state object<code>*</code> - returns.data - The fetched data<code>boolean</code> - returns.loading - Whether the request is in progress<code>Error</code> | <code>null</code> - returns.error - Error object if request failed<code>function</code> - returns.refresh - Function to force refetch bypassing cache<code>boolean</code> - returns.fromCache - Whether data was served from cache  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>key</td>
+<td><code>string</code> | <code>null</code></td>
+<td></td>
+<td>Unique cache key. If null/undefined, fetch is skipped</td>
+</tr>
+<tr>
+<td>fetchFn</td>
+<td><code>function</code></td>
+<td></td>
+<td>Async function that returns the data</td>
+</tr>
+<tr>
+<td>deps</td>
+<td><code>Array</code></td>
+<td></td>
+<td>Dependency array for the effect</td>
+</tr>
+<tr>
+<td>options</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Configuration options</td>
+</tr>
+<tr>
+<td>[options.enabled]</td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Whether the request is enabled</td>
+</tr>
+<tr>
+<td>[options.initialData]</td>
+<td><code>*</code></td>
+<td><code></code></td>
+<td>Initial data value</td>
+</tr>
+<tr>
+<td>[options.ttlMs]</td>
+<td><code>number</code> | <code>null</code></td>
+<td><code></code></td>
+<td>Time-to-live in milliseconds. If provided and cache is stale, refetch occurs</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { data, loading, error, refresh } = useCachedRequest(
+  &#39;forecast-entities&#39;,
+  () =&gt; getEntities(region, date, methodId, configId),
+  [region, date, methodId, configId],
+  { ttlMs: 60000 }
+);
+</code></pre>
+<p><a name="module_hooks/useCachedRequest..GLOBAL_CACHE"></a></p>
+<h3>hooks/useCachedRequest~GLOBAL_CACHE : <code>Map.&lt;string, {timestamp: number, data: any}&gt;</code></h3>
+<p>Global cache storage. Maps cache keys to objects containing timestamp and data.</p>
+<p><strong>Kind</strong>: inner constant of <a href="#module_hooks/useCachedRequest"><code>hooks/useCachedRequest</code></a>  </p>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

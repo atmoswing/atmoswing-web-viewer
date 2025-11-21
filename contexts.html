@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contexts - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            <h1>Contexts</h1>
+<h2>Files</h2>
+<ul>
+<li>src/contexts/WorkspaceContext.jsx</li>
+<li>src/contexts/SynthesisContext.jsx</li>
+<li>src/contexts/SnackbarContext.jsx</li>
+<li>src/contexts/SelectedEntityContext.jsx</li>
+<li>src/contexts/MethodsContext.jsx</li>
+<li>src/contexts/ForecastsContext.jsx</li>
+<li>src/contexts/ForecastValuesContext.jsx</li>
+<li>src/contexts/ForecastSessionContext.jsx</li>
+<li>src/contexts/EntitiesContext.jsx</li>
+<li>src/contexts/ConfigContext.jsx</li>
+</ul>
+<hr>
+<h2>Modules</h2>
+<dl>
+<dt><a href="#module_contexts/WorkspaceContext">contexts/WorkspaceContext</a></dt>
+<dd><p>React context for managing workspace (region) selection and associated forecast data.
+Handles workspace selection, URL synchronization, and workspace-specific data loading.</p>
+</dd>
+<dt><a href="#module_contexts/SynthesisContext">contexts/SynthesisContext</a></dt>
+<dd><p>Provides lead time arrays (daily &amp; sub-daily), target date selection and per-method synthesis data.
+Parses total synthesis responses to derive lead resolution structure.</p>
+</dd>
+<dt><a href="#module_contexts/SnackbarContext">contexts/SnackbarContext</a></dt>
+<dd><p>React context for managing application-wide notification snackbars.
+Provides a queue-based system for displaying temporary messages to users.</p>
+</dd>
+<dt><a href="#module_contexts/SelectedEntityContext">contexts/SelectedEntityContext</a></dt>
+<dd><p>React context for managing the currently selected forecast entity (station/point).
+Automatically resets selection when workspace changes.</p>
+</dd>
+<dt><a href="#module_contexts/MethodsContext">contexts/MethodsContext</a></dt>
+<dd><p>React context for managing forecast methods and configurations.
+Fetches available methods, manages selection, and provides normalized method tree.</p>
+</dd>
+<dt><a href="#module_contexts/ForecastsContext">contexts/ForecastsContext</a></dt>
+<dd><p>Composite provider combining all forecast-related contexts.
+Re-exports convenient hooks for accessing forecast functionality.</p>
+</dd>
+<dt><a href="#module_contexts/ForecastValuesContext">contexts/ForecastValuesContext</a></dt>
+<dd><p>Fetches and exposes forecast values (normalized + raw) for entities based on current selection.
+Handles lead time resolution, availability detection, and percentile/normalization parameters.</p>
+</dd>
+<dt><a href="#module_contexts/ForecastSessionContext">contexts/ForecastSessionContext</a></dt>
+<dd><p>Manages the active forecast date, base date, percentile/normalization parameters and shifting logic.
+Provides helper functions to restore last available forecast and shift base date by hour increments.</p>
+</dd>
+<dt><a href="#module_contexts/EntitiesContext">contexts/EntitiesContext</a></dt>
+<dd><p>Manages fetching and caching of forecast entities (stations/points) and relevant subsets.
+Handles automatic clearing on workspace or configuration changes and derives cache keys.</p>
+</dd>
+<dt><a href="#module_contexts/ConfigContext">contexts/ConfigContext</a></dt>
+<dd><p>React context for managing runtime configuration.</p>
+<p>This context fetches <code>/config.json</code> at startup and makes configuration
+values available throughout the application via the useConfig hook.</p>
+</dd>
+</dl>
+
+<p><a name="module_contexts/WorkspaceContext"></a></p>
+<h2>contexts/WorkspaceContext</h2>
+<p>React context for managing workspace (region) selection and associated forecast data.
+Handles workspace selection, URL synchronization, and workspace-specific data loading.</p>
+<ul>
+<li><a href="#module_contexts/WorkspaceContext">contexts/WorkspaceContext</a><ul>
+<li><a href="#module_contexts/WorkspaceContext.WorkspaceProvider">.WorkspaceProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+<li><a href="#module_contexts/WorkspaceContext.useWorkspace">.useWorkspace()</a> ⇒ <code>Object</code> | <code>string</code> | <code>function</code> | <code>Object</code> | <code>boolean</code> | <code>Error</code> | <code>string</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/WorkspaceContext.WorkspaceProvider"></a></p>
+<h3>contexts/WorkspaceContext.WorkspaceProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>Provider component for workspace management.
+Manages workspace selection, URL synchronization, and workspace-specific data loading.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/WorkspaceContext"><code>contexts/WorkspaceContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td>Component props</td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td>Child components</td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/WorkspaceContext.useWorkspace"></a></p>
+<h3>contexts/WorkspaceContext.useWorkspace() ⇒ <code>Object</code> | <code>string</code> | <code>function</code> | <code>Object</code> | <code>boolean</code> | <code>Error</code> | <code>string</code></h3>
+<p>Hook to access workspace context.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/WorkspaceContext"><code>contexts/WorkspaceContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Workspace context value<code>string</code> - returns.workspace - Current workspace key<code>function</code> - returns.setWorkspace - Function to change workspace<code>Object</code> - returns.workspaceData - Workspace data including last forecast date<code>boolean</code> - returns.loading - Loading state<code>Error</code> - returns.error - Error if loading failed<code>string</code> - returns.invalidWorkspaceKey - Invalid workspace key from URL (if any)<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { workspace, setWorkspace, workspaceData } = useWorkspace();
+console.log(&#39;Current workspace:&#39;, workspace);
+setWorkspace(&#39;newWorkspace&#39;);
+</code></pre>
+<p><a name="module_contexts/SynthesisContext"></a></p>
+<h2>contexts/SynthesisContext</h2>
+<p>Provides lead time arrays (daily &amp; sub-daily), target date selection and per-method synthesis data.
+Parses total synthesis responses to derive lead resolution structure.</p>
+<p><a name="module_contexts/SynthesisContext.useSynthesis"></a></p>
+<h3>contexts/SynthesisContext.useSynthesis ⇒ <code>Object</code> | <code>Array</code> | <code>Array</code> | <code>string</code> | <code>number</code> | <code>Date</code> | <code>null</code> | <code>function</code> | <code>Array</code> | <code>boolean</code> | <code>Error</code> | <code>null</code></h3>
+<p>Hook to access synthesis context.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/SynthesisContext"><code>contexts/SynthesisContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Synthesis state and helpers<code>Array</code> - returns.dailyLeads - Array of daily lead records<code>Array</code> - returns.subDailyLeads - Array of sub-daily lead records<code>string</code> - returns.leadResolution - &#39;daily&#39; or &#39;sub&#39;<code>number</code> - returns.selectedLead - Selected lead index<code>Date</code> | <code>null</code> - returns.selectedTargetDate - Selected target date object<code>function</code> - returns.selectTargetDate - Helper to select target date with preference<code>Array</code> - returns.perMethodSynthesis - Baseline per-method normalized synthesis values<code>boolean</code> - returns.perMethodSynthesisLoading - Loading state for per-method data<code>Error</code> | <code>null</code> - returns.perMethodSynthesisError - Error for per-method data<br><a name="module_contexts/SnackbarContext"></a></p>
+<h2>contexts/SnackbarContext</h2>
+<p>React context for managing application-wide notification snackbars.
+Provides a queue-based system for displaying temporary messages to users.</p>
+<ul>
+<li><a href="#module_contexts/SnackbarContext">contexts/SnackbarContext</a><ul>
+<li><a href="#module_contexts/SnackbarContext.useSnackbar">.useSnackbar</a> ⇒ <code>Object</code> | <code>function</code> | <code>function</code> | <code>function</code> | <code>Array</code></li>
+<li><a href="#module_contexts/SnackbarContext.SnackbarProvider">.SnackbarProvider</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/SnackbarContext.useSnackbar"></a></p>
+<h3>contexts/SnackbarContext.useSnackbar ⇒ <code>Object</code> | <code>function</code> | <code>function</code> | <code>function</code> | <code>Array</code></h3>
+<p>Hook to access snackbar functionality.
+Must be used within a SnackbarProvider.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/SnackbarContext"><code>contexts/SnackbarContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Snackbar context value<code>function</code> - returns.enqueueSnackbar - Add a new snackbar<code>function</code> - returns.closeSnackbar - Close a snackbar<code>function</code> - returns.removeSnackbar - Remove a snackbar<code>Array</code> - returns.snackbars - Array of active snackbars<br><strong>Throws</strong>:</p>
+<ul>
+<li><code>Error</code> If used outside SnackbarProvider</li>
+</ul>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { enqueueSnackbar } = useSnackbar();
+enqueueSnackbar(&#39;Success!&#39;, { variant: &#39;success&#39; });
+</code></pre>
+<p><a name="module_contexts/SnackbarContext.SnackbarProvider"></a></p>
+<h3>contexts/SnackbarContext.SnackbarProvider ⇒ <code>React.ReactElement</code></h3>
+<p>Provider component for snackbar notifications.
+Manages a queue of snackbar messages and provides methods to add, close, and remove them.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/SnackbarContext"><code>contexts/SnackbarContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td>Component props</td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td>Child components</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">&lt;SnackbarProvider&gt;
+  &lt;App /&gt;
+&lt;/SnackbarProvider&gt;
+</code></pre>
+<p><a name="module_contexts/SelectedEntityContext"></a></p>
+<h2>contexts/SelectedEntityContext</h2>
+<p>React context for managing the currently selected forecast entity (station/point).
+Automatically resets selection when workspace changes.</p>
+<ul>
+<li><a href="#module_contexts/SelectedEntityContext">contexts/SelectedEntityContext</a><ul>
+<li><a href="#module_contexts/SelectedEntityContext.useSelectedEntity">.useSelectedEntity</a> ⇒ <code>Object</code> | <code>string</code> | <code>number</code> | <code>null</code> | <code>function</code></li>
+<li><a href="#module_contexts/SelectedEntityContext.SelectedEntityProvider">.SelectedEntityProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/SelectedEntityContext.useSelectedEntity"></a></p>
+<h3>contexts/SelectedEntityContext.useSelectedEntity ⇒ <code>Object</code> | <code>string</code> | <code>number</code> | <code>null</code> | <code>function</code></h3>
+<p>Hook to access the selected entity context.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/SelectedEntityContext"><code>contexts/SelectedEntityContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Selected entity context value<code>string</code> | <code>number</code> | <code>null</code> - returns.selectedEntityId - Currently selected entity ID, or null<code>function</code> - returns.setSelectedEntityId - Function to set the selected entity ID<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { selectedEntityId, setSelectedEntityId } = useSelectedEntity();
+setSelectedEntityId(123); // Select entity with ID 123
+console.log(selectedEntityId); // Logs: 123
+</code></pre>
+<p><a name="module_contexts/SelectedEntityContext.SelectedEntityProvider"></a></p>
+<h3>contexts/SelectedEntityContext.SelectedEntityProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>Provider component for selected entity state management.
+Tracks which forecast entity is currently selected and resets on workspace change.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/SelectedEntityContext"><code>contexts/SelectedEntityContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td>Component props</td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td>Child components</td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/MethodsContext"></a></p>
+<h2>contexts/MethodsContext</h2>
+<p>React context for managing forecast methods and configurations.
+Fetches available methods, manages selection, and provides normalized method tree.</p>
+<ul>
+<li><a href="#module_contexts/MethodsContext">contexts/MethodsContext</a><ul>
+<li><a href="#module_contexts/MethodsContext.useMethods">.useMethods</a> ⇒ <code>Object</code> | <code>Array</code> | <code>boolean</code> | <code>Error</code> | <code>Object</code> | <code>function</code></li>
+<li><a href="#module_contexts/MethodsContext.MethodsProvider">.MethodsProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/MethodsContext.useMethods"></a></p>
+<h3>contexts/MethodsContext.useMethods ⇒ <code>Object</code> | <code>Array</code> | <code>boolean</code> | <code>Error</code> | <code>Object</code> | <code>function</code></h3>
+<p>Hook to access methods context.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/MethodsContext"><code>contexts/MethodsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Methods context value<code>Array</code> - returns.methodConfigTree - Normalized tree of methods with nested configs<code>boolean</code> - returns.methodsLoading - Loading state for methods fetch<code>Error</code> - returns.methodsError - Error if methods fetch failed<code>Object</code> - returns.selectedMethodConfig - Currently selected method and config<code>function</code> - returns.setSelectedMethodConfig - Function to set method/config selection<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { methodConfigTree, selectedMethodConfig, setSelectedMethodConfig } = useMethods();
+// Select first method
+setSelectedMethodConfig({ method: methodConfigTree[0], config: null });
+</code></pre>
+<p><a name="module_contexts/MethodsContext.MethodsProvider"></a></p>
+<h3>contexts/MethodsContext.MethodsProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>Provider component for forecast methods and configurations.
+Manages method selection with workspace scoping and auto-selection.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/MethodsContext"><code>contexts/MethodsContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td>Component props</td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td>Child components</td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/ForecastsContext"></a></p>
+<h2>contexts/ForecastsContext</h2>
+<p>Composite provider combining all forecast-related contexts.
+Re-exports convenient hooks for accessing forecast functionality.</p>
+<ul>
+<li><a href="#module_contexts/ForecastsContext">contexts/ForecastsContext</a><ul>
+<li><a href="#module_contexts/ForecastsContext.useMethods">.useMethods</a> ⇒ <code>Object</code></li>
+<li><a href="#module_contexts/ForecastsContext.useEntities">.useEntities</a> ⇒ <code>Object</code></li>
+<li><a href="#module_contexts/ForecastsContext.useSynthesis">.useSynthesis</a> ⇒ <code>Object</code></li>
+<li><a href="#module_contexts/ForecastsContext.useForecastValues">.useForecastValues</a> ⇒ <code>Object</code></li>
+<li><a href="#module_contexts/ForecastsContext.useForecastParameters">.useForecastParameters</a> ⇒ <code>Object</code> | <code>number</code> | <code>function</code> | <code>string</code> | <code>function</code></li>
+<li><a href="#module_contexts/ForecastsContext.useSelectedEntity">.useSelectedEntity</a> ⇒ <code>Object</code></li>
+<li><a href="#module_contexts/ForecastsContext.ForecastsProvider">.ForecastsProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/ForecastsContext.useMethods"></a></p>
+<h3>contexts/ForecastsContext.useMethods ⇒ <code>Object</code></h3>
+<p>Hook to access methods context. Re-export from MethodsContext.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Methods context value<br><a name="module_contexts/ForecastsContext.useEntities"></a></p>
+<h3>contexts/ForecastsContext.useEntities ⇒ <code>Object</code></h3>
+<p>Hook to access entities context. Re-export from EntitiesContext.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Entities context value<br><a name="module_contexts/ForecastsContext.useSynthesis"></a></p>
+<h3>contexts/ForecastsContext.useSynthesis ⇒ <code>Object</code></h3>
+<p>Hook to access synthesis context. Re-export from SynthesisContext.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Synthesis context value<br><a name="module_contexts/ForecastsContext.useForecastValues"></a></p>
+<h3>contexts/ForecastsContext.useForecastValues ⇒ <code>Object</code></h3>
+<p>Hook to access forecast values context. Re-export from ForecastValuesContext.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Forecast values context value<br><a name="module_contexts/ForecastsContext.useForecastParameters"></a></p>
+<h3>contexts/ForecastsContext.useForecastParameters ⇒ <code>Object</code> | <code>number</code> | <code>function</code> | <code>string</code> | <code>function</code></h3>
+<p>Hook to access forecast parameters (percentile and normalization).</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Forecast parameters<code>number</code> - returns.percentile - Current percentile value<code>function</code> - returns.setPercentile - Set percentile<code>string</code> - returns.normalizationRef - Normalization reference<code>function</code> - returns.setNormalizationRef - Set normalization reference<br><a name="module_contexts/ForecastsContext.useSelectedEntity"></a></p>
+<h3>contexts/ForecastsContext.useSelectedEntity ⇒ <code>Object</code></h3>
+<p>Hook to access selected entity context. Re-export from SelectedEntityContext.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Selected entity context value<br><a name="module_contexts/ForecastsContext.ForecastsProvider"></a></p>
+<h3>contexts/ForecastsContext.ForecastsProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>Composite provider wrapping all forecast-related contexts.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/ForecastsContext"><code>contexts/ForecastsContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/ForecastValuesContext"></a></p>
+<h2>contexts/ForecastValuesContext</h2>
+<p>Fetches and exposes forecast values (normalized + raw) for entities based on current selection.
+Handles lead time resolution, availability detection, and percentile/normalization parameters.</p>
+<ul>
+<li><a href="#module_contexts/ForecastValuesContext">contexts/ForecastValuesContext</a><ul>
+<li><a href="#module_contexts/ForecastValuesContext.useForecastValues">.useForecastValues</a> ⇒ <code>Object</code> | <code>Object</code> | <code>Object</code> | <code>boolean</code> | <code>Error</code> | <code>null</code> | <code>boolean</code></li>
+<li><a href="#module_contexts/ForecastValuesContext.ForecastValuesProvider">.ForecastValuesProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/ForecastValuesContext.useForecastValues"></a></p>
+<h3>contexts/ForecastValuesContext.useForecastValues ⇒ <code>Object</code> | <code>Object</code> | <code>Object</code> | <code>boolean</code> | <code>Error</code> | <code>null</code> | <code>boolean</code></h3>
+<p>Hook to access forecast values context.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastValuesContext"><code>contexts/ForecastValuesContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Forecast values state<code>Object</code> - returns.forecastValues - Map entityId -&gt; raw forecast value<code>Object</code> - returns.forecastValuesNorm - Map entityId -&gt; normalized forecast value<code>boolean</code> - returns.forecastLoading - Loading state<code>Error</code> | <code>null</code> - returns.forecastError - Error during fetch<code>boolean</code> - returns.forecastUnavailable - Flag when data deemed unavailable (e.g., no leads)<br><a name="module_contexts/ForecastValuesContext.ForecastValuesProvider"></a></p>
+<h3>contexts/ForecastValuesContext.ForecastValuesProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>ForecastValuesProvider component.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/ForecastValuesContext"><code>contexts/ForecastValuesContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/ForecastSessionContext"></a></p>
+<h2>contexts/ForecastSessionContext</h2>
+<p>Manages the active forecast date, base date, percentile/normalization parameters and shifting logic.
+Provides helper functions to restore last available forecast and shift base date by hour increments.</p>
+<ul>
+<li><a href="#module_contexts/ForecastSessionContext">contexts/ForecastSessionContext</a><ul>
+<li><a href="#module_contexts/ForecastSessionContext.useForecastSession">.useForecastSession</a> ⇒ <code>Object</code> | <code>string</code> | <code>null</code> | <code>Date</code> | <code>null</code> | <code>number</code> | <code>function</code> | <code>number</code> | <code>string</code> | <code>function</code> | <code>function</code> | <code>function</code> | <code>boolean</code> | <code>boolean</code> | <code>number</code></li>
+<li><a href="#module_contexts/ForecastSessionContext.ForecastSessionProvider">.ForecastSessionProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/ForecastSessionContext.useForecastSession"></a></p>
+<h3>contexts/ForecastSessionContext.useForecastSession ⇒ <code>Object</code> | <code>string</code> | <code>null</code> | <code>Date</code> | <code>null</code> | <code>number</code> | <code>function</code> | <code>number</code> | <code>string</code> | <code>function</code> | <code>function</code> | <code>function</code> | <code>boolean</code> | <code>boolean</code> | <code>number</code></h3>
+<p>Hook to access forecast session context.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/ForecastSessionContext"><code>contexts/ForecastSessionContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Forecast session state and helpers<code>string</code> | <code>null</code> - returns.activeForecastDate - Raw active forecast date string<code>Date</code> | <code>null</code> - returns.forecastBaseDate - Parsed base date object<code>number</code> - returns.percentile - Selected percentile (e.g., 90)<code>function</code> - returns.setPercentile - Setter for percentile<code>number</code> | <code>string</code> - returns.normalizationRef - Normalization reference value<code>function</code> - returns.setNormalizationRef - Setter for normalization reference<code>function</code> - returns.shiftForecastBaseDate - Shift search function for base date<code>function</code> - returns.restoreLastAvailableForecast - Restore last workspace forecast<code>boolean</code> - returns.baseDateSearchFailed - Flag when shift search fails<code>boolean</code> - returns.baseDateSearching - Whether shift search is in progress<code>number</code> - returns.resetVersion - Incrementing version to trigger dependent resets<br><a name="module_contexts/ForecastSessionContext.ForecastSessionProvider"></a></p>
+<h3>contexts/ForecastSessionContext.ForecastSessionProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>ForecastSessionProvider component.
+Initializes forecast session state from workspace data and exposes shifting &amp; restore helpers.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/ForecastSessionContext"><code>contexts/ForecastSessionContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/EntitiesContext"></a></p>
+<h2>contexts/EntitiesContext</h2>
+<p>Manages fetching and caching of forecast entities (stations/points) and relevant subsets.
+Handles automatic clearing on workspace or configuration changes and derives cache keys.</p>
+<ul>
+<li><a href="#module_contexts/EntitiesContext">contexts/EntitiesContext</a><ul>
+<li><a href="#module_contexts/EntitiesContext.useEntities">.useEntities</a> ⇒ <code>Object</code> | <code>Array</code> | <code>boolean</code> | <code>Error</code> | <code>null</code> | <code>Set.&lt;(string|number)&gt;</code> | <code>null</code> | <code>string</code> | <code>string</code> | <code>null</code></li>
+<li><a href="#module_contexts/EntitiesContext.EntitiesProvider">.EntitiesProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/EntitiesContext.useEntities"></a></p>
+<h3>contexts/EntitiesContext.useEntities ⇒ <code>Object</code> | <code>Array</code> | <code>boolean</code> | <code>Error</code> | <code>null</code> | <code>Set.&lt;(string|number)&gt;</code> | <code>null</code> | <code>string</code> | <code>string</code> | <code>null</code></h3>
+<p>Hook to access entities context.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_contexts/EntitiesContext"><code>contexts/EntitiesContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Entities context value<code>Array</code> - returns.entities - Array of entity objects<code>boolean</code> - returns.entitiesLoading - Loading state<code>Error</code> | <code>null</code> - returns.entitiesError - Error during entity fetch<code>Set.&lt;(string|number)&gt;</code> | <code>null</code> - returns.relevantEntities - Set of relevant entity IDs or null<code>string</code> - returns.entitiesWorkspace - Workspace key used for entities<code>string</code> | <code>null</code> - returns.entitiesKey - Cache key used for the request<br><a name="module_contexts/EntitiesContext.EntitiesProvider"></a></p>
+<h3>contexts/EntitiesContext.EntitiesProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>EntitiesProvider component.
+Fetches entity list and relevant entity IDs for the selected method/config.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/EntitiesContext"><code>contexts/EntitiesContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/ConfigContext"></a></p>
+<h2>contexts/ConfigContext</h2>
+<p>React context for managing runtime configuration.</p>
+<p>This context fetches <code>/config.json</code> at startup and makes configuration
+values available throughout the application via the useConfig hook.</p>
+<ul>
+<li><a href="#module_contexts/ConfigContext">contexts/ConfigContext</a><ul>
+<li><a href="#module_contexts/ConfigContext.ConfigProvider">.ConfigProvider(props)</a> ⇒ <code>React.ReactElement</code></li>
+<li><a href="#module_contexts/ConfigContext.useConfig">.useConfig()</a> ⇒ <code>Object</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_contexts/ConfigContext.ConfigProvider"></a></p>
+<h3>contexts/ConfigContext.ConfigProvider(props) ⇒ <code>React.ReactElement</code></h3>
+<p>Provider component that fetches and manages runtime configuration.</p>
+<p>Fetches <code>/config.json</code> on mount with cache: no-store to ensure fresh config.
+Merges normalized config into the shared config object and provides it via context.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/ConfigContext"><code>contexts/ConfigContext</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>props</td>
+<td><code>Object</code></td>
+<td></td>
+</tr>
+<tr>
+<td>props.children</td>
+<td><code>React.ReactNode</code></td>
+<td>Child components</td>
+</tr>
+</tbody></table>
+<p><a name="module_contexts/ConfigContext.useConfig"></a></p>
+<h3>contexts/ConfigContext.useConfig() ⇒ <code>Object</code></h3>
+<p>Hook to access runtime configuration.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_contexts/ConfigContext"><code>contexts/ConfigContext</code></a><br><strong>Returns</strong>: <code>Object</code> - Configuration object with __workspacesLoaded flag<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const config = useConfig();
+if (config.__workspacesLoaded) {
+  console.log(&#39;Workspaces:&#39;, config.workspaces);
+}
+</code></pre>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

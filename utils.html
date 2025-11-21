@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utils - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            <h1>Utils</h1>
+<h2>Files</h2>
+<ul>
+<li>src/utils/urlWorkspaceUtils.js</li>
+<li>src/utils/targetDateUtils.js</li>
+<li>src/utils/formattingUtils.js</li>
+<li>src/utils/forecastDateUtils.js</li>
+<li>src/utils/contextGuards.js</li>
+<li>src/utils/colorUtils.js</li>
+<li>src/utils/cacheTTLs.js</li>
+<li>src/utils/apiNormalization.js</li>
+</ul>
+<hr>
+<h2>Modules</h2>
+<dl>
+<dt><a href="#module_utils/urlWorkspaceUtils">utils/urlWorkspaceUtils</a></dt>
+<dd><p>Helpers for syncing workspace selection with URL query parameters.
+Enables shareable URLs and browser back/forward navigation for workspace changes.</p>
+</dd>
+<dt><a href="#module_utils/targetDateUtils">utils/targetDateUtils</a></dt>
+<dd><p>Utility helpers for lead time calculations and date comparisons.
+Centralizes logic for working with forecast target dates and lead times.</p>
+</dd>
+<dt><a href="#module_utils/formattingUtils">utils/formattingUtils</a></dt>
+<dd><p>Generic formatting utilities for dates, numbers, and entity names.
+Provides consistent formatting across the application for display purposes.</p>
+</dd>
+<dt><a href="#module_utils/forecastDateUtils">utils/forecastDateUtils</a></dt>
+<dd><p>Date parsing and formatting utilities for forecast dates.
+Handles various date formats used by the API and provides consistent parsing/formatting.</p>
+</dd>
+<dt><a href="#module_utils/contextGuards">utils/contextGuards</a></dt>
+<dd><p>Common guard and helper functions shared across context providers.
+Reduces duplication and provides validation logic for method/workspace selections.</p>
+</dd>
+<dt><a href="#module_utils/colorUtils">utils/colorUtils</a></dt>
+<dd><p>Color utilities for visualizing forecast values on maps and charts.
+Provides a color gradient from white -&gt; cyan -&gt; green -&gt; yellow -&gt; red based on normalized values.</p>
+</dd>
+<dt><a href="#module_utils/cacheTTLs">utils/cacheTTLs</a></dt>
+<dd><p>Central TTL (Time-To-Live) presets for cached API requests.
+All values are in milliseconds. Adjust these if backend freshness requirements change.</p>
+</dd>
+<dt><a href="#module_utils/apiNormalization">utils/apiNormalization</a></dt>
+<dd><p>Helpers to normalize varied API response shapes into predictable structures.
+The API may return data in different formats depending on the endpoint or version.
+These functions ensure consistent data structures for the UI layer.</p>
+</dd>
+</dl>
+
+<p><a name="module_utils/urlWorkspaceUtils"></a></p>
+<h2>utils/urlWorkspaceUtils</h2>
+<p>Helpers for syncing workspace selection with URL query parameters.
+Enables shareable URLs and browser back/forward navigation for workspace changes.</p>
+<ul>
+<li><a href="#module_utils/urlWorkspaceUtils">utils/urlWorkspaceUtils</a><ul>
+<li><a href="#module_utils/urlWorkspaceUtils.readWorkspaceFromUrl">.readWorkspaceFromUrl()</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/urlWorkspaceUtils.writeWorkspaceToUrl">.writeWorkspaceToUrl(next)</a></li>
+<li><a href="#module_utils/urlWorkspaceUtils.onWorkspacePopState">.onWorkspacePopState(handler)</a> ⇒ <code>function</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/urlWorkspaceUtils.readWorkspaceFromUrl"></a></p>
+<h3>utils/urlWorkspaceUtils.readWorkspaceFromUrl() ⇒ <code>string</code></h3>
+<p>Reads the workspace key from the current URL query parameters.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/urlWorkspaceUtils"><code>utils/urlWorkspaceUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Workspace key from URL, or empty string if not present<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">// URL: /?workspace=demo
+readWorkspaceFromUrl() // Returns: &quot;demo&quot;
+</code></pre>
+<p><a name="module_utils/urlWorkspaceUtils.writeWorkspaceToUrl"></a></p>
+<h3>utils/urlWorkspaceUtils.writeWorkspaceToUrl(next)</h3>
+<p>Updates the URL query parameter with the selected workspace key.
+Uses pushState to update the URL without page reload.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/urlWorkspaceUtils"><code>utils/urlWorkspaceUtils</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>next</td>
+<td><code>string</code></td>
+<td>Workspace key to set, or empty/null to remove parameter</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">writeWorkspaceToUrl(&#39;demo&#39;) // Updates URL to: /?workspace=demo
+writeWorkspaceToUrl(null)   // Removes workspace parameter from URL
+</code></pre>
+<p><a name="module_utils/urlWorkspaceUtils.onWorkspacePopState"></a></p>
+<h3>utils/urlWorkspaceUtils.onWorkspacePopState(handler) ⇒ <code>function</code></h3>
+<p>Registers a handler for browser back/forward navigation to sync workspace changes.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/urlWorkspaceUtils"><code>utils/urlWorkspaceUtils</code></a><br><strong>Returns</strong>: <code>function</code> - Cleanup function to remove the event listener  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>handler</td>
+<td><code>function</code></td>
+<td>Callback function that receives the workspace key from URL</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const cleanup = onWorkspacePopState((workspaceKey) =&gt; {
+  console.log(&#39;Workspace changed via navigation:&#39;, workspaceKey);
+  setCurrentWorkspace(workspaceKey);
+});
+
+// Later, when component unmounts:
+cleanup();
+</code></pre>
+<p><a name="module_utils/targetDateUtils"></a></p>
+<h2>utils/targetDateUtils</h2>
+<p>Utility helpers for lead time calculations and date comparisons.
+Centralizes logic for working with forecast target dates and lead times.</p>
+<ul>
+<li><a href="#module_utils/targetDateUtils">utils/targetDateUtils</a><ul>
+<li><a href="#module_utils/targetDateUtils.SUB_HOURS">.SUB_HOURS</a> : <code>Array.&lt;number&gt;</code></li>
+<li><a href="#module_utils/targetDateUtils.makeDayKey">.makeDayKey(date)</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/targetDateUtils.parseDayKey">.parseDayKey(key)</a> ⇒ <code>Date</code></li>
+<li><a href="#module_utils/targetDateUtils.computeLeadHours">.computeLeadHours(forecastBaseDate, selectedTargetDate, leadResolution, selectedLead, dailyLeads, subDailyLeads)</a> ⇒ <code>number</code></li>
+<li><a href="#module_utils/targetDateUtils.isSameDay">.isSameDay()</a></li>
+<li><a href="#module_utils/targetDateUtils.isSameInstant">.isSameInstant()</a></li>
+<li><a href="#module_utils/targetDateUtils.hasTargetDate">.hasTargetDate()</a></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/targetDateUtils.SUB_HOURS"></a></p>
+<h3>utils/targetDateUtils.SUB_HOURS : <code>Array.&lt;number&gt;</code></h3>
+<p>Sub-daily hour intervals for forecast resolution.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><a name="module_utils/targetDateUtils.makeDayKey"></a></p>
+<h3>utils/targetDateUtils.makeDayKey(date) ⇒ <code>string</code></h3>
+<p>Creates a stable YYYY-M-D key string for a date.
+Note: Month is 0-based as per JavaScript Date API.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Date key in format &quot;YYYY-M-D&quot;, or empty string if invalid  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>date</td>
+<td><code>Date</code></td>
+<td>Date object to convert to key</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">makeDayKey(new Date(2025, 10, 5)) // Returns: &quot;2025-10-5&quot;
+</code></pre>
+<p><a name="module_utils/targetDateUtils.parseDayKey"></a></p>
+<h3>utils/targetDateUtils.parseDayKey(key) ⇒ <code>Date</code></h3>
+<p>Parses a YYYY-M-D key string back to a Date object.
+Month is treated as 0-based (JavaScript Date convention).</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><strong>Returns</strong>: <code>Date</code> - Date object, or Invalid Date if parsing fails  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>key</td>
+<td><code>string</code></td>
+<td>Date key in format &quot;YYYY-M-D&quot;</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">parseDayKey(&quot;2025-10-5&quot;) // Returns: Date object for November 5, 2025
+</code></pre>
+<p><a name="module_utils/targetDateUtils.computeLeadHours"></a></p>
+<h3>utils/targetDateUtils.computeLeadHours(forecastBaseDate, selectedTargetDate, leadResolution, selectedLead, dailyLeads, subDailyLeads) ⇒ <code>number</code></h3>
+<p>Compute lead hours given either a base date + target date (preferred) or fallback indices.
+Applies timezone offset adjustment when both dates are provided to keep consistent hour differences.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><strong>Returns</strong>: <code>number</code> - non-negative integer lead hours  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>forecastBaseDate</td>
+<td><code>Date</code> | <code>null</code></td>
+</tr>
+<tr>
+<td>selectedTargetDate</td>
+<td><code>Date</code> | <code>null</code></td>
+</tr>
+<tr>
+<td>leadResolution</td>
+<td><code>&#x27;daily&#x27;</code> | <code>&#x27;sub&#x27;</code></td>
+</tr>
+<tr>
+<td>selectedLead</td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td>dailyLeads</td>
+<td><code>Array.&lt;{time_step:number, date:Date}&gt;</code></td>
+</tr>
+<tr>
+<td>subDailyLeads</td>
+<td><code>Array.&lt;{time_step:number, date:Date}&gt;</code></td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/targetDateUtils.isSameDay"></a></p>
+<h3>utils/targetDateUtils.isSameDay()</h3>
+<p>Compare two dates on calendar day only.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><a name="module_utils/targetDateUtils.isSameInstant"></a></p>
+<h3>utils/targetDateUtils.isSameInstant()</h3>
+<p>Strict timestamp equality (ms).</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><a name="module_utils/targetDateUtils.hasTargetDate"></a></p>
+<h3>utils/targetDateUtils.hasTargetDate()</h3>
+<p>Determine if target date is present among leads given resolution.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/targetDateUtils"><code>utils/targetDateUtils</code></a><br><a name="module_utils/formattingUtils"></a></p>
+<h2>utils/formattingUtils</h2>
+<p>Generic formatting utilities for dates, numbers, and entity names.
+Provides consistent formatting across the application for display purposes.</p>
+<ul>
+<li><a href="#module_utils/formattingUtils">utils/formattingUtils</a><ul>
+<li><a href="#module_utils/formattingUtils.formatDateDDMMYYYY">.formatDateDDMMYYYY(dateLike)</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/formattingUtils.formatPrecipitation">.formatPrecipitation(value)</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/formattingUtils.formatCriteria">.formatCriteria(value)</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/formattingUtils.compareEntitiesByName">.compareEntitiesByName(a, b)</a> ⇒ <code>number</code></li>
+<li><a href="#module_utils/formattingUtils.formatDateLabel">.formatDateLabel(date)</a> ⇒ <code>string</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/formattingUtils.formatDateDDMMYYYY"></a></p>
+<h3>utils/formattingUtils.formatDateDDMMYYYY(dateLike) ⇒ <code>string</code></h3>
+<p>Format a Date or date-like value to DD.MM.YYYY format (e.g., 05.11.2025).
+Returns empty string on invalid input.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/formattingUtils"><code>utils/formattingUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Formatted date string or empty string if invalid  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>dateLike</td>
+<td><code>Date</code> | <code>string</code> | <code>number</code></td>
+<td>Date object, timestamp, or date string</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">formatDateDDMMYYYY(new Date(&#39;2025-11-05&#39;)) // Returns: &quot;05.11.2025&quot;
+formatDateDDMMYYYY(&#39;2025-11-05&#39;) // Returns: &quot;05.11.2025&quot;
+formatDateDDMMYYYY(null) // Returns: &quot;&quot;
+</code></pre>
+<p><a name="module_utils/formattingUtils.formatPrecipitation"></a></p>
+<h3>utils/formattingUtils.formatPrecipitation(value) ⇒ <code>string</code></h3>
+<p>Formats precipitation value to string with one decimal place.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/formattingUtils"><code>utils/formattingUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Formatted string: number with 1 decimal, &#39;0&#39; for zero, &#39;-&#39; for null/undefined  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>value</td>
+<td><code>number</code> | <code>string</code> | <code>null</code></td>
+<td>Precipitation value to format</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">formatPrecipitation(25.67) // Returns: &quot;25.7&quot;
+formatPrecipitation(0) // Returns: &quot;0&quot;
+formatPrecipitation(null) // Returns: &quot;-&quot;
+</code></pre>
+<p><a name="module_utils/formattingUtils.formatCriteria"></a></p>
+<h3>utils/formattingUtils.formatCriteria(value) ⇒ <code>string</code></h3>
+<p>Formats a criteria/score value to string with two decimal places.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/formattingUtils"><code>utils/formattingUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Formatted string with 2 decimals, or &#39;-&#39; for null/undefined  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>value</td>
+<td><code>number</code> | <code>string</code> | <code>null</code></td>
+<td>Criteria value to format</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">formatCriteria(0.12345) // Returns: &quot;0.12&quot;
+formatCriteria(null) // Returns: &quot;-&quot;
+</code></pre>
+<p><a name="module_utils/formattingUtils.compareEntitiesByName"></a></p>
+<h3>utils/formattingUtils.compareEntitiesByName(a, b) ⇒ <code>number</code></h3>
+<p>Compares two entity objects by name for sorting, case-insensitive.
+Falls back to comparing by id if name is not available.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/formattingUtils"><code>utils/formattingUtils</code></a><br><strong>Returns</strong>: <code>number</code> - -1 if a &lt; b, 1 if a &gt; b, 0 if equal  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>a</td>
+<td><code>Object</code></td>
+<td>First entity with name and/or id</td>
+</tr>
+<tr>
+<td>b</td>
+<td><code>Object</code></td>
+<td>Second entity with name and/or id</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const entities = [{name: &quot;Station B&quot;}, {name: &quot;Station A&quot;}];
+entities.sort(compareEntitiesByName);
+// Results in: [{name: &quot;Station A&quot;}, {name: &quot;Station B&quot;}]
+</code></pre>
+<p><a name="module_utils/formattingUtils.formatDateLabel"></a></p>
+<h3>utils/formattingUtils.formatDateLabel(date) ⇒ <code>string</code></h3>
+<p>Formats a Date into a display label with optional time component.
+Includes time (HH:MM) only if hours or minutes are non-zero.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/formattingUtils"><code>utils/formattingUtils</code></a><br><strong>Returns</strong>: <code>string</code> - Formatted string &quot;DD.MM.YYYY&quot; or &quot;DD.MM.YYYY HH:MM&quot;  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>date</td>
+<td><code>Date</code> | <code>string</code> | <code>number</code></td>
+<td>Date object, timestamp, or date string</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">formatDateLabel(new Date(&#39;2025-11-05T00:00&#39;)) // Returns: &quot;05.11.2025&quot;
+formatDateLabel(new Date(&#39;2025-11-05T14:30&#39;)) // Returns: &quot;05.11.2025 14:30&quot;
+</code></pre>
+<p><a name="module_utils/forecastDateUtils"></a></p>
+<h2>utils/forecastDateUtils</h2>
+<p>Date parsing and formatting utilities for forecast dates.
+Handles various date formats used by the API and provides consistent parsing/formatting.</p>
+<ul>
+<li><a href="#module_utils/forecastDateUtils">utils/forecastDateUtils</a><ul>
+<li><a href="#module_utils/forecastDateUtils.parseForecastDate">.parseForecastDate(str)</a> ⇒ <code>Date</code> | <code>null</code></li>
+<li><a href="#module_utils/forecastDateUtils.formatForecastDateForApi">.formatForecastDateForApi(dateObj, [reference])</a> ⇒ <code>string</code> | <code>null</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/forecastDateUtils.parseForecastDate"></a></p>
+<h3>utils/forecastDateUtils.parseForecastDate(str) ⇒ <code>Date</code> | <code>null</code></h3>
+<p>Parses various forecast date string formats into a JavaScript Date object.</p>
+<p>Supported formats:</p>
+<ul>
+<li>ISO 8601: &quot;2023-01-15T12:00:00Z&quot;</li>
+<li>Hour-only: &quot;2023-01-15T12&quot;</li>
+<li>Space/underscore: &quot;2023-01-15 12:00&quot;, &quot;2023-01-15_12:00&quot;</li>
+<li>Compact: &quot;2023011512&quot; or &quot;202301151200&quot;</li>
+</ul>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/forecastDateUtils"><code>utils/forecastDateUtils</code></a><br><strong>Returns</strong>: <code>Date</code> | <code>null</code> - Parsed Date object, or null if parsing fails  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>str</td>
+<td><code>string</code></td>
+<td>Date string to parse</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">parseForecastDate(&quot;2023-01-15T12&quot;) // Returns: Date object for Jan 15, 2023 12:00
+parseForecastDate(&quot;2023011512&quot;) // Returns: Date object for Jan 15, 2023 12:00
+parseForecastDate(&quot;invalid&quot;) // Returns: null
+</code></pre>
+<p><a name="module_utils/forecastDateUtils.formatForecastDateForApi"></a></p>
+<h3>utils/forecastDateUtils.formatForecastDateForApi(dateObj, [reference]) ⇒ <code>string</code> | <code>null</code></h3>
+<p>Formats a Date object to a string format suitable for API requests.
+The output format is determined by examining a reference string format.</p>
+<p>Output formats based on reference:</p>
+<ul>
+<li>&quot;YYYY-MM-DDThh&quot; reference → &quot;YYYY-MM-DDThh&quot;</li>
+<li>&quot;YYYY-MM-DD&quot; reference → &quot;YYYY-MM-DD hh:mm&quot;</li>
+<li>No reference → &quot;YYYY-MM-DD hh:mm&quot;</li>
+<li>Other references → ISO 8601 string</li>
+</ul>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/forecastDateUtils"><code>utils/forecastDateUtils</code></a><br><strong>Returns</strong>: <code>string</code> | <code>null</code> - Formatted date string, or null if invalid date  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>dateObj</td>
+<td><code>Date</code></td>
+<td>Date object to format</td>
+</tr>
+<tr>
+<td>[reference]</td>
+<td><code>string</code></td>
+<td>Reference format string to match</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">formatForecastDateForApi(new Date(&#39;2023-01-15T12:00&#39;), &#39;2023-01-01T00&#39;)
+// Returns: &quot;2023-01-15T12&quot;
+
+formatForecastDateForApi(new Date(&#39;2023-01-15T12:00&#39;), &#39;2023-01-01&#39;)
+// Returns: &quot;2023-01-15 12:00&quot;
+</code></pre>
+<p><a name="module_utils/contextGuards"></a></p>
+<h2>utils/contextGuards</h2>
+<p>Common guard and helper functions shared across context providers.
+Reduces duplication and provides validation logic for method/workspace selections.</p>
+<ul>
+<li><a href="#module_utils/contextGuards">utils/contextGuards</a><ul>
+<li><a href="#module_utils/contextGuards.isMethodSelectionValid">.isMethodSelectionValid(selectedMethodConfig, workspace)</a> ⇒ <code>boolean</code></li>
+<li><a href="#module_utils/contextGuards.methodExists">.methodExists(methodConfigTree, methodId)</a> ⇒ <code>boolean</code></li>
+<li><a href="#module_utils/contextGuards.deriveConfigId">.deriveConfigId(selectedMethodConfig, methodConfigTree)</a> ⇒ <code>string</code> | <code>number</code> | <code>null</code></li>
+<li><a href="#module_utils/contextGuards.keyForEntities">.keyForEntities(workspace, forecastDate, methodId, configId)</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/contextGuards.keyForRelevantEntities">.keyForRelevantEntities(workspace, forecastDate, methodId, configId)</a> ⇒ <code>string</code></li>
+<li><a href="#module_utils/contextGuards.keyForForecastValues">.keyForForecastValues(workspace, forecastDate, methodId, configId, leadHours, percentile, normalizationRef)</a> ⇒ <code>string</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/contextGuards.isMethodSelectionValid"></a></p>
+<h3>utils/contextGuards.isMethodSelectionValid(selectedMethodConfig, workspace) ⇒ <code>boolean</code></h3>
+<p>Validates that a selected method/config belongs to the current workspace.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/contextGuards"><code>utils/contextGuards</code></a><br><strong>Returns</strong>: <code>boolean</code> - True if selection is valid for this workspace  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>selectedMethodConfig</td>
+<td><code>Object</code></td>
+<td>The selected method and config object</td>
+</tr>
+<tr>
+<td>workspace</td>
+<td><code>string</code></td>
+<td>Current workspace key</td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/contextGuards.methodExists"></a></p>
+<h3>utils/contextGuards.methodExists(methodConfigTree, methodId) ⇒ <code>boolean</code></h3>
+<p>Checks if a method ID exists in the method configuration tree.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/contextGuards"><code>utils/contextGuards</code></a><br><strong>Returns</strong>: <code>boolean</code> - True if method exists in tree  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>methodConfigTree</td>
+<td><code>Array</code></td>
+<td>Array of method objects with id property</td>
+</tr>
+<tr>
+<td>methodId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Method ID to search for</td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/contextGuards.deriveConfigId"></a></p>
+<h3>utils/contextGuards.deriveConfigId(selectedMethodConfig, methodConfigTree) ⇒ <code>string</code> | <code>number</code> | <code>null</code></h3>
+<p>Derives a configuration ID from selected method, falling back to first config.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/contextGuards"><code>utils/contextGuards</code></a><br><strong>Returns</strong>: <code>string</code> | <code>number</code> | <code>null</code> - Configuration ID, or null if not found  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>selectedMethodConfig</td>
+<td><code>Object</code></td>
+<td>Selected method and config object</td>
+</tr>
+<tr>
+<td>methodConfigTree</td>
+<td><code>Array</code></td>
+<td>Full method configuration tree</td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/contextGuards.keyForEntities"></a></p>
+<h3>utils/contextGuards.keyForEntities(workspace, forecastDate, methodId, configId) ⇒ <code>string</code></h3>
+<p>Composes a cache key for entities data.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/contextGuards"><code>utils/contextGuards</code></a><br><strong>Returns</strong>: <code>string</code> - Composed cache key  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>workspace</td>
+<td><code>string</code></td>
+<td>Workspace key</td>
+</tr>
+<tr>
+<td>forecastDate</td>
+<td><code>string</code></td>
+<td>Forecast date string</td>
+</tr>
+<tr>
+<td>methodId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Method ID</td>
+</tr>
+<tr>
+<td>configId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Configuration ID</td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/contextGuards.keyForRelevantEntities"></a></p>
+<h3>utils/contextGuards.keyForRelevantEntities(workspace, forecastDate, methodId, configId) ⇒ <code>string</code></h3>
+<p>Composes a cache key for relevant entities data.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/contextGuards"><code>utils/contextGuards</code></a><br><strong>Returns</strong>: <code>string</code> - Composed cache key  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>workspace</td>
+<td><code>string</code></td>
+<td>Workspace key</td>
+</tr>
+<tr>
+<td>forecastDate</td>
+<td><code>string</code></td>
+<td>Forecast date string</td>
+</tr>
+<tr>
+<td>methodId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Method ID</td>
+</tr>
+<tr>
+<td>configId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Configuration ID</td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/contextGuards.keyForForecastValues"></a></p>
+<h3>utils/contextGuards.keyForForecastValues(workspace, forecastDate, methodId, configId, leadHours, percentile, normalizationRef) ⇒ <code>string</code></h3>
+<p>Composes a cache key for forecast values data.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/contextGuards"><code>utils/contextGuards</code></a><br><strong>Returns</strong>: <code>string</code> - Composed cache key  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>workspace</td>
+<td><code>string</code></td>
+<td>Workspace key</td>
+</tr>
+<tr>
+<td>forecastDate</td>
+<td><code>string</code></td>
+<td>Forecast date string</td>
+</tr>
+<tr>
+<td>methodId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Method ID</td>
+</tr>
+<tr>
+<td>configId</td>
+<td><code>string</code> | <code>number</code></td>
+<td>Configuration ID (defaults to &#39;agg&#39;)</td>
+</tr>
+<tr>
+<td>leadHours</td>
+<td><code>number</code></td>
+<td>Lead time in hours</td>
+</tr>
+<tr>
+<td>percentile</td>
+<td><code>number</code></td>
+<td>Percentile value</td>
+</tr>
+<tr>
+<td>normalizationRef</td>
+<td><code>string</code></td>
+<td>Normalization reference (defaults to &#39;raw&#39;)</td>
+</tr>
+</tbody></table>
+<p><a name="module_utils/colorUtils"></a></p>
+<h2>utils/colorUtils</h2>
+<p>Color utilities for visualizing forecast values on maps and charts.
+Provides a color gradient from white -&gt; cyan -&gt; green -&gt; yellow -&gt; red based on normalized values.</p>
+<ul>
+<li><a href="#module_utils/colorUtils">utils/colorUtils</a><ul>
+<li><a href="#module_utils/colorUtils.valueToColor">.valueToColor(value, maxValue)</a> ⇒ <code>Array.&lt;number&gt;</code></li>
+<li><a href="#module_utils/colorUtils.valueToColorCSS">.valueToColorCSS(value, maxValue)</a> ⇒ <code>string</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/colorUtils.valueToColor"></a></p>
+<h3>utils/colorUtils.valueToColor(value, maxValue) ⇒ <code>Array.&lt;number&gt;</code></h3>
+<p>Converts a numeric value to an RGB color array based on a gradient scale.</p>
+<p>Color scale:</p>
+<ul>
+<li>0: White [255, 255, 255]</li>
+<li>0-50%: White -&gt; Cyan -&gt; Green</li>
+<li>50-100%: Green -&gt; Yellow -&gt; Red</li>
+<li>null/NaN: Gray [150, 150, 150]</li>
+</ul>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/colorUtils"><code>utils/colorUtils</code></a><br><strong>Returns</strong>: <code>Array.&lt;number&gt;</code> - RGB color array [r, g, b] with values 0-255  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>value</td>
+<td><code>number</code> | <code>null</code></td>
+<td>The value to convert to color</td>
+</tr>
+<tr>
+<td>maxValue</td>
+<td><code>number</code></td>
+<td>The maximum value for normalization</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">valueToColor(50, 100) // Returns [255, 255, 0] (yellow)
+valueToColor(0, 100)  // Returns [255, 255, 255] (white)
+</code></pre>
+<p><a name="module_utils/colorUtils.valueToColorCSS"></a></p>
+<h3>utils/colorUtils.valueToColorCSS(value, maxValue) ⇒ <code>string</code></h3>
+<p>Converts a numeric value to a CSS rgb() color string.
+Convenience wrapper around valueToColor() that returns a CSS-ready string.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/colorUtils"><code>utils/colorUtils</code></a><br><strong>Returns</strong>: <code>string</code> - CSS rgb() color string, e.g., &quot;rgb(255,128,0)&quot;  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>value</td>
+<td><code>number</code> | <code>null</code></td>
+<td>The value to convert to color</td>
+</tr>
+<tr>
+<td>maxValue</td>
+<td><code>number</code></td>
+<td>The maximum value for normalization</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">valueToColorCSS(75, 100) // Returns &quot;rgb(255,191,0)&quot;
+</code></pre>
+<p><a name="module_utils/cacheTTLs"></a></p>
+<h2>utils/cacheTTLs</h2>
+<p>Central TTL (Time-To-Live) presets for cached API requests.
+All values are in milliseconds. Adjust these if backend freshness requirements change.</p>
+<ul>
+<li><a href="#module_utils/cacheTTLs">utils/cacheTTLs</a><ul>
+<li><a href="#module_utils/cacheTTLs.SHORT_TTL">.SHORT_TTL</a> : <code>number</code></li>
+<li><a href="#module_utils/cacheTTLs.DEFAULT_TTL">.DEFAULT_TTL</a> : <code>number</code></li>
+<li><a href="#module_utils/cacheTTLs.LONG_TTL">.LONG_TTL</a> : <code>number</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/cacheTTLs.SHORT_TTL"></a></p>
+<h3>utils/cacheTTLs.SHORT_TTL : <code>number</code></h3>
+<p>Short TTL for frequently changing data (2 minutes).
+Use for exploratory data with high churn rate like analog dates and lead times.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_utils/cacheTTLs"><code>utils/cacheTTLs</code></a><br><a name="module_utils/cacheTTLs.DEFAULT_TTL"></a></p>
+<h3>utils/cacheTTLs.DEFAULT_TTL : <code>number</code></h3>
+<p>Default TTL for typical API data (5 minutes).
+Use for methods, entities, and synthesis data that changes moderately.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_utils/cacheTTLs"><code>utils/cacheTTLs</code></a><br><a name="module_utils/cacheTTLs.LONG_TTL"></a></p>
+<h3>utils/cacheTTLs.LONG_TTL : <code>number</code></h3>
+<p>Long TTL for very static data (15 minutes).
+Use for configuration and rarely-changing reference data.</p>
+<p><strong>Kind</strong>: static constant of <a href="#module_utils/cacheTTLs"><code>utils/cacheTTLs</code></a><br><a name="module_utils/apiNormalization"></a></p>
+<h2>utils/apiNormalization</h2>
+<p>Helpers to normalize varied API response shapes into predictable structures.
+The API may return data in different formats depending on the endpoint or version.
+These functions ensure consistent data structures for the UI layer.</p>
+<ul>
+<li><a href="#module_utils/apiNormalization">utils/apiNormalization</a><ul>
+<li><a href="#module_utils/apiNormalization.normalizeEntitiesResponse">.normalizeEntitiesResponse(resp)</a> ⇒ <code>Array.&lt;Object&gt;</code></li>
+<li><a href="#module_utils/apiNormalization.normalizeRelevantEntityIds">.normalizeRelevantEntityIds(resp)</a> ⇒ <code>Set.&lt;(string|number)&gt;</code></li>
+<li><a href="#module_utils/apiNormalization.normalizeAnalogsResponse">.normalizeAnalogsResponse(resp)</a> ⇒ <code>Array.&lt;Object&gt;</code></li>
+<li><a href="#module_utils/apiNormalization.extractTargetDatesArray">.extractTargetDatesArray(resp)</a> ⇒ <code>Array.&lt;string&gt;</code></li>
+<li><a href="#module_utils/apiNormalization.normalizeForecastValuesResponse">.normalizeForecastValuesResponse(resp)</a> ⇒ <code>Object</code> | <code>Object</code> | <code>Object</code> | <code>boolean</code></li>
+<li><a href="#module_utils/apiNormalization.normalizeMethodsAndConfigs">.normalizeMethodsAndConfigs(resp)</a> ⇒ <code>Array.&lt;Object&gt;</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_utils/apiNormalization.normalizeEntitiesResponse"></a></p>
+<h3>utils/apiNormalization.normalizeEntitiesResponse(resp) ⇒ <code>Array.&lt;Object&gt;</code></h3>
+<p>Normalizes entities response to a consistent array format.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/apiNormalization"><code>utils/apiNormalization</code></a><br><strong>Returns</strong>: <code>Array.&lt;Object&gt;</code> - Array of entity objects with {id, name?, x?, y?}  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>resp</td>
+<td><code>*</code></td>
+<td>Raw API response (can be array, object with entities property, or null)</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">// Returns [{id: 1, name: &quot;Station A&quot;}]
+normalizeEntitiesResponse({entities: [{id: 1, name: &quot;Station A&quot;}]})
+</code></pre>
+<p><a name="module_utils/apiNormalization.normalizeRelevantEntityIds"></a></p>
+<h3>utils/apiNormalization.normalizeRelevantEntityIds(resp) ⇒ <code>Set.&lt;(string|number)&gt;</code></h3>
+<p>Extracts and normalizes relevant entity IDs from various response formats.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/apiNormalization"><code>utils/apiNormalization</code></a><br><strong>Returns</strong>: <code>Set.&lt;(string|number)&gt;</code> - Set of entity IDs  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>resp</td>
+<td><code>*</code></td>
+<td>Raw API response</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">normalizeRelevantEntityIds({entity_ids: [1, 2, 3]}) // Returns Set(1, 2, 3)
+</code></pre>
+<p><a name="module_utils/apiNormalization.normalizeAnalogsResponse"></a></p>
+<h3>utils/apiNormalization.normalizeAnalogsResponse(resp) ⇒ <code>Array.&lt;Object&gt;</code></h3>
+<p>Normalizes analog data from various response formats.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/apiNormalization"><code>utils/apiNormalization</code></a><br><strong>Returns</strong>: <code>Array.&lt;Object&gt;</code> - Array of analog objects with {rank, date, value, criteria}  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>resp</td>
+<td><code>*</code></td>
+<td>Raw API response containing analog data</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">normalizeAnalogsResponse({analogs: [{rank: 1, date: &quot;2020-01-15&quot;, value: 25.3}]})
+</code></pre>
+<p><a name="module_utils/apiNormalization.extractTargetDatesArray"></a></p>
+<h3>utils/apiNormalization.extractTargetDatesArray(resp) ⇒ <code>Array.&lt;string&gt;</code></h3>
+<p>Extracts target dates array from various API response formats.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/apiNormalization"><code>utils/apiNormalization</code></a><br><strong>Returns</strong>: <code>Array.&lt;string&gt;</code> - Array of target date strings, or empty array if not found  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>resp</td>
+<td><code>*</code></td>
+<td>Raw API response (can be object, array, or nested structure)</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">extractTargetDatesArray({series_values: {target_dates: [&#39;2023-01-15&#39;, &#39;2023-01-16&#39;]}})
+// Returns: [&#39;2023-01-15&#39;, &#39;2023-01-16&#39;]
+</code></pre>
+<p><a name="module_utils/apiNormalization.normalizeForecastValuesResponse"></a></p>
+<h3>utils/apiNormalization.normalizeForecastValuesResponse(resp) ⇒ <code>Object</code> | <code>Object</code> | <code>Object</code> | <code>boolean</code></h3>
+<p>Normalizes forecast values response into separate normalized and raw value maps.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/apiNormalization"><code>utils/apiNormalization</code></a><br><strong>Returns</strong>: <code>Object</code> - Object with {norm: Object, raw: Object, unavailable: boolean}<code>Object</code> - returns.norm - Map of entity ID to normalized value<code>Object</code> - returns.raw - Map of entity ID to raw value<code>boolean</code> - returns.unavailable - True if data is missing or malformed  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>resp</td>
+<td><code>Object</code></td>
+<td>Raw API response with entity_ids, values_normalized, and values arrays</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">normalizeForecastValuesResponse({
+  entity_ids: [1, 2],
+  values_normalized: [0.5, 0.8],
+  values: [25.5, 40.2]
+})
+// Returns: {
+//   norm: {1: 0.5, 2: 0.8},
+//   raw: {1: 25.5, 2: 40.2},
+//   unavailable: false
+// }
+</code></pre>
+<p><a name="module_utils/apiNormalization.normalizeMethodsAndConfigs"></a></p>
+<h3>utils/apiNormalization.normalizeMethodsAndConfigs(resp) ⇒ <code>Array.&lt;Object&gt;</code></h3>
+<p>Normalizes methods and configurations response into a tree structure.
+Each method contains nested configuration objects.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_utils/apiNormalization"><code>utils/apiNormalization</code></a><br><strong>Returns</strong>: <code>Array.&lt;Object&gt;</code> - Array of method objects with nested children configs  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>resp</td>
+<td><code>Object</code></td>
+<td>Raw API response with methods array</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">normalizeMethodsAndConfigs({
+  methods: [{id: 1, name: &quot;Method A&quot;, configs: [{id: 10, name: &quot;Config 1&quot;}]}]
+})
+// Returns: [{id: 1, name: &quot;Method A&quot;, children: [{id: 10, name: &quot;Config 1&quot;}]}]
+</code></pre>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

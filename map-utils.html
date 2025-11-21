@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Utils - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            <h1>Map Utils</h1>
+<h2>Files</h2>
+<ul>
+<li>src/components/map/utils/olStyleUtils.js</li>
+<li>src/components/map/utils/olProjectionUtils.js</li>
+<li>src/components/map/utils/loadWmtsCapabilities.js</li>
+<li>src/components/map/utils/buildLegendStops.js</li>
+</ul>
+<hr>
+<h2>Modules</h2>
+<dl>
+<dt><a href="#module_components/map/utils/olStyleUtils">components/map/utils/olStyleUtils</a></dt>
+<dd><p>Utilities for OpenLayers style creation and color parsing.
+Supports hex, rgb, rgba, QGIS-style colors, and style configuration objects.</p>
+</dd>
+<dt><a href="#module_components/map/utils/olProjectionUtils">components/map/utils/olProjectionUtils</a></dt>
+<dd><p>Centralized projection utilities for OpenLayers with proj4 integration.</p>
+</dd>
+<dt><a href="#module_components/map/utils/loadWmtsCapabilities">components/map/utils/loadWmtsCapabilities</a></dt>
+<dd><p>Utilities for loading WMTS (Web Map Tile Service) capabilities and creating tile layers.
+Handles fetching capabilities XML, parsing layer options, and caching for reuse.</p>
+</dd>
+<dt><a href="#module_components/map/utils/buildLegendStops">components/map/utils/buildLegendStops</a></dt>
+<dd><p>Generates legend gradient stops for map visualization.</p>
+</dd>
+</dl>
+
+<p><a name="module_components/map/utils/olStyleUtils"></a></p>
+<h2>components/map/utils/olStyleUtils</h2>
+<p>Utilities for OpenLayers style creation and color parsing.
+Supports hex, rgb, rgba, QGIS-style colors, and style configuration objects.</p>
+<ul>
+<li><a href="#module_components/map/utils/olStyleUtils">components/map/utils/olStyleUtils</a><ul>
+<li><a href="#module_components/map/utils/olStyleUtils.toRGBA">.toRGBA(input, [alphaFallback])</a> ⇒ <code>string</code></li>
+<li><a href="#module_components/map/utils/olStyleUtils.styleFromConfigObj">.styleFromConfigObj([obj])</a> ⇒ <code>function</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/utils/olStyleUtils.toRGBA"></a></p>
+<h3>components/map/utils/olStyleUtils.toRGBA(input, [alphaFallback]) ⇒ <code>string</code></h3>
+<p>Converts various color formats to CSS rgba() string.
+Supports hex, rgb/rgba strings, QGIS-style comma-separated values, and arrays.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/olStyleUtils"><code>components/map/utils/olStyleUtils</code></a><br><strong>Returns</strong>: <code>string</code> - CSS rgba() color string  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>input</td>
+<td><code>string</code> | <code>Array</code></td>
+<td></td>
+<td>Color in various formats</td>
+</tr>
+<tr>
+<td>[alphaFallback]</td>
+<td><code>number</code></td>
+<td><code>1</code></td>
+<td>Default alpha value if not specified</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">toRGBA(&#39;#ff0000&#39;) // Returns: &quot;rgba(255,0,0,1)&quot;
+toRGBA(&#39;255,0,0,128&#39;) // Returns: &quot;rgba(255,0,0,0.5)&quot;
+</code></pre>
+<p><a name="module_components/map/utils/olStyleUtils.styleFromConfigObj"></a></p>
+<h3>components/map/utils/olStyleUtils.styleFromConfigObj([obj]) ⇒ <code>function</code></h3>
+<p>Creates an OpenLayers style function from a configuration object.
+Supports different styles for lines, polygons, and points.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/olStyleUtils"><code>components/map/utils/olStyleUtils</code></a><br><strong>Returns</strong>: <code>function</code> - OpenLayers style function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[obj]</td>
+<td><code>Object</code></td>
+<td><code>{}</code></td>
+<td>Style configuration object</td>
+</tr>
+<tr>
+<td>[obj.line]</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Line style configuration</td>
+</tr>
+<tr>
+<td>[obj.polygon]</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Polygon style configuration</td>
+</tr>
+<tr>
+<td>[obj.point]</td>
+<td><code>Object</code></td>
+<td></td>
+<td>Point/circle style configuration</td>
+</tr>
+<tr>
+<td>[obj.strokeColor]</td>
+<td><code>string</code></td>
+<td></td>
+<td>Fallback stroke color</td>
+</tr>
+<tr>
+<td>[obj.strokeWidth]</td>
+<td><code>number</code></td>
+<td></td>
+<td>Fallback stroke width</td>
+</tr>
+<tr>
+<td>[obj.fillColor]</td>
+<td><code>string</code></td>
+<td></td>
+<td>Fallback fill color</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const style = styleFromConfigObj({
+  line: { stroke: { color: &#39;#ff0000&#39;, width: 3 } },
+  polygon: { fill: { color: &#39;rgba(255,0,0,0.2)&#39; } }
+});
+</code></pre>
+<p><a name="module_components/map/utils/olProjectionUtils"></a></p>
+<h2>components/map/utils/olProjectionUtils</h2>
+<p>Centralized projection utilities for OpenLayers with proj4 integration.</p>
+<ul>
+<li><a href="#module_components/map/utils/olProjectionUtils">components/map/utils/olProjectionUtils</a><ul>
+<li><em>static</em><ul>
+<li><a href="#module_components/map/utils/olProjectionUtils.ensureProjDefined">.ensureProjDefined(epsg)</a></li>
+</ul>
+</li>
+<li><em>inner</em><ul>
+<li><a href="#module_components/map/utils/olProjectionUtils..PREDEFINED">~PREDEFINED</a> : <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/utils/olProjectionUtils.ensureProjDefined"></a></p>
+<h3>components/map/utils/olProjectionUtils.ensureProjDefined(epsg)</h3>
+<p>Ensures a projection is defined in proj4 and registered with OpenLayers.
+Uses predefined definitions for known EPSG codes. Handles registration errors silently.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/olProjectionUtils"><code>components/map/utils/olProjectionUtils</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>epsg</td>
+<td><code>string</code></td>
+<td>EPSG code (e.g., &quot;EPSG:2154&quot;)</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">ensureProjDefined(&#39;EPSG:2154&#39;); // Registers Lambert-93 for France
+</code></pre>
+<p><a name="module_components/map/utils/olProjectionUtils..PREDEFINED"></a></p>
+<h3>components/map/utils/olProjectionUtils~PREDEFINED : <code>Object</code></h3>
+<p>Predefined proj4 projection definitions for common EPSG codes.</p>
+<p><strong>Kind</strong>: inner constant of <a href="#module_components/map/utils/olProjectionUtils"><code>components/map/utils/olProjectionUtils</code></a><br><a name="module_components/map/utils/loadWmtsCapabilities"></a></p>
+<h2>components/map/utils/loadWmtsCapabilities</h2>
+<p>Utilities for loading WMTS (Web Map Tile Service) capabilities and creating tile layers.
+Handles fetching capabilities XML, parsing layer options, and caching for reuse.</p>
+<ul>
+<li><a href="#module_components/map/utils/loadWmtsCapabilities">components/map/utils/loadWmtsCapabilities</a><ul>
+<li><a href="#module_components/map/utils/loadWmtsCapabilities.loadWmtsCapabilities">.loadWmtsCapabilities(runtimeConfig, [enqueueWarning], [preferStyleForItem])</a> ⇒ <code>Promise.&lt;Object&gt;</code></li>
+<li><a href="#module_components/map/utils/loadWmtsCapabilities.createWmtsTileLayer">.createWmtsTileLayer(item, wmtsOptionsCache)</a> ⇒ <code>WMTS</code> | <code>null</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_components/map/utils/loadWmtsCapabilities.loadWmtsCapabilities"></a></p>
+<h3>components/map/utils/loadWmtsCapabilities.loadWmtsCapabilities(runtimeConfig, [enqueueWarning], [preferStyleForItem]) ⇒ <code>Promise.&lt;Object&gt;</code></h3>
+<p>Fetches WMTS capabilities from configured providers and builds options cache.
+Processes base layers and overlay layers from runtime config, attempts to load
+capabilities with preferred styles, and returns a cache of layer options.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/loadWmtsCapabilities"><code>components/map/utils/loadWmtsCapabilities</code></a><br><strong>Returns</strong>: <code>Promise.&lt;Object&gt;</code> - Cache object mapping wmtsLayer name to OpenLayers WMTS options  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime configuration with providers and layers</td>
+</tr>
+<tr>
+<td>[enqueueWarning]</td>
+<td><code>function</code></td>
+<td>Optional callback to display warning messages</td>
+</tr>
+<tr>
+<td>[preferStyleForItem]</td>
+<td><code>function</code></td>
+<td>Optional function to determine preferred style for an item</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const cache = await loadWmtsCapabilities(config, (msg) =&gt; console.warn(msg));
+// Returns: { &#39;layerName&#39;: { ...wmtsOptions } }
+</code></pre>
+<p><a name="module_components/map/utils/loadWmtsCapabilities.createWmtsTileLayer"></a></p>
+<h3>components/map/utils/loadWmtsCapabilities.createWmtsTileLayer(item, wmtsOptionsCache) ⇒ <code>WMTS</code> | <code>null</code></h3>
+<p>Creates an OpenLayers WMTS source from cached layer options.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/loadWmtsCapabilities"><code>components/map/utils/loadWmtsCapabilities</code></a><br><strong>Returns</strong>: <code>WMTS</code> | <code>null</code> - OpenLayers WMTS source instance, or null if not found in cache  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>item</td>
+<td><code>Object</code></td>
+<td>Layer configuration item with wmtsLayer property</td>
+</tr>
+<tr>
+<td>wmtsOptionsCache</td>
+<td><code>Object</code></td>
+<td>Cache of WMTS options from loadWmtsCapabilities</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const source = createWmtsTileLayer({ wmtsLayer: &#39;myLayer&#39; }, cache);
+if (source) {
+  const layer = new TileLayer({ source });
+}
+</code></pre>
+<p><a name="module_components/map/utils/buildLegendStops"></a></p>
+<h2>components/map/utils/buildLegendStops</h2>
+<p>Generates legend gradient stops for map visualization.</p>
+<p><a name="module_components/map/utils/buildLegendStops.buildLegendStops"></a></p>
+<h3>components/map/utils/buildLegendStops.buildLegendStops([maxVal], [samples]) ⇒ <code>Array.&lt;Object&gt;</code></h3>
+<p>Builds an array of color stops for a continuous legend gradient.
+Each stop represents a point in the gradient from 0 to maxVal.</p>
+<p><strong>Kind</strong>: static method of <a href="#module_components/map/utils/buildLegendStops"><code>components/map/utils/buildLegendStops</code></a><br><strong>Returns</strong>: <code>Array.&lt;Object&gt;</code> - Array of legend stops with {color: string, pct: number}  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[maxVal]</td>
+<td><code>number</code></td>
+<td><code>1</code></td>
+<td>Maximum value for the legend scale</td>
+</tr>
+<tr>
+<td>[samples]</td>
+<td><code>number</code></td>
+<td><code>LEGEND_SAMPLES</code></td>
+<td>Number of gradient samples to generate</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const stops = buildLegendStops(100, 10);
+// Returns: [
+//   {color: &#39;rgb(255,255,255)&#39;, pct: 0},
+//   {color: &#39;rgb(200,255,200)&#39;, pct: 10},
+//   ...
+//   {color: &#39;rgb(255,0,0)&#39;, pct: 100}
+// ]
+</code></pre>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Hooks - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            <h1>Map Hooks</h1>
+<h2>Files</h2>
+<ul>
+<li>src/components/map/hooks/useProjectionRegistration.js</li>
+<li>src/components/map/hooks/useOverlayGlobalLayers.js</li>
+<li>src/components/map/hooks/useOverlayConfigLayers.js</li>
+<li>src/components/map/hooks/useMapInteractions.js</li>
+<li>src/components/map/hooks/useMapInit.js</li>
+<li>src/components/map/hooks/useForecastPoints.js</li>
+<li>src/components/map/hooks/useDarkMode.js</li>
+</ul>
+<hr>
+<h2>Modules</h2>
+<dl>
+<dt><a href="#module_components/map/hooks/useProjectionRegistration">components/map/hooks/useProjectionRegistration</a></dt>
+<dd><p>React hook for registering custom map projections with OpenLayers.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useOverlayGlobalLayers">components/map/hooks/useOverlayGlobalLayers</a></dt>
+<dd><p>Hook for loading and managing global (non-workspace-specific) overlay layers.
+Supports WMTS and GeoJSON sources with optional periodic refresh.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useOverlayConfigLayers">components/map/hooks/useOverlayConfigLayers</a></dt>
+<dd><p>Hook for loading and managing workspace-specific overlay layers (shapefiles).
+Dynamically adds/removes overlay layers based on workspace configuration.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useMapInteractions">components/map/hooks/useMapInteractions</a></dt>
+<dd><p>Hook for handling map click and pointer interactions with forecast points.
+Manages entity selection on click and tooltip display on hover.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useMapInit">components/map/hooks/useMapInit</a></dt>
+<dd><p>React hook for initializing OpenLayers map with configured layers and controls.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useForecastPoints">components/map/hooks/useForecastPoints</a></dt>
+<dd><p>Hook for rendering forecast points on the map with color-coded values.
+Handles entity visualization, relevance highlighting, legend updates, and map extent fitting.</p>
+</dd>
+<dt><a href="#module_components/map/hooks/useDarkMode">components/map/hooks/useDarkMode</a></dt>
+<dd><p>React hook for detecting system dark mode preference.</p>
+</dd>
+</dl>
+
+<p><a name="module_components/map/hooks/useProjectionRegistration"></a></p>
+<h2>components/map/hooks/useProjectionRegistration</h2>
+<p>React hook for registering custom map projections with OpenLayers.</p>
+<ul>
+<li><a href="#module_components/map/hooks/useProjectionRegistration">components/map/hooks/useProjectionRegistration</a><ul>
+<li><a href="#exp_module_components/map/hooks/useProjectionRegistration--module.exports">module.exports(epsg)</a> ⇒ <code>React.RefObject</code> ⏏<ul>
+<li><a href="#module_components/map/hooks/useProjectionRegistration--module.exports..PREDEFINED">~PREDEFINED</a> : <code>Object</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="exp_module_components/map/hooks/useProjectionRegistration--module.exports"></a></p>
+<h3>module.exports(epsg) ⇒ <code>React.RefObject</code> ⏏</h3>
+<p>Hook that registers a projection with OpenLayers if not already registered.
+Uses predefined proj4 definitions for known EPSG codes.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>React.RefObject</code> - Ref containing the last registered projection  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>epsg</td>
+<td><code>string</code></td>
+<td>EPSG code (e.g., &quot;EPSG:2154&quot;)</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useProjectionRegistration(&#39;EPSG:2154&#39;); // Registers Lambert-93 for France
+</code></pre>
+<p><a name="module_components/map/hooks/useProjectionRegistration--module.exports..PREDEFINED"></a></p>
+<h4>module.exports~PREDEFINED : <code>Object</code></h4>
+<p>Predefined projection definitions for common EPSG codes.</p>
+<p><strong>Kind</strong>: inner constant of <a href="#exp_module_components/map/hooks/useProjectionRegistration--module.exports"><code>module.exports</code></a><br><a name="module_components/map/hooks/useOverlayGlobalLayers"></a></p>
+<h2>components/map/hooks/useOverlayGlobalLayers</h2>
+<p>Hook for loading and managing global (non-workspace-specific) overlay layers.
+Supports WMTS and GeoJSON sources with optional periodic refresh.</p>
+<p><a name="exp_module_components/map/hooks/useOverlayGlobalLayers--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that loads global overlay layers defined in runtime configuration.
+Handles WMTS capabilities adoption, dynamic GeoJSON fetching, refresh timers,
+abort controllers, and layer switcher panel updates.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+<tr>
+<td>params.runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime configuration object</td>
+</tr>
+<tr>
+<td>params.overlayGroupRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to overlay layer group</td>
+</tr>
+<tr>
+<td>params.layerSwitcherRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to layer switcher control</td>
+</tr>
+<tr>
+<td>[params.enqueueSnackbar]</td>
+<td><code>function</code></td>
+<td>Optional notification callback</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useOverlayGlobalLayers({
+  mapReady: true,
+  runtimeConfig,
+  overlayGroupRef,
+  layerSwitcherRef,
+  enqueueSnackbar: (msg) =&gt; console.warn(msg)
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useOverlayConfigLayers"></a></p>
+<h2>components/map/hooks/useOverlayConfigLayers</h2>
+<p>Hook for loading and managing workspace-specific overlay layers (shapefiles).
+Dynamically adds/removes overlay layers based on workspace configuration.</p>
+<p><a name="exp_module_components/map/hooks/useOverlayConfigLayers--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that manages workspace-specific overlay layers on the map.
+Loads shapefiles defined in workspace configuration and adds them as vector layers.
+Automatically cleans up layers when workspace changes.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+<tr>
+<td>params.runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime configuration with workspace definitions</td>
+</tr>
+<tr>
+<td>params.workspace</td>
+<td><code>string</code></td>
+<td>Current workspace key</td>
+</tr>
+<tr>
+<td>params.overlayGroupRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to overlay layer group</td>
+</tr>
+<tr>
+<td>params.layerSwitcherRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to layer switcher control</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useOverlayConfigLayers({
+  mapReady: true,
+  runtimeConfig: config,
+  workspace: &#39;demo&#39;,
+  overlayGroupRef,
+  layerSwitcherRef
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useMapInteractions"></a></p>
+<h2>components/map/hooks/useMapInteractions</h2>
+<p>Hook for handling map click and pointer interactions with forecast points.
+Manages entity selection on click and tooltip display on hover.</p>
+<p><a name="exp_module_components/map/hooks/useMapInteractions--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that sets up map interaction handlers for forecast point selection and tooltips.
+Handles single click for entity selection and pointer move/out for tooltip display.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.mapRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to OpenLayers map instance</td>
+</tr>
+<tr>
+<td>params.forecastLayerRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to forecast vector layer</td>
+</tr>
+<tr>
+<td>params.setSelectedEntityId</td>
+<td><code>function</code></td>
+<td>Function to set selected entity ID</td>
+</tr>
+<tr>
+<td>params.setTooltip</td>
+<td><code>function</code></td>
+<td>Function to set tooltip state (x, y, name, valueRaw)</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useMapInteractions({
+  mapRef,
+  forecastLayerRef,
+  setSelectedEntityId: (id) =&gt; console.log(&#39;Selected:&#39;, id),
+  setTooltip: (tooltip) =&gt; console.log(&#39;Tooltip:&#39;, tooltip),
+  mapReady: true
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useMapInit"></a></p>
+<h2>components/map/hooks/useMapInit</h2>
+<p>React hook for initializing OpenLayers map with configured layers and controls.</p>
+<p><a name="exp_module_components/map/hooks/useMapInit--module.exports"></a></p>
+<h3>module.exports(params) ⇒ <code>Object</code> ⏏</h3>
+<p>Hook that initializes an OpenLayers map with base layers, overlays, and controls.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>Object</code> - Map refs and ready state  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.t</td>
+<td><code>function</code></td>
+<td>Translation function</td>
+</tr>
+<tr>
+<td>params.runtimeConfig</td>
+<td><code>Object</code></td>
+<td>Runtime config with layer definitions</td>
+</tr>
+<tr>
+<td>params.enqueueSnackbar</td>
+<td><code>function</code></td>
+<td>Notification function</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const { containerRef, mapRef, mapReady } = useMapInit({ t, runtimeConfig, enqueueSnackbar });
+</code></pre>
+<p><a name="module_components/map/hooks/useForecastPoints"></a></p>
+<h2>components/map/hooks/useForecastPoints</h2>
+<p>Hook for rendering forecast points on the map with color-coded values.
+Handles entity visualization, relevance highlighting, legend updates, and map extent fitting.</p>
+<p><a name="exp_module_components/map/hooks/useForecastPoints--module.exports"></a></p>
+<h3>module.exports(params) ⏏</h3>
+<p>Hook that renders forecast entities as colored points on the OpenLayers map.
+Updates point colors based on forecast values, highlights relevant entities,
+manages legend stops, and fits map extent to data.</p>
+<p><strong>Kind</strong>: Exported function  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>params</td>
+<td><code>Object</code></td>
+<td>Hook parameters</td>
+</tr>
+<tr>
+<td>params.ENTITIES_SOURCE_EPSG</td>
+<td><code>string</code></td>
+<td>EPSG code for entity coordinates</td>
+</tr>
+<tr>
+<td>params.mapReady</td>
+<td><code>boolean</code></td>
+<td>Whether map is initialized</td>
+</tr>
+<tr>
+<td>params.entities</td>
+<td><code>Array</code></td>
+<td>Array of entity objects with coordinates</td>
+</tr>
+<tr>
+<td>params.entitiesWorkspace</td>
+<td><code>string</code></td>
+<td>Workspace key for entities</td>
+</tr>
+<tr>
+<td>params.entitiesKey</td>
+<td><code>string</code></td>
+<td>Cache key for current entities</td>
+</tr>
+<tr>
+<td>params.relevantEntities</td>
+<td><code>Set</code></td>
+<td>Set of relevant entity IDs</td>
+</tr>
+<tr>
+<td>params.workspace</td>
+<td><code>string</code></td>
+<td>Current workspace</td>
+</tr>
+<tr>
+<td>params.forecastValuesNorm</td>
+<td><code>Object</code></td>
+<td>Normalized forecast values by entity ID</td>
+</tr>
+<tr>
+<td>params.forecastValues</td>
+<td><code>Object</code></td>
+<td>Raw forecast values by entity ID</td>
+</tr>
+<tr>
+<td>params.forecastUnavailable</td>
+<td><code>boolean</code></td>
+<td>Whether forecast data is unavailable</td>
+</tr>
+<tr>
+<td>params.forecastLayerRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to forecast vector layer</td>
+</tr>
+<tr>
+<td>params.mapRef</td>
+<td><code>React.RefObject</code></td>
+<td>Ref to OpenLayers map instance</td>
+</tr>
+<tr>
+<td>params.setLegendStops</td>
+<td><code>function</code></td>
+<td>Setter for legend gradient stops</td>
+</tr>
+<tr>
+<td>params.setLegendMax</td>
+<td><code>function</code></td>
+<td>Setter for legend maximum value</td>
+</tr>
+</tbody></table>
+<p><strong>Example</strong>  </p>
+<pre><code class="language-javascript">useForecastPoints({
+  ENTITIES_SOURCE_EPSG: &#39;EPSG:4326&#39;,
+  mapReady: true,
+  entities: [...],
+  forecastValuesNorm: { 1: 0.5, 2: 0.8 },
+  forecastLayerRef,
+  mapRef,
+  setLegendStops,
+  setLegendMax
+});
+</code></pre>
+<p><a name="module_components/map/hooks/useDarkMode"></a></p>
+<h2>components/map/hooks/useDarkMode</h2>
+<p>React hook for detecting system dark mode preference.</p>
+<p><a name="exp_module_components/map/hooks/useDarkMode--module.exports"></a></p>
+<h3>module.exports() ⇒ <code>boolean</code> ⏏</h3>
+<p>Hook that detects and tracks the user&#39;s dark mode preference.
+Listens to system preference changes via prefers-color-scheme media query.</p>
+<p><strong>Kind</strong>: Exported function<br><strong>Returns</strong>: <code>boolean</code> - True if dark mode is preferred, false otherwise<br><strong>Example</strong>  </p>
+<pre><code class="language-javascript">const isDarkMode = useDarkMode();
+const tileLayer = isDarkMode ? &#39;dark-tiles&#39; : &#39;light-tiles&#39;;
+</code></pre>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>
