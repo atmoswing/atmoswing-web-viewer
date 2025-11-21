@@ -32,17 +32,4 @@ public/gis-layers/
 
 # Documentation (generated)
 coverage/
-docs/api-services.md
-docs/api-services.html
-docs/components.md
-docs/components.html
-docs/contexts.md
-docs/contexts.html
-docs/hooks.md
-docs/hooks.html
-docs/map-hooks.md
-docs/map-hooks.html
-docs/map-utils.md
-docs/map-utils.html
-docs/utils.md
-docs/utils.html
+docs/
