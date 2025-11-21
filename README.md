@@ -1,5 +1,9 @@
 # AtmoSwing web viewer
 
+[![Tests](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/test.yml)
+[![Docker Image](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/build-docker-image.yml/badge.svg?branch=main)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/build-docker-image.yml)
+[![Documentation](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml/badge.svg)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml)
+
 ## Development
 
 Run the local server for development:
