@@ -31,5 +31,11 @@ lint.txt
 public/gis-layers/
 
 # Documentation (generated)
-docs/
 coverage/
+docs/api-services.md
+docs/components.md
+docs/contexts.md
+docs/hooks.md
+docs/map-hooks.md
+docs/map-utils.md
+docs/utils.md
