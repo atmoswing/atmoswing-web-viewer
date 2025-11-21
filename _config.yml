@@ -1,0 +1,7 @@
+title: AtmoSwing Web Viewer Documentation
+description: API Documentation for AtmoSwing Web Viewer
+theme: jekyll-theme-cayman
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
