@@ -1,4 +1,25 @@
-// Date parsing/formatting helpers extracted from ForecastsContext
+/**
+ * @module utils/forecastDateUtils
+ * @description Date parsing and formatting utilities for forecast dates.
+ * Handles various date formats used by the API and provides consistent parsing/formatting.
+ */
+
+/**
+ * Parses various forecast date string formats into a JavaScript Date object.
+ *
+ * Supported formats:
+ * - ISO 8601: "2023-01-15T12:00:00Z"
+ * - Hour-only: "2023-01-15T12"
+ * - Space/underscore: "2023-01-15 12:00", "2023-01-15_12:00"
+ * - Compact: "2023011512" or "202301151200"
+ *
+ * @param {string} str - Date string to parse
+ * @returns {Date|null} Parsed Date object, or null if parsing fails
+ * @example
+ * parseForecastDate("2023-01-15T12") // Returns: Date object for Jan 15, 2023 12:00
+ * parseForecastDate("2023011512") // Returns: Date object for Jan 15, 2023 12:00
+ * parseForecastDate("invalid") // Returns: null
+ */
 export function parseForecastDate(str) {
   if (!str) return null;
   const mHourOnly = str?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})$/);
@@ -22,6 +43,26 @@ export function parseForecastDate(str) {
   return null;
 }
 
+/**
+ * Formats a Date object to a string format suitable for API requests.
+ * The output format is determined by examining a reference string format.
+ *
+ * Output formats based on reference:
+ * - "YYYY-MM-DDThh" reference → "YYYY-MM-DDThh"
+ * - "YYYY-MM-DD" reference → "YYYY-MM-DD hh:mm"
+ * - No reference → "YYYY-MM-DD hh:mm"
+ * - Other references → ISO 8601 string
+ *
+ * @param {Date} dateObj - Date object to format
+ * @param {string} [reference] - Reference format string to match
+ * @returns {string|null} Formatted date string, or null if invalid date
+ * @example
+ * formatForecastDateForApi(new Date('2023-01-15T12:00'), '2023-01-01T00')
+ * // Returns: "2023-01-15T12"
+ *
+ * formatForecastDateForApi(new Date('2023-01-15T12:00'), '2023-01-01')
+ * // Returns: "2023-01-15 12:00"
+ */
 export function formatForecastDateForApi(dateObj, reference) {
   if (!dateObj || isNaN(dateObj)) return null;
   const pad = n => String(n).padStart(2, '0');

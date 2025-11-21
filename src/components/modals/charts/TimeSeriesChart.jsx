@@ -1,3 +1,8 @@
+/**
+ * @module components/modals/charts/TimeSeriesChart
+ * @description D3-based time series chart rendering percentile envelopes, best analog markers, return periods and forecast history overlays.
+ */
+
 import {useEffect, useMemo} from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
@@ -25,6 +30,23 @@ export default function TimeSeriesChart(
     onHoverHide,
   }
 ) {
+  /**
+   * TimeSeriesChart component.
+   * @param {Object} props
+   * @param {React.RefObject} props.containerRef - Container div ref for mounting SVG
+   * @param {Function} props.t - Translation function
+   * @param {Object|null} props.series - Normalized time series data ({dates:Date[], percentiles: {pct: values[]}})
+   * @param {Object|null} props.bestAnalogs - Best analogs data ({items:[], dates:[]})
+   * @param {Object|null} props.referenceValues - Return period reference ({axis:number[], values:number[]})
+   * @param {Array|null} props.pastForecasts - Previous forecast runs history array
+   * @param {Object} props.options - Display toggles
+   * @param {string} props.activeForecastDate - Raw active forecast date string
+   * @param {Object|null} props.selectedMethodConfig - Current method/config selection
+   * @param {string} props.stationName - Display station name
+   * @param {Function} props.onHoverShow - Show hover popper handler (anchor, title)
+   * @param {Function} props.onHoverHide - Hide hover popper handler
+   */
+
   const pctList = useMemo(() => (series?.pctList ?? []), [series]);
   const dates = useMemo(() => (series?.dates ?? []), [series]);
   const percentilesMap = series?.percentiles || {};

@@ -1,3 +1,8 @@
+/**
+ * @module components/toolbar/ToolbarSquares
+ * @description Visual summary of daily and sub-daily synthesis values allowing target date selection.
+ */
+
 import React from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';
@@ -7,6 +12,11 @@ import {isSameDay, makeDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
 
 export default function ToolbarSquares() {
+  /**
+   * ToolbarSquares component.
+   * @returns {React.ReactElement}
+   */
+
   const {dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate} = useSynthesis();
   const {t} = useTranslation();
   const maxVal = 1;

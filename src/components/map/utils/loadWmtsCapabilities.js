@@ -1,8 +1,26 @@
+/**
+ * @module components/map/utils/loadWmtsCapabilities
+ * @description Utilities for loading WMTS (Web Map Tile Service) capabilities and creating tile layers.
+ * Handles fetching capabilities XML, parsing layer options, and caching for reuse.
+ */
+
 import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
 import WMTSCapabilities from 'ol/format/WMTSCapabilities';
 import {WMTS_MATRIX_SET_DEFAULT} from '@/components/map/mapConstants.js';
 
-// Fetch WMTS capabilities and build cache: layerName -> options
+/**
+ * Fetches WMTS capabilities from configured providers and builds options cache.
+ * Processes base layers and overlay layers from runtime config, attempts to load
+ * capabilities with preferred styles, and returns a cache of layer options.
+ *
+ * @param {Object} runtimeConfig - Runtime configuration with providers and layers
+ * @param {Function} [enqueueWarning] - Optional callback to display warning messages
+ * @param {Function} [preferStyleForItem] - Optional function to determine preferred style for an item
+ * @returns {Promise<Object>} Cache object mapping wmtsLayer name to OpenLayers WMTS options
+ * @example
+ * const cache = await loadWmtsCapabilities(config, (msg) => console.warn(msg));
+ * // Returns: { 'layerName': { ...wmtsOptions } }
+ */
 export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, preferStyleForItem) {
   const wmtsRequests = {};
   const providerMap = {};
@@ -54,6 +72,18 @@ export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, prefer
   return wmtsOptionsCache;
 }
 
+/**
+ * Creates an OpenLayers WMTS source from cached layer options.
+ *
+ * @param {Object} item - Layer configuration item with wmtsLayer property
+ * @param {Object} wmtsOptionsCache - Cache of WMTS options from loadWmtsCapabilities
+ * @returns {WMTS|null} OpenLayers WMTS source instance, or null if not found in cache
+ * @example
+ * const source = createWmtsTileLayer({ wmtsLayer: 'myLayer' }, cache);
+ * if (source) {
+ *   const layer = new TileLayer({ source });
+ * }
+ */
 export function createWmtsTileLayer(item, wmtsOptionsCache) {
   const opts = wmtsOptionsCache[item.wmtsLayer];
   if (!opts) return null;

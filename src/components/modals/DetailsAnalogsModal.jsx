@@ -1,4 +1,9 @@
-import React, {useEffect, useState} from 'react';
+/**
+ * @module components/modals/DetailsAnalogsModal
+ * @description Modal presenting a detailed list of analogs for a selected method/config/entity/lead with criteria and precipitation values.
+ */
+
+import React, {useEffect, useState, useMemo} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -11,6 +16,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
 import Paper from '@mui/material/Paper';
 import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
 import {getAnalogs} from '@/services/api.js';
@@ -22,6 +28,14 @@ import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
 
 export default function DetailsAnalogsModal({open, onClose}) {
+  /**
+   * DetailsAnalogsModal component.
+   * @param {Object} props
+   * @param {boolean} props.open - Whether modal is visible
+   * @param {Function} props.onClose - Close callback
+   * @returns {React.ReactElement}
+   */
+
   const {workspace, activeForecastDate} = useForecastSession();
   const {t} = useTranslation();
 
@@ -37,6 +51,8 @@ export default function DetailsAnalogsModal({open, onClose}) {
   const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('modal_', open, selection);
 
   const [analogs, setAnalogs] = useState(null);
+  const [sortColumn, setSortColumn] = useState('rank');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   // ANALOGS via cached request
   const analogsCacheKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null && selection.lead != null
@@ -55,6 +71,52 @@ export default function DetailsAnalogsModal({open, onClose}) {
   useEffect(() => {
     setAnalogs(Array.isArray(analogsData) ? analogsData : []);
   }, [analogsData]);
+
+  // Handle sort request
+  const handleSortRequest = (column) => {
+    const isAsc = sortColumn === column && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortColumn(column);
+  };
+
+  // Sorted analogs
+  const sortedAnalogs = useMemo(() => {
+    if (!analogs || analogs.length === 0) return [];
+
+    const sorted = [...analogs];
+    sorted.sort((a, b) => {
+      let aVal, bVal;
+
+      switch (sortColumn) {
+        case 'rank':
+          aVal = a.rank ?? 0;
+          bVal = b.rank ?? 0;
+          break;
+        case 'date':
+          aVal = new Date(a.date).getTime();
+          bVal = new Date(b.date).getTime();
+          break;
+        case 'value':
+          aVal = a.value ?? 0;
+          bVal = b.value ?? 0;
+          break;
+        case 'criteria':
+          aVal = a.criteria ?? 0;
+          bVal = b.criteria ?? 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortDirection === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+
+    return sorted;
+  }, [analogs, sortColumn, sortDirection]);
 
   // Reset local selections when modal closes
   useEffect(() => {
@@ -104,21 +166,46 @@ export default function DetailsAnalogsModal({open, onClose}) {
                   <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{width: '6%'}}>#</TableCell>
-                        <TableCell
-                          sx={{width: '34%'}}> {t('detailsAnalogsModal.colDate') || 'Date'}</TableCell>
-                        <TableCell sx={{
-                          width: '30%',
-                          textAlign: 'right'
-                        }}>{t('detailsAnalogsModal.colPrecipitation') || t('detailsAnalogsModal.precipitation') || 'Precipitation'}</TableCell>
-                        <TableCell sx={{
-                          width: '30%',
-                          textAlign: 'right'
-                        }}>{t('detailsAnalogsModal.colCriteria') || 'Criteria'}</TableCell>
+                        <TableCell sx={{width: '6%'}}>
+                          <TableSortLabel
+                            active={sortColumn === 'rank'}
+                            direction={sortColumn === 'rank' ? sortDirection : 'asc'}
+                            onClick={() => handleSortRequest('rank')}
+                          >
+                            #
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell sx={{width: '34%'}}>
+                          <TableSortLabel
+                            active={sortColumn === 'date'}
+                            direction={sortColumn === 'date' ? sortDirection : 'asc'}
+                            onClick={() => handleSortRequest('date')}
+                          >
+                            {t('detailsAnalogsModal.colDate') || 'Date'}
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell sx={{width: '30%', textAlign: 'right'}}>
+                          <TableSortLabel
+                            active={sortColumn === 'value'}
+                            direction={sortColumn === 'value' ? sortDirection : 'asc'}
+                            onClick={() => handleSortRequest('value')}
+                          >
+                            {t('detailsAnalogsModal.colPrecipitation') || t('detailsAnalogsModal.precipitation') || 'Precipitation'}
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell sx={{width: '30%', textAlign: 'right'}}>
+                          <TableSortLabel
+                            active={sortColumn === 'criteria'}
+                            direction={sortColumn === 'criteria' ? sortDirection : 'asc'}
+                            onClick={() => handleSortRequest('criteria')}
+                          >
+                            {t('detailsAnalogsModal.colCriteria') || 'Criteria'}
+                          </TableSortLabel>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {analogs.map((a, idx) => (
+                      {sortedAnalogs.map((a, idx) => (
                         <TableRow key={idx} hover>
                           <TableCell sx={{width: '6%'}}>{a.rank ?? (idx + 1)}</TableCell>
                           <TableCell sx={{width: '34%'}}>{formatDateLabel(a.date)}</TableCell>
@@ -139,4 +226,3 @@ export default function DetailsAnalogsModal({open, onClose}) {
     </Dialog>
   );
 }
-

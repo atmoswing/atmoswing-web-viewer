@@ -1,3 +1,9 @@
+/**
+ * @module components/panels/PanelSynthesis
+ * @description Panel rendering normalized synthesis values per method across daily and sub-daily lead times.
+ * Allows selecting target date and method; supports sub-daily segmentation when available.
+ */
+
 import Panel from './Panel.jsx';
 import React, {useCallback, useMemo} from 'react';
 import {useMethods, useSynthesis} from '@/contexts/ForecastsContext.jsx';
@@ -64,6 +70,12 @@ function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate, isM
 }
 
 export default function PanelSynthesis(props) {
+  /**
+   * PanelSynthesis component.
+   * @param {Object} props
+   * @param {boolean} [props.defaultOpen] - Initial open state
+   * @returns {React.ReactElement}
+   */
   const {t} = useTranslation();
   const {perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError} = useSynthesis();
   const {methodConfigTree, setSelectedMethodConfig, selectedMethodConfig} = useMethods();

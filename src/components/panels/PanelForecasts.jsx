@@ -1,3 +1,8 @@
+/**
+ * @module components/panels/PanelForecasts
+ * @description Panel for selecting forecast method and configuration using a tree view.
+ */
+
 import * as React from 'react';
 import Panel from './Panel.jsx';
 import {useMethods} from '@/contexts/ForecastsContext.jsx';
@@ -50,6 +55,12 @@ export function MethodConfigTree({methodConfigTree, selectedMethodConfig, onSele
   );
 }
 
+/**
+ * PanelForecasts component wrapping the method/config tree inside a collapsible panel.
+ * @param {Object} props
+ * @param {boolean} [props.defaultOpen] - Initial open state for panel
+ * @returns {React.ReactElement}
+ */
 export default function PanelForecasts(props) {
   const {t} = useTranslation();
   const {methodConfigTree, selectedMethodConfig, setSelectedMethodConfig} = useMethods();

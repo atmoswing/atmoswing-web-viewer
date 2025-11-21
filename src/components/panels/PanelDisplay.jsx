@@ -1,3 +1,8 @@
+/**
+ * @module components/panels/PanelDisplay
+ * @description Panel for adjusting display parameters (percentile & normalization reference).
+ */
+
 import Panel from './Panel.jsx';
 import * as React from 'react';
 import {useTranslation} from 'react-i18next';
@@ -7,6 +12,12 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import {useForecastParameters} from '@/contexts/ForecastsContext.jsx';
 
+/**
+ * PanelDisplay component rendering controls for percentile and normalization reference selection.
+ * @param {Object} props
+ * @param {boolean} [props.defaultOpen] - Initial open state
+ * @returns {React.ReactElement}
+ */
 export default function PanelDisplay(props) {
   const {t} = useTranslation();
   const {percentile, setPercentile, normalizationRef, setNormalizationRef} = useForecastParameters();

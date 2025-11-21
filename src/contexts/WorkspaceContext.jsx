@@ -1,3 +1,9 @@
+/**
+ * @module contexts/WorkspaceContext
+ * @description React context for managing workspace (region) selection and associated forecast data.
+ * Handles workspace selection, URL synchronization, and workspace-specific data loading.
+ */
+
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import {getLastForecastDate, getMethodsAndConfigs} from '@/services/api.js';
 import {useConfig} from './ConfigContext.jsx';
@@ -7,6 +13,14 @@ import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const WorkspaceContext = createContext();
 
+/**
+ * Provider component for workspace management.
+ * Manages workspace selection, URL synchronization, and workspace-specific data loading.
+ *
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components
+ * @returns {React.ReactElement}
+ */
 export function WorkspaceProvider({children}) {
   const config = useConfig();
   const workspaces = useMemo(() => (config?.workspaces?.map(ws => ({
@@ -140,6 +154,21 @@ export function WorkspaceProvider({children}) {
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
+/**
+ * Hook to access workspace context.
+ *
+ * @returns {Object} Workspace context value
+ * @returns {string} returns.workspace - Current workspace key
+ * @returns {Function} returns.setWorkspace - Function to change workspace
+ * @returns {Object} returns.workspaceData - Workspace data including last forecast date
+ * @returns {boolean} returns.loading - Loading state
+ * @returns {Error} returns.error - Error if loading failed
+ * @returns {string} returns.invalidWorkspaceKey - Invalid workspace key from URL (if any)
+ * @example
+ * const { workspace, setWorkspace, workspaceData } = useWorkspace();
+ * console.log('Current workspace:', workspace);
+ * setWorkspace('newWorkspace');
+ */
 export function useWorkspace() {
   return useContext(WorkspaceContext);
 }

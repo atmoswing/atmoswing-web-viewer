@@ -1,3 +1,9 @@
+/**
+ * @module contexts/ForecastValuesContext
+ * @description Fetches and exposes forecast values (normalized + raw) for entities based on current selection.
+ * Handles lead time resolution, availability detection, and percentile/normalization parameters.
+ */
+
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
@@ -11,6 +17,12 @@ import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 const ForecastValuesContext = createContext({});
 
+/**
+ * ForecastValuesProvider component.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children
+ * @returns {React.ReactElement}
+ */
 export function ForecastValuesProvider({children}) {
   const {workspace, activeForecastDate, percentile, normalizationRef, forecastBaseDate} = useForecastSession();
   const {selectedMethodConfig, methodConfigTree} = useMethods();
@@ -96,4 +108,13 @@ export function ForecastValuesProvider({children}) {
   return <ForecastValuesContext.Provider value={value}>{children}</ForecastValuesContext.Provider>;
 }
 
+/**
+ * Hook to access forecast values context.
+ * @returns {Object} Forecast values state
+ * @returns {Object} returns.forecastValues - Map entityId -> raw forecast value
+ * @returns {Object} returns.forecastValuesNorm - Map entityId -> normalized forecast value
+ * @returns {boolean} returns.forecastLoading - Loading state
+ * @returns {Error|null} returns.forecastError - Error during fetch
+ * @returns {boolean} returns.forecastUnavailable - Flag when data deemed unavailable (e.g., no leads)
+ */
 export const useForecastValues = () => useContext(ForecastValuesContext);

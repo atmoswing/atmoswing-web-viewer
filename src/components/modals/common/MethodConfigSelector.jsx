@@ -1,3 +1,9 @@
+/**
+ * @module components/modals/common/MethodConfigSelector
+ * @description Shared modal selection component to pick method, configuration, entity and lead time.
+ * Handles chained data fetching, validity maintenance and relevance highlighting.
+ */
+
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Box,
@@ -27,14 +33,14 @@ import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
 
 /**
- * Shared modal selection menu component for method, config, entity, and lead time.
- * Manages data fetching and state for modal dialogs.
- *
- * @param {string} cachePrefix - Prefix for cache keys (e.g., 'modal_', 'dist_')
- * @param {boolean} open - Whether the modal is open
- * @param {Object} value - Current selection state
- * @param {Function} onChange - Callback when selection changes
- * @param {React.ReactNode} children - Optional additional form controls to render below the standard ones
+ * MethodConfigSelector component.
+ * @param {Object} props
+ * @param {string} [props.cachePrefix='modal_'] - Prefix for cache keys to avoid collisions across modals
+ * @param {boolean} props.open - Whether the parent modal is open (controls fetching enablement)
+ * @param {Object} props.value - Current selection state { methodId, configId, entityId, lead }
+ * @param {Function} props.onChange - Callback receiving updated selection object
+ * @param {React.ReactNode} [props.children] - Optional extra controls rendered beneath standard selectors
+ * @returns {React.ReactElement}
  */
 export default function MethodConfigSelector(
   {
@@ -452,7 +458,15 @@ export default function MethodConfigSelector(
   );
 }
 
-// Export hooks for consumers to access derived data
+/**
+ * Hook returning resolved selection data (with fallback config if none explicitly chosen).
+ * @param {string} cachePrefix - Cache key namespace prefix
+ * @param {boolean} open - Whether owning modal is open
+ * @param {Object} selection - Raw selection { methodId, configId, entityId }
+ * @returns {Object} Object with resolvedMethodId, resolvedConfigId, resolvedEntityId
+ * @example
+ * const { resolvedMethodId, resolvedConfigId } = useModalSelectionData('dist_', open, selection);
+ */
 export function useModalSelectionData(cachePrefix, open, selection) {
   const {workspace, activeForecastDate} = useForecastSession();
   const {methodId, configId, entityId} = selection;
@@ -480,4 +494,3 @@ export function useModalSelectionData(cachePrefix, open, selection) {
     resolvedEntityId: entityId
   };
 }
-

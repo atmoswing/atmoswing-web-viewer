@@ -1,15 +1,38 @@
-// Utility helpers for lead time calculations and date comparisons
-// Centralizes duplicated logic across contexts/components.
+/**
+ * @module utils/targetDateUtils
+ * @description Utility helpers for lead time calculations and date comparisons.
+ * Centralizes logic for working with forecast target dates and lead times.
+ */
 
+/**
+ * Sub-daily hour intervals for forecast resolution.
+ * @constant {Array<number>}
+ */
 export const SUB_HOURS = [0, 6, 12, 18];
 
-/** Create a stable YYYY-M-D key for a date (month is 0-based per Date API). */
+/**
+ * Creates a stable YYYY-M-D key string for a date.
+ * Note: Month is 0-based as per JavaScript Date API.
+ *
+ * @param {Date} date - Date object to convert to key
+ * @returns {string} Date key in format "YYYY-M-D", or empty string if invalid
+ * @example
+ * makeDayKey(new Date(2025, 10, 5)) // Returns: "2025-10-5"
+ */
 export function makeDayKey(date) {
   if (!(date instanceof Date)) return '';
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-/** Parse a YYYY-M-D key to a local Date object (month 0-based). */
+/**
+ * Parses a YYYY-M-D key string back to a Date object.
+ * Month is treated as 0-based (JavaScript Date convention).
+ *
+ * @param {string} key - Date key in format "YYYY-M-D"
+ * @returns {Date} Date object, or Invalid Date if parsing fails
+ * @example
+ * parseDayKey("2025-10-5") // Returns: Date object for November 5, 2025
+ */
 export function parseDayKey(key) {
   if (!key || typeof key !== 'string') return new Date(NaN);
   const [y, m, d] = key.split('-').map(Number);

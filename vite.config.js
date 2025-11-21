@@ -12,5 +12,21 @@ export default defineConfig({
     alias: {
       '@': srcDir
     }
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/__tests__/setup.js'],
+    coverage: {
+      provider: 'v8',
+      reports: ['text', 'html', 'lcov'],
+      all: true,
+      include: ['src/**/*.{js,jsx}'],
+      exclude: [
+        'src/__tests__/**',
+        '**/*.d.ts',
+        'src/main.jsx',
+        'src/App.jsx'
+      ]
+    }
   }
 })

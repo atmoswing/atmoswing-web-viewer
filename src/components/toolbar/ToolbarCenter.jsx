@@ -1,3 +1,8 @@
+/**
+ * @module components/toolbar/ToolbarCenter
+ * @description Central toolbar controls for forecast date navigation, manual date selection and restoration.
+ */
+
 import React from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
@@ -23,6 +28,11 @@ import {SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatForecastDateForApi} from '@/utils/forecastDateUtils.js';
 
 export default function ToolbarCenter() {
+  /**
+   * ToolbarCenter component.
+   * @returns {React.ReactElement}
+   */
+
   const {t} = useTranslation();
   const {selectedMethodConfig} = useMethods();
   const {

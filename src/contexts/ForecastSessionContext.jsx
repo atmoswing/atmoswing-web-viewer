@@ -1,3 +1,9 @@
+/**
+ * @module contexts/ForecastSessionContext
+ * @description Manages the active forecast date, base date, percentile/normalization parameters and shifting logic.
+ * Provides helper functions to restore last available forecast and shift base date by hour increments.
+ */
+
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useWorkspace} from './WorkspaceContext.jsx';
 import {formatForecastDateForApi, parseForecastDate} from '@/utils/forecastDateUtils.js';
@@ -35,6 +41,13 @@ async function findShiftedForecast(workspace, activeForecastDate, pattern, hours
   return null;
 }
 
+/**
+ * ForecastSessionProvider component.
+ * Initializes forecast session state from workspace data and exposes shifting & restore helpers.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children
+ * @returns {React.ReactElement}
+ */
 export function ForecastSessionProvider({children}) {
   const {workspace, workspaceData} = useWorkspace();
   const [activeForecastDate, setActiveForecastDate] = useState(null);
@@ -174,4 +187,19 @@ export function ForecastSessionProvider({children}) {
   return <ForecastSessionContext.Provider value={value}>{children}</ForecastSessionContext.Provider>;
 }
 
+/**
+ * Hook to access forecast session context.
+ * @returns {Object} Forecast session state and helpers
+ * @returns {string|null} returns.activeForecastDate - Raw active forecast date string
+ * @returns {Date|null} returns.forecastBaseDate - Parsed base date object
+ * @returns {number} returns.percentile - Selected percentile (e.g., 90)
+ * @returns {Function} returns.setPercentile - Setter for percentile
+ * @returns {number|string} returns.normalizationRef - Normalization reference value
+ * @returns {Function} returns.setNormalizationRef - Setter for normalization reference
+ * @returns {Function} returns.shiftForecastBaseDate - Shift search function for base date
+ * @returns {Function} returns.restoreLastAvailableForecast - Restore last workspace forecast
+ * @returns {boolean} returns.baseDateSearchFailed - Flag when shift search fails
+ * @returns {boolean} returns.baseDateSearching - Whether shift search is in progress
+ * @returns {number} returns.resetVersion - Incrementing version to trigger dependent resets
+ */
 export const useForecastSession = () => useContext(ForecastSessionContext);

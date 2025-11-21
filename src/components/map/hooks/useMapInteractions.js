@@ -1,5 +1,30 @@
+/**
+ * @module components/map/hooks/useMapInteractions
+ * @description Hook for handling map click and pointer interactions with forecast points.
+ * Manages entity selection on click and tooltip display on hover.
+ */
+
 import {useEffect} from 'react';
 
+/**
+ * Hook that sets up map interaction handlers for forecast point selection and tooltips.
+ * Handles single click for entity selection and pointer move/out for tooltip display.
+ *
+ * @param {Object} params - Hook parameters
+ * @param {React.RefObject} params.mapRef - Ref to OpenLayers map instance
+ * @param {React.RefObject} params.forecastLayerRef - Ref to forecast vector layer
+ * @param {Function} params.setSelectedEntityId - Function to set selected entity ID
+ * @param {Function} params.setTooltip - Function to set tooltip state (x, y, name, valueRaw)
+ * @param {boolean} params.mapReady - Whether map is initialized
+ * @example
+ * useMapInteractions({
+ *   mapRef,
+ *   forecastLayerRef,
+ *   setSelectedEntityId: (id) => console.log('Selected:', id),
+ *   setTooltip: (tooltip) => console.log('Tooltip:', tooltip),
+ *   mapReady: true
+ * });
+ */
 export default function useMapInteractions({mapRef, forecastLayerRef, setSelectedEntityId, setTooltip, mapReady}) {
   // Click handler
   useEffect(() => {

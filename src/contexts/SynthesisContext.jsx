@@ -1,3 +1,9 @@
+/**
+ * @module contexts/SynthesisContext
+ * @description Provides lead time arrays (daily & sub-daily), target date selection and per-method synthesis data.
+ * Parses total synthesis responses to derive lead resolution structure.
+ */
+
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {getSynthesisPerMethod, getSynthesisTotal} from '@/services/api.js';
@@ -153,4 +159,17 @@ export function SynthesisProvider({children}) {
   return <SynthesisContext.Provider value={value}>{children}</SynthesisContext.Provider>;
 }
 
+/**
+ * Hook to access synthesis context.
+ * @returns {Object} Synthesis state and helpers
+ * @returns {Array} returns.dailyLeads - Array of daily lead records
+ * @returns {Array} returns.subDailyLeads - Array of sub-daily lead records
+ * @returns {string} returns.leadResolution - 'daily' or 'sub'
+ * @returns {number} returns.selectedLead - Selected lead index
+ * @returns {Date|null} returns.selectedTargetDate - Selected target date object
+ * @returns {Function} returns.selectTargetDate - Helper to select target date with preference
+ * @returns {Array} returns.perMethodSynthesis - Baseline per-method normalized synthesis values
+ * @returns {boolean} returns.perMethodSynthesisLoading - Loading state for per-method data
+ * @returns {Error|null} returns.perMethodSynthesisError - Error for per-method data
+ */
 export const useSynthesis = () => useContext(SynthesisContext);

@@ -1,3 +1,9 @@
+/**
+ * @module contexts/EntitiesContext
+ * @description Manages fetching and caching of forecast entities (stations/points) and relevant subsets.
+ * Handles automatic clearing on workspace or configuration changes and derives cache keys.
+ */
+
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
@@ -15,6 +21,13 @@ import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const EntitiesContext = createContext({});
 
+/**
+ * EntitiesProvider component.
+ * Fetches entity list and relevant entity IDs for the selected method/config.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children
+ * @returns {React.ReactElement}
+ */
 export function EntitiesProvider({children}) {
   const {workspace, activeForecastDate, resetVersion} = useForecastSession();
   const {selectedMethodConfig, methodConfigTree, methodsLoading} = useMethods();
@@ -99,4 +112,14 @@ export function EntitiesProvider({children}) {
   return <EntitiesContext.Provider value={value}>{children}</EntitiesContext.Provider>;
 }
 
+/**
+ * Hook to access entities context.
+ * @returns {Object} Entities context value
+ * @returns {Array} returns.entities - Array of entity objects
+ * @returns {boolean} returns.entitiesLoading - Loading state
+ * @returns {Error|null} returns.entitiesError - Error during entity fetch
+ * @returns {Set<string|number>|null} returns.relevantEntities - Set of relevant entity IDs or null
+ * @returns {string} returns.entitiesWorkspace - Workspace key used for entities
+ * @returns {string|null} returns.entitiesKey - Cache key used for the request
+ */
 export const useEntities = () => useContext(EntitiesContext);

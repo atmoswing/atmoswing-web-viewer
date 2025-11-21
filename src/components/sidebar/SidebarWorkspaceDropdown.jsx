@@ -1,3 +1,8 @@
+/**
+ * @module components/sidebar/SidebarWorkspaceDropdown
+ * @description Dropdown selector for choosing active workspace region.
+ */
+
 import * as React from 'react';
 import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import MenuItem from '@mui/material/MenuItem';
@@ -6,6 +11,13 @@ import Select from '@mui/material/Select';
 import {useTranslation} from 'react-i18next';
 
 export function SidebarWorkspaceDropdown({options = []}) {
+  /**
+   * SidebarWorkspaceDropdown component.
+   * @param {Object} props
+   * @param {Array<{key:string,name:string}>} props.options - Workspace options
+   * @returns {React.ReactElement}
+   */
+
   const {t} = useTranslation();
   const {workspace, setWorkspace} = useWorkspace();
 

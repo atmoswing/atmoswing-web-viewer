@@ -1,6 +1,23 @@
+/**
+ * @module i18n
+ * @description Internationalization configuration using i18next.
+ * Currently supports English (en) and French (fr) translations.
+ *
+ * Usage in components:
+ * ```javascript
+ * import { useTranslation } from 'react-i18next';
+ * const { t } = useTranslation();
+ * return <div>{t('panel.display')}</div>;
+ * ```
+ */
+
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';
 
+/**
+ * Translation resources organized by language and namespace.
+ * @constant {Object}
+ */
 const resources = {
   en: {
     translation: {

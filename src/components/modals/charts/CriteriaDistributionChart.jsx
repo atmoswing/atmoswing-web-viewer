@@ -1,3 +1,8 @@
+/**
+ * @module components/modals/charts/CriteriaDistributionChart
+ * @description D3-based ordered criteria distribution chart with optional analog criteria fallback.
+ */
+
 import React, {forwardRef, useEffect} from 'react';
 import * as d3 from 'd3';
 
@@ -16,6 +21,20 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
     renderTick
   },
   ref) {
+  /**
+   * CriteriaDistributionChart component.
+   * @param {Object} props
+   * @param {Array|null} props.criteriaValues - Array of {index, value} criteria pairs
+   * @param {Array|null} props.analogValues - Raw analog array (used as fallback for criteria extraction)
+   * @param {string|number} props.selectedMethodId - Method identifier
+   * @param {string|number} props.selectedConfigId - Configuration identifier
+   * @param {number|null} props.selectedLead - Lead time in hours
+   * @param {Array} props.leads - Available leads metadata
+   * @param {string} props.activeForecastDate - Active forecast date string
+   * @param {string} props.stationName - Display station name
+   * @param {Function} props.t - Translation function
+   * @param {number} props.renderTick - Redraw trigger counter
+   */
   useEffect(() => {
     const container = ref?.current;
     if (!container) return;

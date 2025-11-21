@@ -1,7 +1,22 @@
-// Reusable utilities for OpenLayers style creation and simple QGIS style parsing
+/**
+ * @module components/map/utils/olStyleUtils
+ * @description Utilities for OpenLayers style creation and color parsing.
+ * Supports hex, rgb, rgba, QGIS-style colors, and style configuration objects.
+ */
+
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 
-// Convert various color formats to CSS rgba()
+/**
+ * Converts various color formats to CSS rgba() string.
+ * Supports hex, rgb/rgba strings, QGIS-style comma-separated values, and arrays.
+ *
+ * @param {string|Array} input - Color in various formats
+ * @param {number} [alphaFallback=1] - Default alpha value if not specified
+ * @returns {string} CSS rgba() color string
+ * @example
+ * toRGBA('#ff0000') // Returns: "rgba(255,0,0,1)"
+ * toRGBA('255,0,0,128') // Returns: "rgba(255,0,0,0.5)"
+ */
 export function toRGBA(input, alphaFallback = 1) {
   if (!input) return `rgba(0,0,0,${alphaFallback})`;
   if (typeof input === 'string') {
@@ -31,7 +46,24 @@ export function toRGBA(input, alphaFallback = 1) {
   return `rgba(0,0,0,${alphaFallback})`;
 }
 
-// Build a style function from a flexible config object
+/**
+ * Creates an OpenLayers style function from a configuration object.
+ * Supports different styles for lines, polygons, and points.
+ *
+ * @param {Object} [obj={}] - Style configuration object
+ * @param {Object} [obj.line] - Line style configuration
+ * @param {Object} [obj.polygon] - Polygon style configuration
+ * @param {Object} [obj.point] - Point/circle style configuration
+ * @param {string} [obj.strokeColor] - Fallback stroke color
+ * @param {number} [obj.strokeWidth] - Fallback stroke width
+ * @param {string} [obj.fillColor] - Fallback fill color
+ * @returns {Function} OpenLayers style function
+ * @example
+ * const style = styleFromConfigObj({
+ *   line: { stroke: { color: '#ff0000', width: 3 } },
+ *   polygon: { fill: { color: 'rgba(255,0,0,0.2)' } }
+ * });
+ */
 export function styleFromConfigObj(obj = {}) {
   const line = obj.line || {};
   const polygon = obj.polygon || {};

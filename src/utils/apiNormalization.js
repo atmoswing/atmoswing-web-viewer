@@ -1,7 +1,18 @@
-// filepath: d:\Development\atmoswing-web-viewer\src\utils\apiNormalization.js
-// Helpers to normalize varied API response shapes into predictable structures.
+/**
+ * @module utils/apiNormalization
+ * @description Helpers to normalize varied API response shapes into predictable structures.
+ * The API may return data in different formats depending on the endpoint or version.
+ * These functions ensure consistent data structures for the UI layer.
+ */
 
-// Entities list: return an array of {id, name?}
+/**
+ * Normalizes entities response to a consistent array format.
+ * @param {*} resp - Raw API response (can be array, object with entities property, or null)
+ * @returns {Array<Object>} Array of entity objects with {id, name?, x?, y?}
+ * @example
+ * // Returns [{id: 1, name: "Station A"}]
+ * normalizeEntitiesResponse({entities: [{id: 1, name: "Station A"}]})
+ */
 export function normalizeEntitiesResponse(resp) {
   if (!resp) return [];
   if (Array.isArray(resp)) return resp;
@@ -9,7 +20,13 @@ export function normalizeEntitiesResponse(resp) {
   return [];
 }
 
-// Relevant entity ids: return a Set of ids (string|number)
+/**
+ * Extracts and normalizes relevant entity IDs from various response formats.
+ * @param {*} resp - Raw API response
+ * @returns {Set<string|number>} Set of entity IDs
+ * @example
+ * normalizeRelevantEntityIds({entity_ids: [1, 2, 3]}) // Returns Set(1, 2, 3)
+ */
 export function normalizeRelevantEntityIds(resp) {
   let ids = [];
   if (!resp) return new Set();
@@ -25,7 +42,13 @@ export function normalizeRelevantEntityIds(resp) {
   return new Set(ids);
 }
 
-// Analogs list: return array of { rank, date, value, criteria }
+/**
+ * Normalizes analog data from various response formats.
+ * @param {*} resp - Raw API response containing analog data
+ * @returns {Array<Object>} Array of analog objects with {rank, date, value, criteria}
+ * @example
+ * normalizeAnalogsResponse({analogs: [{rank: 1, date: "2020-01-15", value: 25.3}]})
+ */
 export function normalizeAnalogsResponse(resp) {
   // Gather candidate arrays from various shapes
   let arr = [];
@@ -63,7 +86,15 @@ export function normalizeAnalogsResponse(resp) {
   });
 }
 
-// Extracts an array of date strings representing target dates from various response shapes
+/**
+ * Extracts target dates array from various API response formats.
+ *
+ * @param {*} resp - Raw API response (can be object, array, or nested structure)
+ * @returns {Array<string>} Array of target date strings, or empty array if not found
+ * @example
+ * extractTargetDatesArray({series_values: {target_dates: ['2023-01-15', '2023-01-16']}})
+ * // Returns: ['2023-01-15', '2023-01-16']
+ */
 export function extractTargetDatesArray(resp) {
   if (!resp) return [];
   if (resp.series_values && Array.isArray(resp.series_values.target_dates)) return resp.series_values.target_dates;
@@ -77,7 +108,26 @@ export function extractTargetDatesArray(resp) {
   return [];
 }
 
-// Add forecast values and methods/synthesis normalization helpers
+/**
+ * Normalizes forecast values response into separate normalized and raw value maps.
+ *
+ * @param {Object} resp - Raw API response with entity_ids, values_normalized, and values arrays
+ * @returns {Object} Object with {norm: Object, raw: Object, unavailable: boolean}
+ * @returns {Object} returns.norm - Map of entity ID to normalized value
+ * @returns {Object} returns.raw - Map of entity ID to raw value
+ * @returns {boolean} returns.unavailable - True if data is missing or malformed
+ * @example
+ * normalizeForecastValuesResponse({
+ *   entity_ids: [1, 2],
+ *   values_normalized: [0.5, 0.8],
+ *   values: [25.5, 40.2]
+ * })
+ * // Returns: {
+ * //   norm: {1: 0.5, 2: 0.8},
+ * //   raw: {1: 25.5, 2: 40.2},
+ * //   unavailable: false
+ * // }
+ */
 export function normalizeForecastValuesResponse(resp) {
   if (!resp || typeof resp !== 'object') return {norm: {}, raw: {}, unavailable: true};
   const ids = Array.isArray(resp.entity_ids) ? resp.entity_ids : [];
@@ -94,6 +144,18 @@ export function normalizeForecastValuesResponse(resp) {
   return {norm: normMap, raw: rawMap, unavailable: false};
 }
 
+/**
+ * Normalizes methods and configurations response into a tree structure.
+ * Each method contains nested configuration objects.
+ *
+ * @param {Object} resp - Raw API response with methods array
+ * @returns {Array<Object>} Array of method objects with nested children configs
+ * @example
+ * normalizeMethodsAndConfigs({
+ *   methods: [{id: 1, name: "Method A", configs: [{id: 10, name: "Config 1"}]}]
+ * })
+ * // Returns: [{id: 1, name: "Method A", children: [{id: 10, name: "Config 1"}]}]
+ */
 export function normalizeMethodsAndConfigs(resp) {
   const methods = Array.isArray(resp?.methods) ? resp.methods : [];
   return methods.map(m => ({

@@ -1,3 +1,8 @@
+/**
+ * @module components/panels/PanelStations
+ * @description Panel for selecting a forecast station/entity from the available entities list.
+ */
+
 import Panel from './Panel.jsx';
 import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
@@ -8,6 +13,12 @@ import {useTranslation} from 'react-i18next';
 import PanelStatus from './PanelStatus.jsx';
 import {compareEntitiesByName} from '@/utils/formattingUtils.js';
 
+/**
+ * PanelStations component rendering a dropdown of entities with loading/error/empty states.
+ * @param {Object} props
+ * @param {boolean} [props.defaultOpen] - Initial open state of panel
+ * @returns {React.ReactElement}
+ */
 export default function PanelStations(props) {
   const {t} = useTranslation();
   const {entities, entitiesLoading, entitiesError} = useEntities();

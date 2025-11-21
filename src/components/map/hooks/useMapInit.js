@@ -1,3 +1,8 @@
+/**
+ * @module components/map/hooks/useMapInit
+ * @description React hook for initializing OpenLayers map with configured layers and controls.
+ */
+
 import {useEffect, useRef, useState} from 'react';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -11,6 +16,17 @@ import LayerSwitcher from 'ol-layerswitcher';
 import {createWmtsTileLayer, loadWmtsCapabilities} from '@/components/map/utils/loadWmtsCapabilities.js';
 import {DEFAULT_PROJECTION} from '@/components/map/mapConstants.js';
 
+/**
+ * Hook that initializes an OpenLayers map with base layers, overlays, and controls.
+ *
+ * @param {Object} params - Hook parameters
+ * @param {Function} params.t - Translation function
+ * @param {Object} params.runtimeConfig - Runtime config with layer definitions
+ * @param {Function} params.enqueueSnackbar - Notification function
+ * @returns {Object} Map refs and ready state
+ * @example
+ * const { containerRef, mapRef, mapReady } = useMapInit({ t, runtimeConfig, enqueueSnackbar });
+ */
 export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);

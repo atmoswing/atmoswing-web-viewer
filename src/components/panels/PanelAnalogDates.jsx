@@ -1,3 +1,8 @@
+/**
+ * @module components/panels/PanelAnalogDates
+ * @description Panel displaying ranked analog dates with criteria values for the selected method/config and lead time.
+ */
+
 import Panel from './Panel.jsx';
 import * as React from 'react';
 import {useMemo} from 'react';
@@ -14,6 +19,13 @@ import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 export default function PanelAnalogDates(props) {
+  /**
+   * PanelAnalogDates component showing a table of analog dates and criteria.
+   * @param {Object} props
+   * @param {boolean} [props.defaultOpen] - Initial panel open state
+   * @returns {React.ReactElement|null} Null if no config selected
+   */
+
   const {t} = useTranslation();
   const {selectedMethodConfig} = useMethods();
   const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();

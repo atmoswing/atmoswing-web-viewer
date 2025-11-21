@@ -1,3 +1,9 @@
+/**
+ * @module contexts/MethodsContext
+ * @description React context for managing forecast methods and configurations.
+ * Fetches available methods, manages selection, and provides normalized method tree.
+ */
+
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useWorkspace} from './WorkspaceContext.jsx';
@@ -8,6 +14,14 @@ import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const MethodsContext = createContext({});
 
+/**
+ * Provider component for forecast methods and configurations.
+ * Manages method selection with workspace scoping and auto-selection.
+ *
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components
+ * @returns {React.ReactElement}
+ */
 export function MethodsProvider({children}) {
   const {workspace, activeForecastDate} = useForecastSession();
   const {workspaceData} = useWorkspace();
@@ -78,4 +92,18 @@ export function MethodsProvider({children}) {
   return <MethodsContext.Provider value={value}>{children}</MethodsContext.Provider>;
 }
 
+/**
+ * Hook to access methods context.
+ *
+ * @returns {Object} Methods context value
+ * @returns {Array} returns.methodConfigTree - Normalized tree of methods with nested configs
+ * @returns {boolean} returns.methodsLoading - Loading state for methods fetch
+ * @returns {Error} returns.methodsError - Error if methods fetch failed
+ * @returns {Object} returns.selectedMethodConfig - Currently selected method and config
+ * @returns {Function} returns.setSelectedMethodConfig - Function to set method/config selection
+ * @example
+ * const { methodConfigTree, selectedMethodConfig, setSelectedMethodConfig } = useMethods();
+ * // Select first method
+ * setSelectedMethodConfig({ method: methodConfigTree[0], config: null });
+ */
 export const useMethods = () => useContext(MethodsContext);
