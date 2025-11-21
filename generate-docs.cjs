@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const jsdoc2md = require('jsdoc-to-markdown');
 const { glob } = require('glob');
+const { marked } = require('marked');
 
 const DOCS_DIR = path.join(__dirname, 'docs');
 const SRC_DIR = path.join(__dirname, 'src');
@@ -23,6 +24,116 @@ const sections = [
   { name: 'Map Utils', pattern: 'src/components/map/utils/**/*.js', output: 'map-utils.md' },
   { name: 'Components', pattern: 'src/components/**/*.{js,jsx}', output: 'components.md' },
 ];
+
+/**
+ * Generate HTML page from markdown content
+ */
+function generateHtmlFromMarkdown(markdownContent, title) {
+  const htmlBody = marked(markdownContent);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} - AtmoSwing Web Viewer Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .header a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .markdown-body code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #586069;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📚 AtmoSwing Web Viewer Docs</h1>
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="markdown-body">
+            ${htmlBody}
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated automatically from JSDoc comments | <a href="https://github.com/atmoswing/atmoswing-web-viewer">AtmoSwing Web Viewer</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>`;
+}
 
 /**
  * Ensure docs directory exists
@@ -63,6 +174,12 @@ async function generateSectionDocs(section) {
     const outputPath = path.join(DOCS_DIR, section.output);
     fs.writeFileSync(outputPath, content, 'utf8');
     console.log(`  ✓ Generated: ${section.output}`);
+
+    // Also generate HTML version
+    const htmlContent = generateHtmlFromMarkdown(content, section.name);
+    const htmlPath = path.join(DOCS_DIR, section.output.replace('.md', '.html'));
+    fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+    console.log(`  ✓ Generated: ${section.output.replace('.md', '.html')}`);
   } catch (error) {
     console.error(`  ✗ Error generating ${section.name}:`, error.message);
   }
@@ -197,7 +314,7 @@ function generateIndexHtml() {
             <h2>📚 Documentation Sections</h2>
             <div class="nav-sections">
 ${sections.map(s => {
-  const filename = s.output; // Keep .md extension, GitHub Pages will handle it
+  const filename = s.output.replace('.md', '.html');
   return `                <a href="${filename}" class="nav-card">
                     <h3>${s.name}</h3>
                     <p>Documentation for ${s.name.toLowerCase()}</p>
