@@ -1,0 +1,42 @@
+# Codecov Configuration
+# Documentation: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        base: auto
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+comment:
+  layout: "reach,diff,flags,tree,footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+ignore:
+  - "src/**/*.test.js"
+  - "src/**/*.test.jsx"
+  - "src/__tests__/**"
+  - "**/*.config.js"
+  - "**/*.config.cjs"
+  - "generate-docs.cjs"
+  - "generate-docs.js"
+  - "src/main.jsx"
+  - "coverage/**"
+  - "dist/**"
+  - "node_modules/**"
+  - "docs/**"
+
+flags:
+  unittests:
+    paths:
+      - src/
+    carryforward: true
+
