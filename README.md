@@ -1,5 +1,11 @@
 # AtmoSwing web viewer
 
+[![Tests](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/test.yml)
+[![Docker Image](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/build-docker-image.yml/badge.svg?branch=main)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/build-docker-image.yml)
+[![Documentation](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml/badge.svg)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml)
+[![codecov](https://codecov.io/gh/atmoswing/atmoswing-web-viewer/graph/badge.svg?token=LFwOPlcsv8)](https://codecov.io/gh/atmoswing/atmoswing-web-viewer)
+
+
 ## Configuration
 
 All runtime settings live in a single JSON file served at `/config.json` (located at `public/config.json` in the source tree). This file is fetched at startup and can be changed without rebuilding the application. It contains API settings, map providers, base layers, overlay layers, and workspace definitions.
@@ -40,7 +46,6 @@ Examples:
 - `/?workspace=zap_v13` → selects the `zap_v13` workspace
 
 Browser navigation (back/forward) stays in sync with the selected workspace, and changing the workspace from the dropdown updates the URL so links are shareable.
-
 
 ## Development
 
