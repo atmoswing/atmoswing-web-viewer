@@ -45,15 +45,22 @@ export async function myFunction(param) {
 
 ## Runtime Configuration
 
-All runtime settings live in a single JSON file served at `/config.json` (located at `public/config.json` in the source tree). This file is fetched at startup and can be changed without rebuilding the application. It contains both API settings and workspace definitions, for example:
+All runtime settings live in a single JSON file served at `/config.json` (located at `public/config.json` in the source tree). This file is fetched at startup and can be changed without rebuilding the application. It contains API settings, map providers, base layers, overlay layers, and workspace definitions.
+
+For detailed documentation on all available configuration options and fields, see **[CONFIGURATION.md](CONFIGURATION.md)**.
+
+### Quick Example
 
 ```json
 {
   "API_BASE_URL": "https://api.example.com",
   "ENTITIES_SOURCE_EPSG": "EPSG:4326",
   "API_DEBUG": false,
+  "providers": [...],
+  "baseLayers": [...],
+  "overlayLayers": [...],
   "workspaces": [
-    { "key": "demo", "name": "Demo", "shapefiles": [] }
+    { "key": "demo", "name": "Demo", "shapefiles": [...] }
   ]
 }
 ```
@@ -62,7 +69,9 @@ All runtime settings live in a single JSON file served at `/config.json` (locate
 You can change `/config.json` directly on the server (or via a mounted volume) and force clients to pick it up with a hard refresh (Ctrl+F5). Because `Cache-Control: no-store` is sent for `config.json` (see `nginx.conf`), normal reloads already fetch the latest file.
 
 ## Workspaces
-Workspace definitions are part of the same `config.json` under the `workspaces` key. The UI will automatically pick up new keys if referenced in components.
+Workspace definitions are part of the same `config.json` under the `workspaces` key. Each workspace can define its own set of GIS layers (shapefiles, GeoJSON) with custom styling. The UI will automatically pick up new workspaces from the configuration.
+
+For complete workspace configuration options including shapefile layers and styling, see **[CONFIGURATION.md](CONFIGURATION.md)**.
 
 ### Selecting a workspace via URL
 You can preselect a workspace by adding a query parameter to the URL: `?workspace=<key>`.
