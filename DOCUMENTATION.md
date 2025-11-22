@@ -8,11 +8,6 @@ The project uses **JSDoc** to document JavaScript and JSX code. Documentation is
 
 ## Documentation Tools
 
-### Installed Packages
-
-- **jsdoc**: Core JSDoc library for parsing documentation comments
-- **jsdoc-to-markdown**: Converts JSDoc to Markdown format
-
 ### Available Commands
 
 ```bash
@@ -153,8 +148,8 @@ The generated documentation is organized into sections:
 The `.github/workflows/docs.yml` workflow automatically:
 
 1. **Triggers on**:
-   - Push to `main`, `master`, or `develop` branches
-   - Pull requests to `main` or `master`
+   - Push to `main` or `dev` branches
+   - Pull requests to `main`
    - Manual workflow dispatch
    - Changes to source files or documentation config
 
@@ -162,20 +157,6 @@ The `.github/workflows/docs.yml` workflow automatically:
    - Generates documentation using `npm run docs`
    - Uploads documentation as build artifacts
    - Deploys to GitHub Pages (on main/master branch only)
-   - Comments on PRs with documentation status
-
-### GitHub Pages Setup
-
-To enable documentation hosting:
-
-1. Go to your repository **Settings** → **Pages**
-2. Set **Source** to "Deploy from a branch"
-3. Select branch: `gh-pages`
-4. Select folder: `/ (root)`
-5. Click **Save**
-
-After the first successful workflow run, documentation will be available at:
-`https://<username>.github.io/<repository-name>/`
 
 ## Local Documentation Development
 
@@ -291,40 +272,8 @@ When reviewing pull requests:
 3. Ensure type annotations are correct
 4. Review generated documentation artifacts
 
-## Troubleshooting
-
-### Documentation Not Generating
-
-1. Check workflow logs in GitHub Actions
-2. Verify JSDoc comments syntax
-3. Run `npm run docs` locally to test
-
-### Missing Documentation
-
-1. Ensure files are included in `generate-docs.js` patterns
-2. Check that functions are exported
-3. Verify JSDoc comments are properly formatted
-
-### GitHub Pages Not Updating
-
-1. Check that workflow completed successfully
-2. Verify GitHub Pages is enabled in repository settings
-3. Check `gh-pages` branch was updated
-4. Clear browser cache
-
 ## Resources
 
 - [JSDoc Official Documentation](https://jsdoc.app/)
 - [JSDoc Cheat Sheet](https://devhints.io/jsdoc)
 - [TypeScript JSDoc Reference](https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html)
-
-## Contributing
-
-When contributing code:
-
-1. ✅ Add JSDoc comments to all new functions/components
-2. ✅ Include type information for parameters and returns
-3. ✅ Provide usage examples for complex functions
-4. ✅ Run `npm run docs` to verify documentation generates
-5. ✅ Check for JSDoc syntax errors in your editor
-
