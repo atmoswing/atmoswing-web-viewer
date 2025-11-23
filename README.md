@@ -23,7 +23,7 @@ For detailed documentation on all available configuration options and fields, se
   "baseLayers": [],
   "overlayLayers": [],
   "workspaces": [
-    { "key": "demo", "name": "Demo", "shapefiles": [...] }
+    { "key": "demo", "name": "Demo", "shapefiles": [] }
   ]
 }
 ```
