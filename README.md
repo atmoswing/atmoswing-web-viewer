@@ -5,6 +5,48 @@
 [![Documentation](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml/badge.svg)](https://github.com/atmoswing/atmoswing-web-viewer/actions/workflows/docs.yml)
 [![codecov](https://codecov.io/gh/atmoswing/atmoswing-web-viewer/graph/badge.svg?token=LFwOPlcsv8)](https://codecov.io/gh/atmoswing/atmoswing-web-viewer)
 
+
+## Configuration
+
+All runtime settings live in a single JSON file served at `/config.json` (located at `public/config.json` in the source tree). This file is fetched at startup and can be changed without rebuilding the application. It contains API settings, map providers, base layers, overlay layers, and workspace definitions.
+
+For detailed documentation on all available configuration options and fields, see **[CONFIGURATION.md](CONFIGURATION.md)**.
+
+### Quick Example
+
+```json
+{
+  "API_BASE_URL": "https://api.example.com",
+  "ENTITIES_SOURCE_EPSG": "EPSG:4326",
+  "API_DEBUG": false,
+  "providers": [...],
+  "baseLayers": [...],
+  "overlayLayers": [...],
+  "workspaces": [
+    { "key": "demo", "name": "Demo", "shapefiles": [...] }
+  ]
+}
+```
+
+### Editing Configuration At Runtime
+You can change `/config.json` directly on the server (or via a mounted volume) and force clients to pick it up with a hard refresh (Ctrl+F5).
+
+## Workspaces
+Workspace definitions are part of the same `config.json` under the `workspaces` key. Each workspace can define its own set of GIS layers (shapefiles, GeoJSON) with custom styling. The UI will automatically pick up new workspaces from the configuration.
+
+For complete workspace configuration options including shapefile layers and styling, see **[CONFIGURATION.md](CONFIGURATION.md)**.
+
+### Selecting a workspace via URL
+You can preselect a workspace by adding a query parameter to the URL: `?workspace=<key>`.
+
+If the key is invalid or missing, the app will fall back to the first workspace from `config.json`.
+
+Examples:
+- `/` → selects the first workspace
+- `/?workspace=zap_v13` → selects the `zap_v13` workspace
+
+Browser navigation (back/forward) stays in sync with the selected workspace, and changing the workspace from the dropdown updates the URL so links are shareable.
+
 ## Development
 
 Run the local server for development:
@@ -13,19 +55,30 @@ Run the local server for development:
 npm run dev
 ```
 
+## Running Tests
+
+To run the tests, use the following commands:
+```bash
+# Run all tests
+npm test
+
+# Generate coverage report
+npm test -- --coverage
+# or
+npx vitest run --coverage
+```
+
 ## Documentation
 
-API documentation: http://atmoswing.org/atmoswing-web-viewer
+The API documentation is available under http://atmoswing.org/atmoswing-web-viewer
 
 ### Generating Documentation
 
 The project includes comprehensive JSDoc API documentation. To generate and view it:
 
 ```bash
-# Generate documentation
+# Generate documentation (generated docs will be in the docs/ directory)
 npm run docs
-
-# The generated docs will be in the docs/ directory
 ```
 
 The documentation is also automatically generated and deployed to GitHub Pages on every push to the main branch.
@@ -46,51 +99,6 @@ Example:
 export async function myFunction(param) {
   // implementation
 }
-```
-
-## Runtime Configuration
-
-All runtime settings live in a single JSON file served at `/config.json` (located at `public/config.json` in the source tree). This file is fetched at startup and can be changed without rebuilding the application. It contains both API settings and workspace definitions, for example:
-
-```json
-{
-  "API_BASE_URL": "https://api.example.com",
-  "ENTITIES_SOURCE_EPSG": "EPSG:4326",
-  "API_DEBUG": false,
-  "workspaces": [
-    { "key": "demo", "name": "Demo", "shapefiles": [] }
-  ]
-}
-```
-
-### Editing Configuration At Runtime
-You can change `/config.json` directly on the server (or via a mounted volume) and force clients to pick it up with a hard refresh (Ctrl+F5). Because `Cache-Control: no-store` is sent for `config.json` (see `nginx.conf`), normal reloads already fetch the latest file.
-
-## Workspaces
-Workspace definitions are part of the same `config.json` under the `workspaces` key. The UI will automatically pick up new keys if referenced in components.
-
-### Selecting a workspace via URL
-You can preselect a workspace by adding a query parameter to the URL: `?workspace=<key>`.
-
-If the key is invalid or missing, the app will fall back to the first workspace from `config.json`.
-
-Examples:
-- `/` → selects the first workspace
-- `/?workspace=zap_v13` → selects the `zap_v13` workspace
-
-Browser navigation (back/forward) stays in sync with the selected workspace, and changing the workspace from the dropdown updates the URL so links are shareable.
-
-## Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate coverage report
-npm test -- --coverage
 ```
 
 ## License
