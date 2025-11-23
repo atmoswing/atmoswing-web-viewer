@@ -19,9 +19,9 @@ For detailed documentation on all available configuration options and fields, se
   "API_BASE_URL": "https://api.example.com",
   "ENTITIES_SOURCE_EPSG": "EPSG:4326",
   "API_DEBUG": false,
-  "providers": [...],
-  "baseLayers": [...],
-  "overlayLayers": [...],
+  "providers": [],
+  "baseLayers": [],
+  "overlayLayers": [],
   "workspaces": [
     { "key": "demo", "name": "Demo", "shapefiles": [...] }
   ]
