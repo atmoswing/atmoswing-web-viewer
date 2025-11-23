@@ -18,10 +18,10 @@ The configuration is loaded at application startup and can be modified without r
   "API_BASE_URL": "https://api.example.com",
   "ENTITIES_SOURCE_EPSG": "EPSG:4326",
   "API_DEBUG": false,
-  "providers": [...],
-  "baseLayers": [...],
-  "overlayLayers": [...],
-  "workspaces": [...]
+  "providers": [],
+  "baseLayers": [],
+  "overlayLayers": [],
+  "workspaces": []
 }
 ```
 
@@ -161,7 +161,7 @@ The `workspaces` array defines different geographic areas or projects, each with
 {
   "key": "zap_v13",
   "name": "ZAP (v13)",
-  "shapefiles": [...]
+  "shapefiles": []
 }
 ```
 
