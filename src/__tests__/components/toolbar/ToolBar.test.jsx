@@ -2,6 +2,10 @@
  * @fileoverview Smoke tests for ToolBar component
  */
 
+// Call i18n setup early
+import { setupI18nMock } from '../../testUtils.js';
+setupI18nMock();
+
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -30,13 +34,6 @@ vi.mock('@/assets/toolbar/frame_distributions.svg?react', () => ({
 
 vi.mock('@/assets/toolbar/frame_analogs.svg?react', () => ({
   default: () => <svg data-testid="analogs-icon" />
-}));
-
-// Mock i18n
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key
-  })
 }));
 
 describe('ToolBar', () => {
@@ -90,4 +87,3 @@ describe('ToolBar', () => {
     expect(screen.queryByTestId('distributions-modal')).not.toBeInTheDocument();
   });
 });
-

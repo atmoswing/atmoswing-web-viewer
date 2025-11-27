@@ -3,7 +3,7 @@ import {
   readWorkspaceFromUrl,
   writeWorkspaceToUrl,
   onWorkspacePopState
-} from '@/utils/urlWorkspaceUtils';
+} from '@/utils/urlWorkspaceUtils.js';
 
 describe('urlWorkspaceUtils', () => {
   beforeEach(() => {

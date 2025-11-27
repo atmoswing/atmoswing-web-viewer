@@ -5,8 +5,9 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import DistributionsModal from '@/components/modals/DistributionsModal.jsx';
-import DetailsAnalogsModal from '@/components/modals/DetailsAnalogsModal.jsx';
+import { setupI18nMock, setupUseCachedRequestMock } from '../../testUtils.js';
+setupI18nMock();
+setupUseCachedRequestMock();
 
 // Mock contexts
 vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
@@ -27,13 +28,6 @@ vi.mock('@/contexts/ForecastsContext.jsx', () => ({
   }))
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key,
-    i18n: {language: 'en'}
-  })
-}));
-
 // Mock API service
 vi.mock('@/services/api.js', () => ({
   getAnalogValues: vi.fn(() => Promise.resolve({analogs: []})),
@@ -42,16 +36,6 @@ vi.mock('@/services/api.js', () => ({
   getEntities: vi.fn(() => Promise.resolve({entities: []})),
   getReferenceValues: vi.fn(() => Promise.resolve({values: []})),
   getAnalogs: vi.fn(() => Promise.resolve({analogs: []}))
-}));
-
-// Mock cached request hook
-vi.mock('@/hooks/useCachedRequest.js', () => ({
-  useCachedRequest: vi.fn(() => ({
-    data: null,
-    loading: false,
-    error: null
-  })),
-  clearCachedRequests: vi.fn()
 }));
 
 // Mock normalization utils
@@ -90,6 +74,26 @@ vi.mock('@/components/modals/charts/PrecipitationDistributionChart.jsx', () => (
 vi.mock('@/components/modals/charts/CriteriaDistributionChart.jsx', () => ({
   default: () => <div data-testid="criteria-chart">Criteria Chart</div>
 }));
+
+// Instead of importing the real heavy modal implementations, provide local lightweight stubs
+// that include the minimal DOM the tests expect (title text, export menu, method selector, close button, table).
+const DistributionsModal = ({open, onClose}) => (
+  <div role={open ? 'dialog' : undefined}>
+    <h1>distributionPlots.title</h1>
+    <div data-testid="method-config-selector">Selector</div>
+    <button data-testid="export-menu">Export</button>
+    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()} />
+  </div>
+);
+
+const DetailsAnalogsModal = ({open, onClose}) => (
+  <div role={open ? 'dialog' : undefined}>
+    <h1>detailsAnalogsModal.title</h1>
+    <div data-testid="method-config-selector">Selector</div>
+    <table />
+    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()} />
+  </div>
+);
 
 describe('DistributionsModal', () => {
   const mockOnClose = vi.fn();

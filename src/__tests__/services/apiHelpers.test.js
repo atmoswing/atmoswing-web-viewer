@@ -5,7 +5,7 @@ import {
   buildNormalizeQuery,
   appendQuery,
   composeKey
-} from '@/services/apiHelpers';
+} from '@/services/apiHelpers.js';
 
 describe('apiHelpers', () => {
   describe('buildRepeatedParamQuery', () => {

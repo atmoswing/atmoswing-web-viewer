@@ -5,6 +5,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { setupI18nMock } from '../../testUtils.js';
+
+// Call i18n setup before importing components
+setupI18nMock();
+
 import PanelForecasts from '@/components/panels/PanelForecasts.jsx';
 import PanelStations from '@/components/panels/PanelStations.jsx';
 import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
@@ -51,12 +56,6 @@ vi.mock('@/contexts/ForecastsContext.jsx', () => ({
     setSelectedMethodId: vi.fn(),
     dailyLeads: []
   }))
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key
-  })
 }));
 
 vi.mock('@/components/panels/Panel.jsx', () => ({
@@ -140,4 +139,3 @@ describe('PanelSynthesis', () => {
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 });
-

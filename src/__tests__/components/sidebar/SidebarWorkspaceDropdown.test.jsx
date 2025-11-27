@@ -2,6 +2,10 @@
  * @fileoverview Smoke tests for SidebarWorkspaceDropdown component
  */
 
+// Call i18n setup early
+import { setupI18nMock } from '../../testUtils.js';
+setupI18nMock();
+
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {SidebarWorkspaceDropdown} from '@/components/sidebar/SidebarWorkspaceDropdown.jsx';
@@ -11,12 +15,6 @@ vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
     workspace: 'workspace1',
     setWorkspace: vi.fn()
   }))
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key
-  })
 }));
 
 describe('SidebarWorkspaceDropdown', () => {
@@ -41,4 +39,3 @@ describe('SidebarWorkspaceDropdown', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 });
-

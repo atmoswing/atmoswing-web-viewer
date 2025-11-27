@@ -5,7 +5,7 @@ import {
   normalizeAnalogsResponse,
   extractTargetDatesArray,
   normalizeForecastValuesResponse
-} from '@/utils/apiNormalization';
+} from '@/utils/apiNormalization.js';
 
 describe('apiNormalization', () => {
   describe('normalizeEntitiesResponse', () => {

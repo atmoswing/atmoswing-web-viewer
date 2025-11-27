@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useCachedRequest } from '@/hooks/useCachedRequest';
+import { useCachedRequest } from '@/hooks/useCachedRequest.js';
 
 describe('useCachedRequest', () => {
   afterEach(() => {

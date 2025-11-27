@@ -5,7 +5,7 @@ import {
   formatCriteria,
   compareEntitiesByName,
   formatDateLabel
-} from '@/utils/formattingUtils';
+} from '@/utils/formattingUtils.js';
 
 describe('formattingUtils', () => {
   describe('formatDateDDMMYYYY', () => {

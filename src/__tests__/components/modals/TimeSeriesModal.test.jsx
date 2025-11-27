@@ -5,6 +5,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 
+// Call i18n setup early
+import { setupI18nMock, setupUseCachedRequestMock } from '../../testUtils.js';
+setupI18nMock();
+setupUseCachedRequestMock();
+
 // Mocks must be before component import
 vi.mock('@/contexts/ForecastsContext.jsx', () => ({
   useSelectedEntity: vi.fn(() => ({
@@ -23,22 +28,6 @@ vi.mock('@/contexts/ForecastsContext.jsx', () => ({
     workspace: 'test',
     activeForecastDate: '2024-01-01'
   }))
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key,
-    i18n: {language: 'en'}
-  })
-}));
-
-vi.mock('@/hooks/useCachedRequest.js', () => ({
-  useCachedRequest: vi.fn(() => ({
-    data: null,
-    loading: false,
-    error: null
-  })),
-  clearCachedRequests: vi.fn()
 }));
 
 vi.mock('@/services/api.js', () => ({
@@ -94,4 +83,3 @@ describe('TimeSeriesModal', () => {
     expect(checkboxes.length).toBeGreaterThan(0);
   });
 });
-

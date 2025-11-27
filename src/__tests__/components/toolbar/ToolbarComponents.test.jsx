@@ -4,6 +4,8 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import { setupI18nMock } from '../../testUtils.js';
+setupI18nMock();
 import ToolbarSquares from '@/components/toolbar/ToolbarSquares.jsx';
 import ToolbarCenter from '@/components/toolbar/ToolbarCenter.jsx';
 
@@ -36,12 +38,6 @@ vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
   useWorkspace: vi.fn(() => ({
     workspace: 'test'
   }))
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key
-  })
 }));
 
 describe('ToolbarSquares', () => {
@@ -87,4 +83,3 @@ describe('ToolbarCenter', () => {
     expect(screen.getAllByRole('button')).toBeDefined();
   });
 });
-

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SHORT_TTL, DEFAULT_TTL, LONG_TTL } from '@/utils/cacheTTLs';
+import { SHORT_TTL, DEFAULT_TTL, LONG_TTL } from '@/utils/cacheTTLs.js';
 
 describe('cacheTTLs', () => {
   it('should export SHORT_TTL constant', () => {

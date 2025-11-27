@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import * as mapConstants from '@/components/map/mapConstants';
+import * as mapConstants from '@/components/map/mapConstants.js';
 
 describe('mapConstants', () => {
   it('should export DEFAULT_PROJECTION', () => {
