@@ -4,9 +4,12 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import { setupI18nMock } from './testUtils.js';
 import PanelDisplay from '@/components/panels/PanelDisplay.jsx';
 import PanelAnalogDates from '@/components/panels/PanelAnalogDates.jsx';
 import PanelStatus from '@/components/panels/PanelStatus.jsx';
+
+setupI18nMock();
 
 // Mock contexts
 vi.mock('@/contexts/ForecastsContext.jsx', () => ({
@@ -33,12 +36,6 @@ vi.mock('@/contexts/SynthesisContext.jsx', () => ({
   useSynthesis: vi.fn(() => ({
     selectedTargetDate: new Date('2024-01-02')
   }))
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key
-  })
 }));
 
 vi.mock('@/components/panels/Panel.jsx', () => ({
@@ -156,4 +153,3 @@ describe('PanelStatus', () => {
     expect(screen.queryByText('No data')).not.toBeInTheDocument();
   });
 });
-

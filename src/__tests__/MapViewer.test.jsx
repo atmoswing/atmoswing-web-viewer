@@ -2,6 +2,9 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, cleanup} from '@testing-library/react';
 import React from 'react';
 
+import { setupI18nMock } from './testUtils.js';
+setupI18nMock();
+
 // Provide mutable state holders so tests can change hook return values per-case
 let ENTITIES = {
   entities: [],
@@ -18,7 +21,7 @@ let WORKSPACE = { workspace: 'ws' };
 let RUNTIME_CONFIG = { ENTITIES_SOURCE_EPSG: 'EPSG:4326' };
 let SNACK = { enqueueSnackbar: () => {} };
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'en' } }) }));
+// vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'en' } }) }));
 
 vi.mock('@/contexts/ForecastsContext.jsx', () => ({
   useEntities: () => ENTITIES,
@@ -97,4 +100,3 @@ describe('MapViewer smoke', () => {
     expect(screen.getByText('map.loading.noForecastFoundSearch')).toBeInTheDocument();
   });
 });
-

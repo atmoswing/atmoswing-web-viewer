@@ -3,7 +3,8 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'en' } }) }));
+import { setupI18nMock } from '../../testUtils.js';
+setupI18nMock();
 
 import ExportMenu from '@/components/modals/common/ExportMenu.jsx';
 

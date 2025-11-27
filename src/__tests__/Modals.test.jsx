@@ -5,6 +5,10 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { setupI18nMock, setupUseCachedRequestMock } from './testUtils.js';
+setupI18nMock();
+setupUseCachedRequestMock();
+
 import DistributionsModal from '@/components/modals/DistributionsModal.jsx';
 import DetailsAnalogsModal from '@/components/modals/DetailsAnalogsModal.jsx';
 
@@ -27,13 +31,6 @@ vi.mock('@/contexts/ForecastsContext.jsx', () => ({
   }))
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key,
-    i18n: {language: 'en'}
-  })
-}));
-
 // Mock API service
 vi.mock('@/services/api.js', () => ({
   getAnalogValues: vi.fn(() => Promise.resolve({analogs: []})),
@@ -42,16 +39,6 @@ vi.mock('@/services/api.js', () => ({
   getEntities: vi.fn(() => Promise.resolve({entities: []})),
   getReferenceValues: vi.fn(() => Promise.resolve({values: []})),
   getAnalogs: vi.fn(() => Promise.resolve({analogs: []}))
-}));
-
-// Mock cached request hook
-vi.mock('@/hooks/useCachedRequest.js', () => ({
-  useCachedRequest: vi.fn(() => ({
-    data: null,
-    loading: false,
-    error: null
-  })),
-  clearCachedRequests: vi.fn()
 }));
 
 // Mock normalization utils

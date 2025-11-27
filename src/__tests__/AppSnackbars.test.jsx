@@ -2,6 +2,9 @@
  * @fileoverview Smoke tests for AppSnackbars component
  */
 
+import { setupI18nMock } from './testUtils.js';
+setupI18nMock();
+
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -31,12 +34,6 @@ vi.mock('@/contexts/SnackbarContext.jsx', () => ({
     closeSnackbar: mockCloseSnackbar,
     removeSnackbar: mockRemoveSnackbar
   }))
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key
-  })
 }));
 
 vi.mock('@/components/snackbars/SnackbarItem.jsx', () => ({
@@ -80,4 +77,3 @@ describe('AppSnackbars', () => {
     expect(screen.queryByText('workspace.noWorkspaces')).not.toBeInTheDocument();
   });
 });
-

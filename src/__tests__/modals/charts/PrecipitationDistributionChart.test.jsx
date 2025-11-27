@@ -2,9 +2,8 @@ import React from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, cleanup} from '@testing-library/react';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k, i18n: {language: 'en'} })
-}));
+import { setupI18nMock } from '../../testUtils.js';
+setupI18nMock();
 
 import PrecipitationDistributionChart from '@/components/modals/charts/PrecipitationDistributionChart.jsx';
 
