@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toRGBA } from '@/components/map/utils/olStyleUtils';
+import { toRGBA } from '@/components/map/utils/olStyleUtils.js';
 
 describe('olStyleUtils', () => {
   describe('toRGBA', () => {

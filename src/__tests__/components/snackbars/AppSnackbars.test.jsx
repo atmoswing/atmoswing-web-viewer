@@ -2,7 +2,7 @@
  * @fileoverview Smoke tests for AppSnackbars component
  */
 
-import { setupI18nMock } from './testUtils.js';
+import { setupI18nMock } from '../../testUtils.js';
 setupI18nMock();
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';

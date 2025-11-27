@@ -7,7 +7,7 @@ import {
   isSameDay,
   isSameInstant,
   hasTargetDate
-} from '@/utils/targetDateUtils';
+} from '@/utils/targetDateUtils.js';
 
 describe('targetDateUtils', () => {
   describe('SUB_HOURS', () => {

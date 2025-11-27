@@ -2,7 +2,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, cleanup} from '@testing-library/react';
 import React from 'react';
 
-import { setupI18nMock } from './testUtils.js';
+import { setupI18nMock } from '../../testUtils.js';
 setupI18nMock();
 
 // Provide mutable state holders so tests can change hook return values per-case

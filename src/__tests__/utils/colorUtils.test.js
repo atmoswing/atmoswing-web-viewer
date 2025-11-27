@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { valueToColor, valueToColorCSS } from '@/utils/colorUtils';
+import { valueToColor, valueToColorCSS } from '@/utils/colorUtils.js';
 
 describe('colorUtils', () => {
   describe('valueToColor', () => {

@@ -6,7 +6,7 @@ import {
   keyForEntities,
   keyForRelevantEntities,
   keyForForecastValues
-} from '@/utils/contextGuards';
+} from '@/utils/contextGuards.js';
 
 describe('contextGuards', () => {
   describe('isMethodSelectionValid', () => {

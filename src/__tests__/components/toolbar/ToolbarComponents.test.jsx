@@ -4,7 +4,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import { setupI18nMock } from './testUtils.js';
+import { setupI18nMock } from '../../testUtils.js';
 setupI18nMock();
 import ToolbarSquares from '@/components/toolbar/ToolbarSquares.jsx';
 import ToolbarCenter from '@/components/toolbar/ToolbarCenter.jsx';

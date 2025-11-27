@@ -4,7 +4,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import { setupI18nMock } from './testUtils.js';
+import { setupI18nMock } from '../../testUtils.js';
 import PanelDisplay from '@/components/panels/PanelDisplay.jsx';
 import PanelAnalogDates from '@/components/panels/PanelAnalogDates.jsx';
 import PanelStatus from '@/components/panels/PanelStatus.jsx';

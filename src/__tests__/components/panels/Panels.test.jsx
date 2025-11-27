@@ -5,7 +5,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { setupI18nMock } from './testUtils.js';
+import { setupI18nMock } from '../../testUtils.js';
 
 // Call i18n setup before importing components
 setupI18nMock();
