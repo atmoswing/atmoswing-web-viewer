@@ -2,7 +2,7 @@
  * @fileoverview Tests for ForecastValuesContext
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {ForecastValuesProvider, useForecastValues} from '@/contexts/ForecastValuesContext.jsx';
 import {ForecastSessionProvider} from '@/contexts/ForecastSessionContext.jsx';
@@ -10,7 +10,13 @@ import {MethodsProvider} from '@/contexts/MethodsContext.jsx';
 import {SynthesisProvider} from '@/contexts/SynthesisContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
-import {getLastForecastDate, getMethodsAndConfigs, getSynthesisTotal, getEntitiesValuesPercentile, getAggregatedEntitiesValues} from '@/services/api.js';
+import {
+  getAggregatedEntitiesValues,
+  getEntitiesValuesPercentile,
+  getLastForecastDate,
+  getMethodsAndConfigs,
+  getSynthesisTotal
+} from '@/services/api.js';
 
 // Mock dependencies
 vi.mock('@/services/api.js', () => ({

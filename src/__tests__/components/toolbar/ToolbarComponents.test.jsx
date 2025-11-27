@@ -2,12 +2,13 @@
  * @fileoverview Smoke tests for Toolbar sub-components
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import { setupI18nMock } from '../../testUtils.js';
-setupI18nMock();
+import {setupI18nMock} from '../../testUtils.js';
 import ToolbarSquares from '@/components/toolbar/ToolbarSquares.jsx';
 import ToolbarCenter from '@/components/toolbar/ToolbarCenter.jsx';
+
+setupI18nMock();
 
 // Mock contexts
 vi.mock('@/contexts/ForecastsContext.jsx', () => ({
@@ -42,12 +43,12 @@ vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
 
 describe('ToolbarSquares', () => {
   it('renders without crashing', () => {
-    const {container} = render(<ToolbarSquares />);
+    const {container} = render(<ToolbarSquares/>);
     expect(container).toBeInTheDocument();
   });
 
   it('renders empty state when no leads available', () => {
-    render(<ToolbarSquares />);
+    render(<ToolbarSquares/>);
     // Component should render even with empty data
     const container = document.querySelector('.toolbar-squares, .forecast-squares');
     // May or may not have specific class, just verify no crash
@@ -57,28 +58,28 @@ describe('ToolbarSquares', () => {
   it('handles synthesis data structure', () => {
     // Component handles various synthesis data states
     // Detailed state testing is covered in integration tests
-    const {container} = render(<ToolbarSquares />);
+    const {container} = render(<ToolbarSquares/>);
     expect(container).toBeInTheDocument();
   });
 });
 
 describe('ToolbarCenter', () => {
   it('renders without crashing', () => {
-    render(<ToolbarCenter />);
+    render(<ToolbarCenter/>);
     // Should render navigation buttons
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
   });
 
   it('renders navigation buttons', () => {
-    render(<ToolbarCenter />);
+    render(<ToolbarCenter/>);
     // Check for multiple button elements (navigation controls)
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThanOrEqual(5); // Several nav buttons
   });
 
   it('displays current date info', () => {
-    render(<ToolbarCenter />);
+    render(<ToolbarCenter/>);
     // Component should render without error
     expect(screen.getAllByRole('button')).toBeDefined();
   });

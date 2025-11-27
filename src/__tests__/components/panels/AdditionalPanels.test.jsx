@@ -2,9 +2,9 @@
  * @fileoverview Smoke tests for additional Panel components
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import { setupI18nMock } from '../../testUtils.js';
+import {setupI18nMock} from '../../testUtils.js';
 import PanelDisplay from '@/components/panels/PanelDisplay.jsx';
 import PanelAnalogDates from '@/components/panels/PanelAnalogDates.jsx';
 import PanelStatus from '@/components/panels/PanelStatus.jsx';
@@ -61,44 +61,44 @@ vi.mock('@/hooks/useCachedRequest.js', () => ({
 
 describe('PanelDisplay', () => {
   it('renders without crashing', () => {
-    render(<PanelDisplay />);
+    render(<PanelDisplay/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 
   it('renders percentile selector', () => {
-    render(<PanelDisplay />);
+    render(<PanelDisplay/>);
     const selects = screen.getAllByRole('combobox');
     expect(selects.length).toBeGreaterThan(0);
   });
 
   it('renders normalization reference selector', () => {
-    render(<PanelDisplay />);
+    render(<PanelDisplay/>);
     const selects = screen.getAllByRole('combobox');
     expect(selects.length).toBe(2); // percentile and normalization
   });
 
   it('handles defaultOpen prop', () => {
-    render(<PanelDisplay defaultOpen={true} />);
+    render(<PanelDisplay defaultOpen={true}/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 });
 
 describe('PanelAnalogDates', () => {
   it('renders without crashing when config is selected', () => {
-    render(<PanelAnalogDates />);
+    render(<PanelAnalogDates/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 
   it('handles different config states', () => {
     // Component handles various config states gracefully
     // Detailed config testing is in integration tests
-    const {container} = render(<PanelAnalogDates />);
+    const {container} = render(<PanelAnalogDates/>);
     expect(container.firstChild).toBeTruthy();
   });
 
   it('renders with various states', () => {
     // Loading and error states are tested in integration tests
-    render(<PanelAnalogDates />);
+    render(<PanelAnalogDates/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 });
@@ -106,49 +106,49 @@ describe('PanelAnalogDates', () => {
 describe('PanelStatus', () => {
   it('renders nothing when no state', () => {
     const {container} = render(
-      <PanelStatus loading={false} error={false} empty={false} />
+      <PanelStatus loading={false} error={false} empty={false}/>
     );
     expect(container.firstChild).toBeNull();
   });
 
   it('renders loading message with default text', () => {
-    render(<PanelStatus loading={true} />);
+    render(<PanelStatus loading={true}/>);
     expect(screen.getByText('Loading…')).toBeInTheDocument();
   });
 
   it('renders loading message with custom text', () => {
-    render(<PanelStatus loading={true} messages={{loading: 'Custom loading'}} />);
+    render(<PanelStatus loading={true} messages={{loading: 'Custom loading'}}/>);
     expect(screen.getByText('Custom loading')).toBeInTheDocument();
   });
 
   it('renders error message with default text', () => {
-    render(<PanelStatus loading={false} error={true} />);
+    render(<PanelStatus loading={false} error={true}/>);
     expect(screen.getByText('Error loading')).toBeInTheDocument();
   });
 
   it('renders error message with custom text', () => {
-    render(<PanelStatus loading={false} error={true} messages={{error: 'Custom error'}} />);
+    render(<PanelStatus loading={false} error={true} messages={{error: 'Custom error'}}/>);
     expect(screen.getByText('Custom error')).toBeInTheDocument();
   });
 
   it('renders empty message with default text', () => {
-    render(<PanelStatus loading={false} error={false} empty={true} />);
+    render(<PanelStatus loading={false} error={false} empty={true}/>);
     expect(screen.getByText('No data')).toBeInTheDocument();
   });
 
   it('renders empty message with custom text', () => {
-    render(<PanelStatus loading={false} error={false} empty={true} messages={{empty: 'Custom empty'}} />);
+    render(<PanelStatus loading={false} error={false} empty={true} messages={{empty: 'Custom empty'}}/>);
     expect(screen.getByText('Custom empty')).toBeInTheDocument();
   });
 
   it('prioritizes loading over error', () => {
-    render(<PanelStatus loading={true} error={true} />);
+    render(<PanelStatus loading={true} error={true}/>);
     expect(screen.getByText('Loading…')).toBeInTheDocument();
     expect(screen.queryByText('Error loading')).not.toBeInTheDocument();
   });
 
   it('prioritizes error over empty', () => {
-    render(<PanelStatus loading={false} error={true} empty={true} />);
+    render(<PanelStatus loading={false} error={true} empty={true}/>);
     expect(screen.getByText('Error loading')).toBeInTheDocument();
     expect(screen.queryByText('No data')).not.toBeInTheDocument();
   });

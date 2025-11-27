@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
-  buildRepeatedParamQuery,
-  buildPercentilesQuery,
-  buildNormalizeQuery,
   appendQuery,
+  buildNormalizeQuery,
+  buildPercentilesQuery,
+  buildRepeatedParamQuery,
   composeKey
 } from '@/services/apiHelpers.js';
 

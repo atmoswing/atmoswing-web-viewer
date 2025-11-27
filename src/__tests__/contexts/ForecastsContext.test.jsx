@@ -2,18 +2,17 @@
  * @fileoverview Tests for ForecastsContext composite provider
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import {renderHook} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {render, renderHook, screen} from '@testing-library/react';
 import {
   ForecastsProvider,
-  useMethods,
   useEntities,
-  useSynthesis,
-  useForecastValues,
   useForecastParameters,
   useForecastSession,
-  useSelectedEntity
+  useForecastValues,
+  useMethods,
+  useSelectedEntity,
+  useSynthesis
 } from '@/contexts/ForecastsContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';

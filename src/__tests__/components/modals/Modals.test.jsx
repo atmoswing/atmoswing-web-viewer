@@ -2,10 +2,11 @@
  * @fileoverview Smoke tests for Modal components
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { setupI18nMock, setupUseCachedRequestMock } from '../../testUtils.js';
+import {setupI18nMock, setupUseCachedRequestMock} from '../../testUtils.js';
+
 setupI18nMock();
 setupUseCachedRequestMock();
 
@@ -82,7 +83,7 @@ const DistributionsModal = ({open, onClose}) => (
     <h1>distributionPlots.title</h1>
     <div data-testid="method-config-selector">Selector</div>
     <button data-testid="export-menu">Export</button>
-    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()} />
+    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()}/>
   </div>
 );
 
@@ -90,8 +91,8 @@ const DetailsAnalogsModal = ({open, onClose}) => (
   <div role={open ? 'dialog' : undefined}>
     <h1>detailsAnalogsModal.title</h1>
     <div data-testid="method-config-selector">Selector</div>
-    <table />
-    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()} />
+    <table/>
+    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()}/>
   </div>
 );
 
@@ -103,29 +104,29 @@ describe('DistributionsModal', () => {
   });
 
   it('renders without crashing when closed', () => {
-    render(<DistributionsModal open={false} onClose={mockOnClose} />);
+    render(<DistributionsModal open={false} onClose={mockOnClose}/>);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('renders without crashing when open', () => {
-    render(<DistributionsModal open={true} onClose={mockOnClose} />);
+    render(<DistributionsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('displays dialog title', () => {
-    render(<DistributionsModal open={true} onClose={mockOnClose} />);
+    render(<DistributionsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByText('distributionPlots.title')).toBeInTheDocument();
   });
 
   it('includes close button', () => {
-    render(<DistributionsModal open={true} onClose={mockOnClose} />);
+    render(<DistributionsModal open={true} onClose={mockOnClose}/>);
     const closeButton = screen.getByLabelText('detailsAnalogsModal.close');
     expect(closeButton).toBeInTheDocument();
   });
 
   it('calls onClose when close button is clicked', async () => {
     const user = userEvent.setup();
-    render(<DistributionsModal open={true} onClose={mockOnClose} />);
+    render(<DistributionsModal open={true} onClose={mockOnClose}/>);
 
     const closeButton = screen.getByLabelText('detailsAnalogsModal.close');
     await user.click(closeButton);
@@ -134,12 +135,12 @@ describe('DistributionsModal', () => {
   });
 
   it('renders method config selector', () => {
-    render(<DistributionsModal open={true} onClose={mockOnClose} />);
+    render(<DistributionsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByTestId('method-config-selector')).toBeInTheDocument();
   });
 
   it('renders export menu', () => {
-    render(<DistributionsModal open={true} onClose={mockOnClose} />);
+    render(<DistributionsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByTestId('export-menu')).toBeInTheDocument();
   });
 });
@@ -152,29 +153,29 @@ describe('DetailsAnalogsModal', () => {
   });
 
   it('renders without crashing when closed', () => {
-    render(<DetailsAnalogsModal open={false} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={false} onClose={mockOnClose}/>);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('renders without crashing when open', () => {
-    render(<DetailsAnalogsModal open={true} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('displays dialog title', () => {
-    render(<DetailsAnalogsModal open={true} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByText('detailsAnalogsModal.title')).toBeInTheDocument();
   });
 
   it('includes close button', () => {
-    render(<DetailsAnalogsModal open={true} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={true} onClose={mockOnClose}/>);
     const closeButton = screen.getByLabelText('detailsAnalogsModal.close');
     expect(closeButton).toBeInTheDocument();
   });
 
   it('calls onClose when close button is clicked', async () => {
     const user = userEvent.setup();
-    render(<DetailsAnalogsModal open={true} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={true} onClose={mockOnClose}/>);
 
     const closeButton = screen.getByLabelText('detailsAnalogsModal.close');
     await user.click(closeButton);
@@ -183,12 +184,12 @@ describe('DetailsAnalogsModal', () => {
   });
 
   it('renders method config selector', () => {
-    render(<DetailsAnalogsModal open={true} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={true} onClose={mockOnClose}/>);
     expect(screen.getByTestId('method-config-selector')).toBeInTheDocument();
   });
 
   it('renders table structure', () => {
-    render(<DetailsAnalogsModal open={true} onClose={mockOnClose} />);
+    render(<DetailsAnalogsModal open={true} onClose={mockOnClose}/>);
     const table = screen.getByRole('table');
     expect(table).toBeInTheDocument();
   });

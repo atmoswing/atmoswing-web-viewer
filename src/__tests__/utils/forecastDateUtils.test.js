@@ -1,8 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import {
-  parseForecastDate,
-  formatForecastDateForApi
-} from '@/utils/forecastDateUtils.js';
+import {describe, expect, it} from 'vitest';
+import {formatForecastDateForApi, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
 describe('forecastDateUtils', () => {
   describe('parseForecastDate', () => {

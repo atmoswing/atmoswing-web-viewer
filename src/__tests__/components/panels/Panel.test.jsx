@@ -2,7 +2,7 @@
  * @fileoverview Smoke tests for Panel component
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Panel from '@/components/panels/Panel.jsx';

@@ -2,13 +2,13 @@
  * @fileoverview Tests for useOverlayGlobalLayers hook
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
 import useOverlayGlobalLayers from '@/components/map/hooks/useOverlayGlobalLayers.js';
 
 // Mock dependencies
 vi.mock('ol/layer/Tile', () => ({
-  default: vi.fn(function() {
+  default: vi.fn(function () {
     return {
       set: vi.fn(),
       get: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock('ol/layer/Tile', () => ({
   }),
 }));
 vi.mock('ol/layer/Vector', () => ({
-  default: vi.fn(function() {
+  default: vi.fn(function () {
     return {
       set: vi.fn(),
       get: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock('ol/layer/Vector', () => ({
   }),
 }));
 vi.mock('ol/source/Vector', () => ({
-  default: vi.fn(function() {
+  default: vi.fn(function () {
     return {
       clear: vi.fn(),
       addFeatures: vi.fn(),
@@ -32,11 +32,15 @@ vi.mock('ol/source/Vector', () => ({
   }),
 }));
 vi.mock('ol/style', () => ({
-  Stroke: vi.fn(function() { return {}; }),
-  Style: vi.fn(function() { return {}; }),
+  Stroke: vi.fn(function () {
+    return {};
+  }),
+  Style: vi.fn(function () {
+    return {};
+  }),
 }));
 vi.mock('ol/format/GeoJSON', () => ({
-  default: vi.fn(function() {
+  default: vi.fn(function () {
     return {
       readFeatures: vi.fn(() => []),
     };

@@ -2,7 +2,7 @@
  * @fileoverview Smoke tests for Map components
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import MapLegend from '@/components/map/MapLegend.jsx';
 import MapTooltip from '@/components/map/MapTooltip.jsx';
@@ -126,22 +126,22 @@ describe('MapTooltip', () => {
   };
 
   it('renders without crashing', () => {
-    render(<MapTooltip tooltip={mockTooltip} label="Precipitation" />);
+    render(<MapTooltip tooltip={mockTooltip} label="Precipitation"/>);
     expect(screen.getByText('Station A')).toBeInTheDocument();
   });
 
   it('displays entity name', () => {
-    render(<MapTooltip tooltip={mockTooltip} label="Precipitation" />);
+    render(<MapTooltip tooltip={mockTooltip} label="Precipitation"/>);
     expect(screen.getByText('Station A')).toBeInTheDocument();
   });
 
   it('displays value with label', () => {
-    render(<MapTooltip tooltip={mockTooltip} label="Precipitation" />);
+    render(<MapTooltip tooltip={mockTooltip} label="Precipitation"/>);
     expect(screen.getByText(/Precipitation: 25.5 mm/)).toBeInTheDocument();
   });
 
   it('returns null when tooltip is null', () => {
-    const {container} = render(<MapTooltip tooltip={null} label="Precipitation" />);
+    const {container} = render(<MapTooltip tooltip={null} label="Precipitation"/>);
     expect(container.firstChild).toBeNull();
   });
 
@@ -150,7 +150,7 @@ describe('MapTooltip', () => {
       ...mockTooltip,
       valueRaw: NaN
     };
-    render(<MapTooltip tooltip={tooltipWithNaN} label="Precipitation" />);
+    render(<MapTooltip tooltip={tooltipWithNaN} label="Precipitation"/>);
     expect(screen.getByText(/Precipitation: NaN mm/)).toBeInTheDocument();
   });
 
@@ -159,12 +159,12 @@ describe('MapTooltip', () => {
       ...mockTooltip,
       valueRaw: null
     };
-    render(<MapTooltip tooltip={tooltipWithNull} label="Precipitation" />);
+    render(<MapTooltip tooltip={tooltipWithNull} label="Precipitation"/>);
     expect(screen.getByText(/Precipitation: NaN mm/)).toBeInTheDocument();
   });
 
   it('positions tooltip at correct coordinates', () => {
-    const {container} = render(<MapTooltip tooltip={mockTooltip} label="Precipitation" />);
+    const {container} = render(<MapTooltip tooltip={mockTooltip} label="Precipitation"/>);
     const tooltipDiv = container.firstChild;
     expect(tooltipDiv).toHaveStyle({
       top: '212px',
@@ -177,12 +177,12 @@ describe('MapTooltip', () => {
       ...mockTooltip,
       valueRaw: 25.567
     };
-    render(<MapTooltip tooltip={tooltipWithDecimal} label="Precipitation" />);
+    render(<MapTooltip tooltip={tooltipWithDecimal} label="Precipitation"/>);
     expect(screen.getByText(/Precipitation: 25.6 mm/)).toBeInTheDocument();
   });
 
   it('applies pointer-events: none style', () => {
-    const {container} = render(<MapTooltip tooltip={mockTooltip} label="Precipitation" />);
+    const {container} = render(<MapTooltip tooltip={mockTooltip} label="Precipitation"/>);
     const tooltipDiv = container.firstChild;
     expect(tooltipDiv).toHaveStyle({pointerEvents: 'none'});
   });

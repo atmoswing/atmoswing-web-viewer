@@ -3,13 +3,13 @@
  */
 
 // Call i18n setup early
-import { setupI18nMock } from '../../testUtils.js';
-setupI18nMock();
-
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {setupI18nMock} from '../../testUtils.js';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ToolBar from '@/components/toolbar/ToolBar.jsx';
+
+setupI18nMock();
 
 // Mock child components
 vi.mock('@/components/toolbar/ToolbarSquares.jsx', () => ({
@@ -29,34 +29,34 @@ vi.mock('@/components/modals', () => ({
 
 // Mock SVG imports
 vi.mock('@/assets/toolbar/frame_distributions.svg?react', () => ({
-  default: () => <svg data-testid="distributions-icon" />
+  default: () => <svg data-testid="distributions-icon"/>
 }));
 
 vi.mock('@/assets/toolbar/frame_analogs.svg?react', () => ({
-  default: () => <svg data-testid="analogs-icon" />
+  default: () => <svg data-testid="analogs-icon"/>
 }));
 
 describe('ToolBar', () => {
   it('renders without crashing', () => {
-    render(<ToolBar />);
+    render(<ToolBar/>);
     expect(screen.getByRole('banner')).toBeInTheDocument();
   });
 
   it('renders child toolbar components', () => {
-    render(<ToolBar />);
+    render(<ToolBar/>);
     expect(screen.getByTestId('toolbar-squares')).toBeInTheDocument();
     expect(screen.getByTestId('toolbar-center')).toBeInTheDocument();
   });
 
   it('renders toolbar buttons', () => {
-    render(<ToolBar />);
+    render(<ToolBar/>);
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
   });
 
   it('opens distributions modal when button is clicked', async () => {
     const user = userEvent.setup();
-    render(<ToolBar />);
+    render(<ToolBar/>);
 
     const distributionsButton = screen.getByLabelText('toolbar.openDistributions');
     await user.click(distributionsButton);
@@ -66,7 +66,7 @@ describe('ToolBar', () => {
 
   it('opens analogs modal when button is clicked', async () => {
     const user = userEvent.setup();
-    render(<ToolBar />);
+    render(<ToolBar/>);
 
     const analogsButton = screen.getByLabelText('toolbar.openAnalogs');
     await user.click(analogsButton);
@@ -76,7 +76,7 @@ describe('ToolBar', () => {
 
   it('closes modals when close handler is called', async () => {
     const user = userEvent.setup();
-    render(<ToolBar />);
+    render(<ToolBar/>);
 
     // Open and close distributions modal
     const distributionsButton = screen.getByLabelText('toolbar.openDistributions');

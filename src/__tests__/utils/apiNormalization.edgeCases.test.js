@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
-  normalizeSeriesValuesPercentiles,
-  normalizeSeriesValuesPercentilesHistory,
+  normalizeReferenceValues,
   normalizeSeriesBestAnalogs,
-  normalizeReferenceValues
+  normalizeSeriesValuesPercentiles,
+  normalizeSeriesValuesPercentilesHistory
 } from '@/utils/apiNormalization.js';
 
 describe('apiNormalization - edge cases', () => {
@@ -36,8 +36,8 @@ describe('apiNormalization - edge cases', () => {
         series_values: {
           target_dates: ['2020-01-01'],
           series_percentiles: [
-            { percentile: 'not-a-number', series_values: [1] },
-            { percentile: 50, series_values: [2] }
+            {percentile: 'not-a-number', series_values: [1]},
+            {percentile: 50, series_values: [2]}
           ]
         }
       };
@@ -50,7 +50,7 @@ describe('apiNormalization - edge cases', () => {
       const resp = {
         series_values: {
           target_dates: ['2020-01-01'],
-          series_percentiles: [{ percentile: 50, series_values: [1] }]
+          series_percentiles: [{percentile: 50, series_values: [1]}]
         }
       };
       normalizeSeriesValuesPercentiles(resp, parseDateFn);
@@ -62,7 +62,7 @@ describe('apiNormalization - edge cases', () => {
         series_values: {
           target_dates: ['2020-01-01'],
           series_percentiles: [
-            { percentile: 50, series_values: ['not-a-number', 10, null, undefined] }
+            {percentile: 50, series_values: ['not-a-number', 10, null, undefined]}
           ]
         }
       };
@@ -82,8 +82,8 @@ describe('apiNormalization - edge cases', () => {
     it('filters out entries with no target dates', () => {
       const resp = {
         past_forecasts: [
-          { forecast_date: '2020-01-01', target_dates: [], series_percentiles: [] },
-          { forecast_date: '2020-01-02', target_dates: ['2020-01-03'], series_percentiles: [] }
+          {forecast_date: '2020-01-01', target_dates: [], series_percentiles: []},
+          {forecast_date: '2020-01-02', target_dates: ['2020-01-03'], series_percentiles: []}
         ]
       };
       const result = normalizeSeriesValuesPercentilesHistory(resp, null);
@@ -97,7 +97,7 @@ describe('apiNormalization - edge cases', () => {
           {
             forecast_date: '2020-01-01',
             target_dates: ['2020-01-02'],
-            series_percentiles: [{ percentile: 50, series_values: [1] }]
+            series_percentiles: [{percentile: 50, series_values: [1]}]
           }
         ]
       };
@@ -112,8 +112,8 @@ describe('apiNormalization - edge cases', () => {
             forecast_date: '2020-01-01',
             target_dates: ['2020-01-02'],
             series_percentiles: [
-              { percentile: NaN, series_values: [1] },
-              { percentile: 90, series_values: [2] }
+              {percentile: NaN, series_values: [1]},
+              {percentile: 90, series_values: [2]}
             ]
           }
         ]
@@ -135,7 +135,7 @@ describe('apiNormalization - edge cases', () => {
     });
 
     it('returns null for empty series_values', () => {
-      const result = normalizeSeriesBestAnalogs({ series_values: [] }, null);
+      const result = normalizeSeriesBestAnalogs({series_values: []}, null);
       expect(result).toBeNull();
     });
 
@@ -204,8 +204,8 @@ describe('apiNormalization - edge cases', () => {
     it('handles items with return_period instead of rp', () => {
       const resp = {
         items: [
-          { return_period: 5, value: 100 },
-          { return_period: 10, value: 200 }
+          {return_period: 5, value: 100},
+          {return_period: 10, value: 200}
         ]
       };
       const result = normalizeReferenceValues(resp);
@@ -216,8 +216,8 @@ describe('apiNormalization - edge cases', () => {
     it('handles items with x/y instead of rp/value', () => {
       const resp = {
         items: [
-          { x: 5, y: 100 },
-          { x: 10, y: 200 }
+          {x: 5, y: 100},
+          {x: 10, y: 200}
         ]
       };
       const result = normalizeReferenceValues(resp);

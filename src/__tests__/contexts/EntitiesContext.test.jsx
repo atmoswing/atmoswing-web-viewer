@@ -2,8 +2,8 @@
  * @fileoverview Tests for EntitiesContext
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {renderHook} from '@testing-library/react';
 import {EntitiesProvider, useEntities} from '@/contexts/EntitiesContext.jsx';
 import {ForecastSessionProvider} from '@/contexts/ForecastSessionContext.jsx';
 import {MethodsProvider} from '@/contexts/MethodsContext.jsx';

@@ -2,9 +2,8 @@
  * @fileoverview Tests for SnackbarContext
  */
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import {renderHook, act} from '@testing-library/react';
+import {describe, expect, it} from 'vitest';
+import {act, render, renderHook, screen} from '@testing-library/react';
 import {SnackbarProvider, useSnackbar} from '@/contexts/SnackbarContext.jsx';
 
 describe('SnackbarProvider', () => {
@@ -26,7 +25,7 @@ describe('SnackbarProvider', () => {
 
     render(
       <SnackbarProvider>
-        <TestComponent />
+        <TestComponent/>
       </SnackbarProvider>
     );
 

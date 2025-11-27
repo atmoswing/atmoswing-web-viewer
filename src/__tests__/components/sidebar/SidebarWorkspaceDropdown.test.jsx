@@ -3,12 +3,12 @@
  */
 
 // Call i18n setup early
-import { setupI18nMock } from '../../testUtils.js';
-setupI18nMock();
-
-import {describe, it, expect, vi} from 'vitest';
+import {setupI18nMock} from '../../testUtils.js';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {SidebarWorkspaceDropdown} from '@/components/sidebar/SidebarWorkspaceDropdown.jsx';
+
+setupI18nMock();
 
 vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
   useWorkspace: vi.fn(() => ({
@@ -24,18 +24,18 @@ describe('SidebarWorkspaceDropdown', () => {
   ];
 
   it('renders without crashing', () => {
-    render(<SidebarWorkspaceDropdown options={mockOptions} />);
+    render(<SidebarWorkspaceDropdown options={mockOptions}/>);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('renders with empty options', () => {
-    render(<SidebarWorkspaceDropdown options={[]} />);
+    render(<SidebarWorkspaceDropdown options={[]}/>);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('handles single workspace option', () => {
     const singleOption = [{key: 'only', name: 'Only Workspace'}];
-    render(<SidebarWorkspaceDropdown options={singleOption} />);
+    render(<SidebarWorkspaceDropdown options={singleOption}/>);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 });

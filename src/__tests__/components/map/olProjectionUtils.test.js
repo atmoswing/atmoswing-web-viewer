@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
-import { ensureProjDefined } from '@/components/map/utils/olProjectionUtils.js';
+import {describe, expect, it, vi} from 'vitest';
+import {ensureProjDefined} from '@/components/map/utils/olProjectionUtils.js';
 import proj4 from 'proj4';
+import {register} from 'ol/proj/proj4';
 
 // Mock register to avoid actual OL side-effects
-vi.mock('ol/proj/proj4', () => ({ register: vi.fn() }));
-import { register } from 'ol/proj/proj4';
+vi.mock('ol/proj/proj4', () => ({register: vi.fn()}));
 
 describe('ensureProjDefined', () => {
   it('registers predefined EPSG definition if not present', () => {

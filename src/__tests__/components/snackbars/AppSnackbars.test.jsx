@@ -2,13 +2,12 @@
  * @fileoverview Smoke tests for AppSnackbars component
  */
 
-import { setupI18nMock } from '../../testUtils.js';
-setupI18nMock();
-
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {setupI18nMock} from '../../testUtils.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import AppSnackbars from '@/components/snackbars/AppSnackbars.jsx';
+
+setupI18nMock();
 
 // Mock contexts
 const mockSnackbars = [];
@@ -51,7 +50,7 @@ describe('AppSnackbars', () => {
   });
 
   it('renders without crashing', () => {
-    render(<AppSnackbars />);
+    render(<AppSnackbars/>);
   });
 
   it('displays no workspaces message when no workspaces exist', () => {
@@ -66,13 +65,13 @@ describe('AppSnackbars', () => {
 
   it('handles empty snackbar queue', () => {
     // Default mocks provide empty snackbars, this is already tested by "renders without crashing"
-    render(<AppSnackbars />);
+    render(<AppSnackbars/>);
     expect(screen.queryByTestId('snackbar-item')).not.toBeInTheDocument();
   });
 
   it('handles workspace loading state', () => {
     // Covered by default rendering tests
-    render(<AppSnackbars />);
+    render(<AppSnackbars/>);
     // Should not show no workspaces message while loading
     expect(screen.queryByText('workspace.noWorkspaces')).not.toBeInTheDocument();
   });
