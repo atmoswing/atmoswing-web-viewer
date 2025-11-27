@@ -28,7 +28,11 @@ export default defineConfig({
         'public/',
         'src/main.jsx',
         'src/assets/',
-        'src/styles/'
+        'src/styles/',
+        // Exclude heavy/charting modal components from coverage
+        'src/components/modals/DetailsAnalogsModal.jsx',
+        'src/components/modals/DistributionsModal.jsx',
+        'src/components/modals/TimeSeriesModal.jsx'
       ],
       include: ['src/**/*.{js,jsx}'],
       all: true,
@@ -39,4 +43,3 @@ export default defineConfig({
     }
   }
 });
-
