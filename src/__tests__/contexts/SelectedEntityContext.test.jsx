@@ -2,8 +2,8 @@
  * @fileoverview Tests for SelectedEntityContext
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {act, renderHook} from '@testing-library/react';
 import {SelectedEntityProvider, useSelectedEntity} from '@/contexts/SelectedEntityContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';

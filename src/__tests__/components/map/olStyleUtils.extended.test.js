@@ -1,33 +1,38 @@
-import { describe, it, expect, vi } from 'vitest';
-import { styleFromConfigObj, candidateStyleUrlsForDataUrl, tryLoadQmlStyle, resolveOverlayStyle } from '@/components/map/utils/olStyleUtils.js';
+import {describe, expect, it, vi} from 'vitest';
+import {
+  candidateStyleUrlsForDataUrl,
+  resolveOverlayStyle,
+  styleFromConfigObj,
+  tryLoadQmlStyle
+} from '@/components/map/utils/olStyleUtils.js';
 
 // Mock OpenLayers modules
 vi.mock('ol/style', () => ({
-  Style: vi.fn((config) => ({ __style: true, ...config })),
-  Fill: vi.fn((config) => ({ __fill: true, ...config })),
-  Stroke: vi.fn((config) => ({ __stroke: true, ...config })),
-  Circle: vi.fn((config) => ({ __circle: true, ...config }))
+  Style: vi.fn((config) => ({__style: true, ...config})),
+  Fill: vi.fn((config) => ({__fill: true, ...config})),
+  Stroke: vi.fn((config) => ({__stroke: true, ...config})),
+  Circle: vi.fn((config) => ({__circle: true, ...config}))
 }));
 
 describe('olStyleUtils - styleFromConfigObj', () => {
   it('returns a function that creates styles based on geometry type', () => {
     const styleFn = styleFromConfigObj({
-      line: { stroke: { color: '#ff0000', width: 3 } },
-      polygon: { fill: { color: 'rgba(0,255,0,0.3)' } },
-      point: { circle: { radius: 8 } }
+      line: {stroke: {color: '#ff0000', width: 3}},
+      polygon: {fill: {color: 'rgba(0,255,0,0.3)'}},
+      point: {circle: {radius: 8}}
     });
 
     expect(typeof styleFn).toBe('function');
 
     // Mock features with different geometry types
     const polygonFeature = {
-      getGeometry: () => ({ getType: () => 'Polygon' })
+      getGeometry: () => ({getType: () => 'Polygon'})
     };
     const lineFeature = {
-      getGeometry: () => ({ getType: () => 'LineString' })
+      getGeometry: () => ({getType: () => 'LineString'})
     };
     const pointFeature = {
-      getGeometry: () => ({ getType: () => 'Point' })
+      getGeometry: () => ({getType: () => 'Point'})
     };
 
     const polyStyle = styleFn(polygonFeature);
@@ -43,10 +48,10 @@ describe('olStyleUtils - styleFromConfigObj', () => {
     const styleFn = styleFromConfigObj({});
 
     const multiPolygon = {
-      getGeometry: () => ({ getType: () => 'MultiPolygon' })
+      getGeometry: () => ({getType: () => 'MultiPolygon'})
     };
     const multiLine = {
-      getGeometry: () => ({ getType: () => 'MultiLineString' })
+      getGeometry: () => ({getType: () => 'MultiLineString'})
     };
 
     const polyStyle = styleFn(multiPolygon);
@@ -59,7 +64,7 @@ describe('olStyleUtils - styleFromConfigObj', () => {
   it('uses fallback defaults when config is empty', () => {
     const styleFn = styleFromConfigObj({});
     const feature = {
-      getGeometry: () => ({ getType: () => 'Point' })
+      getGeometry: () => ({getType: () => 'Point'})
     };
 
     const style = styleFn(feature);
@@ -81,8 +86,8 @@ describe('olStyleUtils - styleFromConfigObj', () => {
       point: {
         circle: {
           radius: 10,
-          stroke: { color: '#000', width: 2 },
-          fill: { color: '#fff' }
+          stroke: {color: '#000', width: 2},
+          fill: {color: '#fff'}
         }
       }
     });
@@ -94,7 +99,7 @@ describe('olStyleUtils - styleFromConfigObj', () => {
     const styleFn = styleFromConfigObj({
       circle: {
         radius: 10,
-        stroke: { color: '#000', width: 2 }
+        stroke: {color: '#000', width: 2}
       }
     });
 
@@ -192,7 +197,7 @@ describe('olStyleUtils - resolveOverlayStyle', () => {
   it('uses item.style if provided', async () => {
     const item = {
       style: {
-        line: { stroke: { color: '#ff0000' } }
+        line: {stroke: {color: '#ff0000'}}
       }
     };
 

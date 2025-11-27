@@ -2,12 +2,12 @@
  * @fileoverview Tests for exportUtils functions
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
-  safeForFilename,
   downloadBlob,
-  inlineAllStyles,
   getSVGSize,
+  inlineAllStyles,
+  safeForFilename,
   withTemporaryContainer,
 } from '@/components/modals/common/exportUtils.js';
 
@@ -64,7 +64,8 @@ describe('exportUtils', () => {
       };
 
       vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
-      vi.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+      vi.spyOn(document.body, 'appendChild').mockImplementation(() => {
+      });
 
       // Mock URL methods properly
       originalCreateObjectURL = URL.createObjectURL;

@@ -1,9 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  readWorkspaceFromUrl,
-  writeWorkspaceToUrl,
-  onWorkspacePopState
-} from '@/utils/urlWorkspaceUtils.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {onWorkspacePopState, readWorkspaceFromUrl, writeWorkspaceToUrl} from '@/utils/urlWorkspaceUtils.js';
 
 describe('urlWorkspaceUtils', () => {
   beforeEach(() => {
@@ -42,7 +38,7 @@ describe('urlWorkspaceUtils', () => {
     it('should return empty string on error', () => {
       // Mock URLSearchParams to throw
       const original = window.URLSearchParams;
-      window.URLSearchParams = function() {
+      window.URLSearchParams = function () {
         throw new Error('Mock error');
       };
 

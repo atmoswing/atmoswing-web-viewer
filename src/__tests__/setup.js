@@ -5,8 +5,10 @@ if (!window.matchMedia) {
   window.matchMedia = (query) => ({
     matches: false,
     media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {}
+    addEventListener: () => {
+    },
+    removeEventListener: () => {
+    }
   });
 }
 
@@ -19,8 +21,8 @@ beforeAll(() => {
     if (
       typeof message === 'string' &&
       (message.includes('Warning: An update to') ||
-       message.includes('Warning: A suspended resource') ||
-       message.includes('inside a test was not wrapped in act'))
+        message.includes('Warning: A suspended resource') ||
+        message.includes('inside a test was not wrapped in act'))
     ) {
       return;
     }

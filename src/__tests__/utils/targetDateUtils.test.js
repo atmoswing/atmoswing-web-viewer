@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
-  SUB_HOURS,
-  makeDayKey,
-  parseDayKey,
   computeLeadHours,
+  hasTargetDate,
   isSameDay,
   isSameInstant,
-  hasTargetDate
+  makeDayKey,
+  parseDayKey,
+  SUB_HOURS
 } from '@/utils/targetDateUtils.js';
 
 describe('targetDateUtils', () => {
@@ -83,8 +83,8 @@ describe('targetDateUtils', () => {
 
     it('should fall back to sub-daily leads when dates are invalid', () => {
       const subDailyLeads = [
-        { time_step: 6, date: new Date() },
-        { time_step: 6, date: new Date() }
+        {time_step: 6, date: new Date()},
+        {time_step: 6, date: new Date()}
       ];
       const result = computeLeadHours(null, null, 'sub', 2, [], subDailyLeads);
       expect(result).toBe(12); // 6 * 2
@@ -92,8 +92,8 @@ describe('targetDateUtils', () => {
 
     it('should fall back to daily leads when dates are invalid', () => {
       const dailyLeads = [
-        { time_step: 24, date: new Date() },
-        { time_step: 24, date: new Date() }
+        {time_step: 24, date: new Date()},
+        {time_step: 24, date: new Date()}
       ];
       const result = computeLeadHours(null, null, 'daily', 3, dailyLeads, []);
       expect(result).toBe(72); // 24 * 3
@@ -170,12 +170,12 @@ describe('targetDateUtils', () => {
   describe('hasTargetDate', () => {
     const targetDate = new Date('2025-11-05T12:00:00Z');
     const dailyLeads = [
-      { date: new Date('2025-11-05T00:00:00Z') },
-      { date: new Date('2025-11-06T00:00:00Z') }
+      {date: new Date('2025-11-05T00:00:00Z')},
+      {date: new Date('2025-11-06T00:00:00Z')}
     ];
     const subDailyLeads = [
-      { date: new Date('2025-11-05T12:00:00Z') },
-      { date: new Date('2025-11-05T18:00:00Z') }
+      {date: new Date('2025-11-05T12:00:00Z')},
+      {date: new Date('2025-11-05T18:00:00Z')}
     ];
 
     it('should find target date in sub-daily leads by exact instant', () => {

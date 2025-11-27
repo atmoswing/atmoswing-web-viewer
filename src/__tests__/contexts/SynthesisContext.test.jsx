@@ -2,13 +2,13 @@
  * @fileoverview Tests for SynthesisContext
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {act, renderHook} from '@testing-library/react';
 import {SynthesisProvider, useSynthesis} from '@/contexts/SynthesisContext.jsx';
 import {ForecastSessionProvider} from '@/contexts/ForecastSessionContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
-import {getLastForecastDate, getMethodsAndConfigs, getSynthesisTotal, getSynthesisPerMethod} from '@/services/api.js';
+import {getLastForecastDate, getMethodsAndConfigs, getSynthesisPerMethod, getSynthesisTotal} from '@/services/api.js';
 
 // Mock dependencies
 vi.mock('@/services/api.js', () => ({

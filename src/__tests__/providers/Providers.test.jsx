@@ -2,7 +2,7 @@
  * @fileoverview Tests for Providers component
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import Providers from '@/providers/Providers.jsx';
 

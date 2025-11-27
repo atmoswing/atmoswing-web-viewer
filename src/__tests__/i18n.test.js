@@ -4,7 +4,7 @@
  * This test just verifies the module loads without errors.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect, it} from 'vitest';
 
 describe('i18n', () => {
   it('module loads without errors', async () => {

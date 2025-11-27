@@ -2,7 +2,7 @@
  * @fileoverview Tests for useMapInteractions hook
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import useMapInteractions from '@/components/map/hooks/useMapInteractions.js';
 

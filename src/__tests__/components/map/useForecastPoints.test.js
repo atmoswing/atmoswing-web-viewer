@@ -2,7 +2,7 @@
  * @fileoverview Tests for useForecastPoints hook
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import useForecastPoints from '@/components/map/hooks/useForecastPoints.js';
 import proj4 from 'proj4';

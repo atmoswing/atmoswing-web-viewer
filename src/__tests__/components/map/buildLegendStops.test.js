@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { buildLegendStops } from '@/components/map/utils/buildLegendStops.js';
+import {describe, expect, it} from 'vitest';
+import {buildLegendStops} from '@/components/map/utils/buildLegendStops.js';
 
 describe('buildLegendStops', () => {
   it('should generate legend stops with default parameters', () => {

@@ -2,7 +2,7 @@
  * @fileoverview Smoke tests for SideBar component
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import SideBar from '@/components/sidebar/SideBar.jsx';
 
@@ -35,24 +35,24 @@ vi.mock('@/components/panels', () => ({
 
 describe('SideBar', () => {
   it('renders without crashing', () => {
-    render(<SideBar />);
+    render(<SideBar/>);
     expect(screen.getByRole('complementary')).toBeInTheDocument();
   });
 
   it('renders logo', () => {
-    render(<SideBar />);
+    render(<SideBar/>);
     const logo = screen.getByAltText('Logo');
     expect(logo).toBeInTheDocument();
     expect(logo).toHaveAttribute('src', '/logo.svg');
   });
 
   it('renders workspace dropdown', () => {
-    render(<SideBar />);
+    render(<SideBar/>);
     expect(screen.getByTestId('workspace-dropdown')).toBeInTheDocument();
   });
 
   it('renders all panel components', () => {
-    render(<SideBar />);
+    render(<SideBar/>);
     expect(screen.getByTestId('panel-forecasts')).toBeInTheDocument();
     expect(screen.getByTestId('panel-display')).toBeInTheDocument();
     expect(screen.getByTestId('panel-synthesis')).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('SideBar', () => {
 
   it('handles various workspace configurations', () => {
     // Different workspace configurations are tested in integration tests
-    render(<SideBar />);
+    render(<SideBar/>);
     expect(screen.getByRole('complementary')).toBeInTheDocument();
     expect(screen.getByTestId('workspace-dropdown')).toBeInTheDocument();
   });

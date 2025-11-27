@@ -1,12 +1,12 @@
 import React from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { setupI18nMock } from '../../testUtils.js';
-setupI18nMock();
-
+import {setupI18nMock} from '../../testUtils.js';
 import ExportMenu from '@/components/modals/common/ExportMenu.jsx';
+
+setupI18nMock();
 
 describe('ExportMenu', () => {
   const onPNG = vi.fn();
@@ -18,13 +18,13 @@ describe('ExportMenu', () => {
   });
 
   it('renders button with translation key', async () => {
-    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF} />);
+    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF}/>);
     expect(screen.getByText('seriesModal.export')).toBeInTheDocument();
   });
 
   it('opens menu and triggers export handlers', async () => {
     const user = userEvent.setup();
-    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF} />);
+    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF}/>);
     const btn = screen.getByText('seriesModal.export');
     await user.click(btn);
 

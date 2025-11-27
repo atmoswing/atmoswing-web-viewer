@@ -2,17 +2,16 @@
  * @fileoverview Smoke tests for Panel components
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { setupI18nMock } from '../../testUtils.js';
-
-// Call i18n setup before importing components
-setupI18nMock();
-
+import {setupI18nMock} from '../../testUtils.js';
 import PanelForecasts from '@/components/panels/PanelForecasts.jsx';
 import PanelStations from '@/components/panels/PanelStations.jsx';
 import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
+
+// Call i18n setup before importing components
+setupI18nMock();
 
 // Mock contexts
 vi.mock('@/contexts/ForecastsContext.jsx', () => ({
@@ -82,17 +81,17 @@ describe('PanelForecasts', () => {
   });
 
   it('renders without crashing', () => {
-    render(<PanelForecasts />);
+    render(<PanelForecasts/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 
   it('renders tree view with methods', () => {
-    render(<PanelForecasts />);
+    render(<PanelForecasts/>);
     expect(screen.getByText('Method 1')).toBeInTheDocument();
   });
 
   it('handles defaultOpen prop', () => {
-    render(<PanelForecasts defaultOpen={true} />);
+    render(<PanelForecasts defaultOpen={true}/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 });
@@ -103,18 +102,18 @@ describe('PanelStations', () => {
   });
 
   it('renders without crashing', () => {
-    render(<PanelStations />);
+    render(<PanelStations/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 
   it('renders station dropdown', () => {
-    render(<PanelStations />);
+    render(<PanelStations/>);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('displays available stations', async () => {
     const user = userEvent.setup();
-    render(<PanelStations />);
+    render(<PanelStations/>);
 
     const select = screen.getByRole('combobox');
     await user.click(select);
@@ -130,12 +129,12 @@ describe('PanelSynthesis', () => {
   });
 
   it('renders without crashing', () => {
-    render(<PanelSynthesis />);
+    render(<PanelSynthesis/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 
   it('handles defaultOpen prop', () => {
-    render(<PanelSynthesis defaultOpen={false} />);
+    render(<PanelSynthesis defaultOpen={false}/>);
     expect(screen.getByTestId('panel')).toBeInTheDocument();
   });
 });

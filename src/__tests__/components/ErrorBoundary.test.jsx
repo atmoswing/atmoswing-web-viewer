@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { ErrorBoundary } from '@/components/ErrorBoundary.jsx';
+import {describe, expect, it, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {ErrorBoundary} from '@/components/ErrorBoundary.jsx';
 
 // Component that throws an error
-function ThrowError({ shouldThrow }) {
+function ThrowError({shouldThrow}) {
   if (shouldThrow) {
     throw new Error('Test error');
   }
@@ -32,7 +32,7 @@ describe('ErrorBoundary', () => {
   it('should render error UI when child throws', () => {
     render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
     expect(screen.getByText('Something went wrong.')).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe('ErrorBoundary', () => {
   it('should display error message', () => {
     render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
     expect(screen.getByText(/Test error/)).toBeInTheDocument();
@@ -50,26 +50,26 @@ describe('ErrorBoundary', () => {
   it('should show retry button', () => {
     render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
   });
 
   it('should retry rendering when retry button is clicked', () => {
-    const { rerender } = render(
+    const {rerender} = render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
 
-    const retryButton = screen.getByRole('button', { name: 'Retry' });
+    const retryButton = screen.getByRole('button', {name: 'Retry'});
     retryButton.click();
 
     // After retry, re-render without throwing
     rerender(
       <ErrorBoundary>
-        <ThrowError shouldThrow={false} />
+        <ThrowError shouldThrow={false}/>
       </ErrorBoundary>
     );
 
@@ -80,7 +80,7 @@ describe('ErrorBoundary', () => {
     const onError = vi.fn();
     render(
       <ErrorBoundary onError={onError}>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
 
@@ -92,7 +92,7 @@ describe('ErrorBoundary', () => {
     const fallback = <div>Custom error UI</div>;
     render(
       <ErrorBoundary fallback={fallback}>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
 
@@ -108,7 +108,7 @@ describe('ErrorBoundary', () => {
     // Should not throw and should still render error UI
     render(
       <ErrorBoundary onError={onError}>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
 
@@ -116,9 +116,9 @@ describe('ErrorBoundary', () => {
   });
 
   it('should maintain error state until retry', () => {
-    const { rerender } = render(
+    const {rerender} = render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
 
@@ -127,7 +127,7 @@ describe('ErrorBoundary', () => {
     // Rerender with same error
     rerender(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowError shouldThrow={true}/>
       </ErrorBoundary>
     );
 

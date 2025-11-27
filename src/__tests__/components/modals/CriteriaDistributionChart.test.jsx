@@ -1,18 +1,18 @@
 import React from 'react';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, cleanup} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {cleanup, render} from '@testing-library/react';
 
-import { setupI18nMock } from '../../testUtils.js';
-setupI18nMock();
-
+import {setupI18nMock} from '../../testUtils.js';
 import CriteriaDistributionChart from '@/components/modals/charts/CriteriaDistributionChart.jsx';
+
+setupI18nMock();
 
 function makeSizedRef(width = 700, height = 360) {
   const div = document.createElement('div');
-  Object.defineProperty(div, 'clientWidth', { get: () => width });
-  Object.defineProperty(div, 'clientHeight', { get: () => height });
+  Object.defineProperty(div, 'clientWidth', {get: () => width});
+  Object.defineProperty(div, 'clientHeight', {get: () => height});
   // document.body.appendChild(div); // avoid appending in tests
-  return { current: div };
+  return {current: div};
 }
 
 describe('CriteriaDistributionChart (smoke)', () => {
@@ -21,7 +21,7 @@ describe('CriteriaDistributionChart (smoke)', () => {
 
   it('renders without crashing and mounts an SVG when given minimal criteria data', () => {
     const ref = makeSizedRef();
-    const criteria = [{ value: 2 }];
+    const criteria = [{value: 2}];
 
     render(
       <CriteriaDistributionChart
@@ -46,8 +46,8 @@ describe('CriteriaDistributionChart (smoke)', () => {
 
   it('falls back to analogValues when criteriaValues empty and builds title with leads and forecast date', () => {
     const ref = makeSizedRef();
-    const analogs = [ { criteria: 1 }, { criteria: 3 }, { criteria: 2 } ];
-    const leads = [{ lead: 6, date: new Date('2024-02-01') }];
+    const analogs = [{criteria: 1}, {criteria: 3}, {criteria: 2}];
+    const leads = [{lead: 6, date: new Date('2024-02-01')}];
 
     render(
       <CriteriaDistributionChart

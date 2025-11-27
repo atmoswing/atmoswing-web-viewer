@@ -2,10 +2,14 @@
  * @fileoverview Tests for WorkspaceContext
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
-import {WorkspaceProvider, useWorkspace} from '@/contexts/WorkspaceContext.jsx';
+import {useWorkspace, WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import React from 'react';
+import * as api from '@/services/api.js';
+import * as ConfigContext from '@/contexts/ConfigContext.jsx';
+import * as urlUtils from '@/utils/urlWorkspaceUtils.js';
+import * as cachedRequest from '@/hooks/useCachedRequest.js';
 
 // Mock dependencies
 vi.mock('@/services/api.js', () => ({
@@ -25,11 +29,6 @@ vi.mock('@/hooks/useCachedRequest.js', () => ({
   clearCachedRequests: vi.fn(),
 }));
 
-import * as api from '@/services/api.js';
-import * as ConfigContext from '@/contexts/ConfigContext.jsx';
-import * as urlUtils from '@/utils/urlWorkspaceUtils.js';
-import * as cachedRequest from '@/hooks/useCachedRequest.js';
-
 describe('WorkspaceContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,8 +41,10 @@ describe('WorkspaceContext', () => {
     });
 
     urlUtils.readWorkspaceFromUrl.mockReturnValue('workspace1');
-    urlUtils.writeWorkspaceToUrl.mockImplementation(() => {});
-    urlUtils.onWorkspacePopState.mockReturnValue(() => {});
+    urlUtils.writeWorkspaceToUrl.mockImplementation(() => {
+    });
+    urlUtils.onWorkspacePopState.mockReturnValue(() => {
+    });
 
     cachedRequest.useCachedRequest.mockReturnValue({
       data: null,

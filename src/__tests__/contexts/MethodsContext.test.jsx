@@ -2,9 +2,10 @@
  * @fileoverview Tests for MethodsContext
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, act, waitFor} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {act, renderHook, waitFor} from '@testing-library/react';
 import {MethodsProvider, useMethods} from '@/contexts/MethodsContext.jsx';
+import {normalizeMethodsAndConfigs} from '@/utils/apiNormalization.js';
 
 // Mock dependent contexts to provide synchronous workspace & forecast date
 vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
@@ -27,8 +28,6 @@ vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
     }
   })
 }));
-
-import {normalizeMethodsAndConfigs} from '@/utils/apiNormalization.js';
 
 vi.mock('@/utils/apiNormalization.js', () => ({
   normalizeMethodsAndConfigs: vi.fn()

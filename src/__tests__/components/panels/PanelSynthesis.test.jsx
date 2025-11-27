@@ -1,14 +1,12 @@
 // filepath: d:\Development\atmoswing-web-viewer\src\__tests__\components\panels\PanelSynthesis.test.jsx
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { setupI18nMock } from '../../testUtils.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {setupI18nMock} from '../../testUtils.js';
+import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
 
 // setup i18n before importing the component
 setupI18nMock();
-
-import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
 
 // Mock Panel and PanelStatus the same way other panel tests do
 vi.mock('@/components/panels/Panel.jsx', () => ({
@@ -50,10 +48,21 @@ describe('PanelSynthesis (more tests)', () => {
 
   it('shows loading PanelStatus when synthesis is loading', async () => {
     const ctx = await import('@/contexts/ForecastsContext.jsx');
-    ctx.useMethods.mockReturnValue({ methodConfigTree: [], selectedMethodConfig: null, setSelectedMethodConfig: vi.fn() });
-    ctx.useSynthesis.mockReturnValue({ perMethodSynthesis: [], perMethodSynthesisLoading: true, perMethodSynthesisError: null, selectTargetDate: vi.fn(), selectedTargetDate: null, dailyLeads: [] });
+    ctx.useMethods.mockReturnValue({
+      methodConfigTree: [],
+      selectedMethodConfig: null,
+      setSelectedMethodConfig: vi.fn()
+    });
+    ctx.useSynthesis.mockReturnValue({
+      perMethodSynthesis: [],
+      perMethodSynthesisLoading: true,
+      perMethodSynthesisError: null,
+      selectTargetDate: vi.fn(),
+      selectedTargetDate: null,
+      dailyLeads: []
+    });
 
-    render(<PanelSynthesis />);
+    render(<PanelSynthesis/>);
 
     expect(screen.getByTestId('panel-status-loading')).toBeInTheDocument();
   });
@@ -64,11 +73,15 @@ describe('PanelSynthesis (more tests)', () => {
     const setSelectedMethodConfig = vi.fn();
     const selectTargetDate = vi.fn();
 
-    ctx.useMethods.mockReturnValue({ methodConfigTree: [{ id: 'm1', name: 'M1' }], selectedMethodConfig: { method: null, config: null }, setSelectedMethodConfig });
+    ctx.useMethods.mockReturnValue({
+      methodConfigTree: [{id: 'm1', name: 'M1'}],
+      selectedMethodConfig: {method: null, config: null},
+      setSelectedMethodConfig
+    });
 
     const dateISO = makeDateISO(2025, 11, 27, 0);
     ctx.useSynthesis.mockReturnValue({
-      perMethodSynthesis: [{ method_id: 'm1', target_dates: [dateISO], values_normalized: [0.5] }],
+      perMethodSynthesis: [{method_id: 'm1', target_dates: [dateISO], values_normalized: [0.5]}],
       perMethodSynthesisLoading: false,
       perMethodSynthesisError: null,
       selectTargetDate,
@@ -76,7 +89,7 @@ describe('PanelSynthesis (more tests)', () => {
       dailyLeads: []
     });
 
-    render(<PanelSynthesis />);
+    render(<PanelSynthesis/>);
 
     // cell should have a title with method name
     const cells = screen.getAllByTitle('M1');
@@ -98,13 +111,17 @@ describe('PanelSynthesis (more tests)', () => {
     const setSelectedMethodConfig = vi.fn();
     const selectTargetDate = vi.fn();
 
-    ctx.useMethods.mockReturnValue({ methodConfigTree: [{ id: 'm1', name: 'M1' }], selectedMethodConfig: { method: null, config: null }, setSelectedMethodConfig });
+    ctx.useMethods.mockReturnValue({
+      methodConfigTree: [{id: 'm1', name: 'M1'}],
+      selectedMethodConfig: {method: null, config: null},
+      setSelectedMethodConfig
+    });
 
     const d1 = makeDateISO(2025, 11, 28, 0);
     const d2 = makeDateISO(2025, 11, 28, 6); // sub-daily non-zero hour
 
     ctx.useSynthesis.mockReturnValue({
-      perMethodSynthesis: [{ method_id: 'm1', target_dates: [d1, d2], values_normalized: [0.2, 0.8] }],
+      perMethodSynthesis: [{method_id: 'm1', target_dates: [d1, d2], values_normalized: [0.2, 0.8]}],
       perMethodSynthesisLoading: false,
       perMethodSynthesisError: null,
       selectTargetDate,
@@ -112,7 +129,7 @@ describe('PanelSynthesis (more tests)', () => {
       dailyLeads: []
     });
 
-    const { container } = render(<PanelSynthesis />);
+    const {container} = render(<PanelSynthesis/>);
 
     // Find a table cell (td) that contains any sub-segment element (placeholders allowed)
     const tds = Array.from(container.querySelectorAll('td'));

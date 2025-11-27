@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
-  formatDateDDMMYYYY,
-  formatPrecipitation,
-  formatCriteria,
   compareEntitiesByName,
-  formatDateLabel
+  formatCriteria,
+  formatDateDDMMYYYY,
+  formatDateLabel,
+  formatPrecipitation
 } from '@/utils/formattingUtils.js';
 
 describe('formattingUtils', () => {
@@ -109,27 +109,27 @@ describe('formattingUtils', () => {
 
   describe('compareEntitiesByName', () => {
     it('should sort entities by name alphabetically', () => {
-      const a = { name: 'Station B', id: 1 };
-      const b = { name: 'Station A', id: 2 };
+      const a = {name: 'Station B', id: 1};
+      const b = {name: 'Station A', id: 2};
       expect(compareEntitiesByName(a, b)).toBe(1);
       expect(compareEntitiesByName(b, a)).toBe(-1);
     });
 
     it('should be case-insensitive', () => {
-      const a = { name: 'station b' };
-      const b = { name: 'Station A' };
+      const a = {name: 'station b'};
+      const b = {name: 'Station A'};
       expect(compareEntitiesByName(a, b)).toBe(1);
     });
 
     it('should return 0 for equal names', () => {
-      const a = { name: 'Station A' };
-      const b = { name: 'Station A' };
+      const a = {name: 'Station A'};
+      const b = {name: 'Station A'};
       expect(compareEntitiesByName(a, b)).toBe(0);
     });
 
     it('should fall back to id if name is missing', () => {
-      const a = { id: 2 };
-      const b = { id: 1 };
+      const a = {id: 2};
+      const b = {id: 1};
       expect(compareEntitiesByName(a, b)).toBe(1);
     });
 
@@ -145,8 +145,8 @@ describe('formattingUtils', () => {
     });
 
     it('should handle numeric ids by converting to string', () => {
-      const a = { id: 10 };
-      const b = { id: 2 };
+      const a = {id: 10};
+      const b = {id: 2};
       expect(compareEntitiesByName(a, b)).toBe(-1); // '10' < '2' lexically
     });
   });

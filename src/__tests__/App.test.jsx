@@ -2,7 +2,7 @@
  * @fileoverview Smoke tests for App component
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import App from '@/App.jsx';
 
@@ -33,49 +33,49 @@ vi.mock('@/components/ErrorBoundary.jsx', () => ({
 
 describe('App', () => {
   it('renders without crashing', () => {
-    render(<App />);
+    render(<App/>);
     expect(screen.getByTestId('error-boundary')).toBeInTheDocument();
   });
 
   it('renders sidebar component', () => {
-    render(<App />);
+    render(<App/>);
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
   });
 
   it('renders toolbar component', () => {
-    render(<App />);
+    render(<App/>);
     expect(screen.getByTestId('toolbar')).toBeInTheDocument();
   });
 
   it('renders map viewer component', () => {
-    render(<App />);
+    render(<App/>);
     expect(screen.getByTestId('map-viewer')).toBeInTheDocument();
   });
 
   it('renders snackbars component', () => {
-    render(<App />);
+    render(<App/>);
     expect(screen.getByTestId('snackbars')).toBeInTheDocument();
   });
 
   it('wraps content in error boundary', () => {
-    render(<App />);
+    render(<App/>);
     expect(screen.getByTestId('error-boundary')).toBeInTheDocument();
   });
 
   it('has correct layout structure', () => {
-    const {container} = render(<App />);
+    const {container} = render(<App/>);
     const appLayout = container.querySelector('.app-layout');
     expect(appLayout).toBeInTheDocument();
   });
 
   it('has main content area', () => {
-    const {container} = render(<App />);
+    const {container} = render(<App/>);
     const mainContent = container.querySelector('.main-content');
     expect(mainContent).toBeInTheDocument();
   });
 
   it('has map area', () => {
-    const {container} = render(<App />);
+    const {container} = render(<App/>);
     const mapArea = container.querySelector('.map-area');
     expect(mapArea).toBeInTheDocument();
   });

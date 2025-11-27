@@ -1,19 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useCachedRequest, invalidateCachedKey, clearCachedRequests } from '@/hooks/useCachedRequest.js';
+import {describe, expect, it, vi} from 'vitest';
+import {renderHook, waitFor} from '@testing-library/react';
+import {clearCachedRequests, invalidateCachedKey, useCachedRequest} from '@/hooks/useCachedRequest.js';
 
 describe('useCachedRequest - additional coverage', () => {
   it('resets to initialData on fetch error', async () => {
-    const initialData = { placeholder: 'loading' };
+    const initialData = {placeholder: 'loading'};
     const fetchFn = vi.fn().mockRejectedValue(new Error('Fetch failed'));
 
-    const { result } = renderHook(() =>
-      useCachedRequest('error-key-unique', fetchFn, [], { initialData })
+    const {result} = renderHook(() =>
+      useCachedRequest('error-key-unique', fetchFn, [], {initialData})
     );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    }, { timeout: 3000 });
+    }, {timeout: 3000});
 
     expect(result.current.error).toBeInstanceOf(Error);
     expect(result.current.data).toEqual(initialData);
@@ -21,46 +21,48 @@ describe('useCachedRequest - additional coverage', () => {
 
   it('handles race condition when key changes during fetch', async () => {
     let resolveFirst;
-    const firstPromise = new Promise(resolve => { resolveFirst = resolve; });
+    const firstPromise = new Promise(resolve => {
+      resolveFirst = resolve;
+    });
     const fetchFn = vi.fn()
       .mockImplementationOnce(() => firstPromise)
-      .mockResolvedValueOnce({ data: 'second' });
+      .mockResolvedValueOnce({data: 'second'});
 
-    const { result, rerender } = renderHook(
-      ({ key }) => useCachedRequest(key, fetchFn, []),
-      { initialProps: { key: 'race-key-1' } }
+    const {result, rerender} = renderHook(
+      ({key}) => useCachedRequest(key, fetchFn, []),
+      {initialProps: {key: 'race-key-1'}}
     );
 
     // Start first request
     expect(result.current.loading).toBe(true);
 
     // Change key to trigger second request
-    rerender({ key: 'race-key-2' });
+    rerender({key: 'race-key-2'});
 
     // Resolve first request (should be ignored)
-    resolveFirst({ data: 'first' });
+    resolveFirst({data: 'first'});
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    }, { timeout: 3000 });
+    }, {timeout: 3000});
 
     // Should have second data, not first
-    expect(result.current.data).toEqual({ data: 'second' });
+    expect(result.current.data).toEqual({data: 'second'});
   });
 
   it('invalidateCachedKey removes specific key from cache', async () => {
-    const fetchFn = vi.fn().mockResolvedValue({ data: 'test' });
+    const fetchFn = vi.fn().mockResolvedValue({data: 'test'});
     const key = 'invalidate-test-key';
 
-    const { result } = renderHook(() =>
+    const {result} = renderHook(() =>
       useCachedRequest(key, fetchFn, [])
     );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    }, { timeout: 3000 });
+    }, {timeout: 3000});
 
-    expect(result.current.data).toEqual({ data: 'test' });
+    expect(result.current.data).toEqual({data: 'test'});
 
     // Invalidate the key
     invalidateCachedKey(key);
@@ -70,21 +72,21 @@ describe('useCachedRequest - additional coverage', () => {
   });
 
   it('clearCachedRequests with prefix clears matching keys', async () => {
-    const fetchFn1 = vi.fn().mockResolvedValue({ data: '1' });
-    const fetchFn2 = vi.fn().mockResolvedValue({ data: '2' });
+    const fetchFn1 = vi.fn().mockResolvedValue({data: '1'});
+    const fetchFn2 = vi.fn().mockResolvedValue({data: '2'});
 
-    const { result: result1 } = renderHook(() =>
+    const {result: result1} = renderHook(() =>
       useCachedRequest('prefix-key-1', fetchFn1, [])
     );
 
-    const { result: result2 } = renderHook(() =>
+    const {result: result2} = renderHook(() =>
       useCachedRequest('other-key', fetchFn2, [])
     );
 
     await waitFor(() => {
       expect(result1.current.loading).toBe(false);
       expect(result2.current.loading).toBe(false);
-    }, { timeout: 3000 });
+    }, {timeout: 3000});
 
     // Clear only prefix keys
     clearCachedRequests('prefix');
@@ -101,25 +103,27 @@ describe('useCachedRequest - additional coverage', () => {
   });
 
   it('provides refresh function', async () => {
-    const fetchFn = vi.fn().mockResolvedValue({ data: 'test' });
+    const fetchFn = vi.fn().mockResolvedValue({data: 'test'});
 
-    const { result } = renderHook(() =>
+    const {result} = renderHook(() =>
       useCachedRequest('refresh-test-key', fetchFn, [])
     );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-    }, { timeout: 3000 });
+    }, {timeout: 3000});
 
     expect(typeof result.current.refresh).toBe('function');
-    expect(result.current.data).toEqual({ data: 'test' });
+    expect(result.current.data).toEqual({data: 'test'});
   });
 
   it('cancelled requests do not update state', async () => {
     let resolveFetch;
-    const fetchFn = vi.fn(() => new Promise(resolve => { resolveFetch = resolve; }));
+    const fetchFn = vi.fn(() => new Promise(resolve => {
+      resolveFetch = resolve;
+    }));
 
-    const { result, unmount } = renderHook(() =>
+    const {result, unmount} = renderHook(() =>
       useCachedRequest('cancel-test-key', fetchFn, [])
     );
 
@@ -129,7 +133,7 @@ describe('useCachedRequest - additional coverage', () => {
     unmount();
 
     // Resolve the fetch (should be ignored due to cleanup)
-    resolveFetch({ data: 'should-be-ignored' });
+    resolveFetch({data: 'should-be-ignored'});
 
     // No way to assert state after unmount, but this tests the cleanup path
     expect(fetchFn).toHaveBeenCalled();
@@ -137,7 +141,7 @@ describe('useCachedRequest - additional coverage', () => {
 
   it('handles null key edge case', () => {
     const fetchFn = vi.fn();
-    const { result } = renderHook(() =>
+    const {result} = renderHook(() =>
       useCachedRequest(null, fetchFn, [])
     );
 
@@ -148,7 +152,7 @@ describe('useCachedRequest - additional coverage', () => {
 
   it('handles undefined key edge case', () => {
     const fetchFn = vi.fn();
-    const { result } = renderHook(() =>
+    const {result} = renderHook(() =>
       useCachedRequest(undefined, fetchFn, [])
     );
 
