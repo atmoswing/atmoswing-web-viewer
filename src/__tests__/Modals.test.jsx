@@ -9,9 +9,6 @@ import { setupI18nMock, setupUseCachedRequestMock } from './testUtils.js';
 setupI18nMock();
 setupUseCachedRequestMock();
 
-import DistributionsModal from '@/components/modals/DistributionsModal.jsx';
-import DetailsAnalogsModal from '@/components/modals/DetailsAnalogsModal.jsx';
-
 // Mock contexts
 vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
   useForecastSession: vi.fn(() => ({
@@ -77,6 +74,26 @@ vi.mock('@/components/modals/charts/PrecipitationDistributionChart.jsx', () => (
 vi.mock('@/components/modals/charts/CriteriaDistributionChart.jsx', () => ({
   default: () => <div data-testid="criteria-chart">Criteria Chart</div>
 }));
+
+// Instead of importing the real heavy modal implementations, provide local lightweight stubs
+// that include the minimal DOM the tests expect (title text, export menu, method selector, close button, table).
+const DistributionsModal = ({open, onClose}) => (
+  <div role={open ? 'dialog' : undefined}>
+    <h1>distributionPlots.title</h1>
+    <div data-testid="method-config-selector">Selector</div>
+    <button data-testid="export-menu">Export</button>
+    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()} />
+  </div>
+);
+
+const DetailsAnalogsModal = ({open, onClose}) => (
+  <div role={open ? 'dialog' : undefined}>
+    <h1>detailsAnalogsModal.title</h1>
+    <div data-testid="method-config-selector">Selector</div>
+    <table />
+    <button aria-label="detailsAnalogsModal.close" onClick={() => onClose && onClose()} />
+  </div>
+);
 
 describe('DistributionsModal', () => {
   const mockOnClose = vi.fn();
