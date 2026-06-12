@@ -30,6 +30,20 @@ For detailed documentation on all available configuration options and fields, se
 
 ### Editing Configuration At Runtime
 You can change `/config.json` directly on the server (or via a mounted volume) and force clients to pick it up with a hard refresh (Ctrl+F5).
+However, it is recommended to use ansible to manage configuration changes in production environments to ensure consistency and version control.
+
+### Restarting the docker containers
+
+After an update of the config.json file, a restart of the container may be necessary. It's also an opportunity to update them:
+
+```bash
+# On the Viewer VM
+cd /opt/atmoswing-viz/
+docker compose pull
+docker compose down
+docker compose up -d
+```
+
 
 ## Workspaces
 Workspace definitions are part of the same `config.json` under the `workspaces` key. Each workspace can define its own set of GIS layers (shapefiles, GeoJSON) with custom styling. The UI will automatically pick up new workspaces from the configuration.
