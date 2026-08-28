@@ -144,8 +144,14 @@ export default function MethodConfigSelector(
   }, [stations, open, selectedStationId, onChange, value]);
 
   // LEADS via cached request (series percentiles)
+  // The cached entry holds lead numbers computed against forecastBaseDate, so the base date is
+  // part of the key: it arrives asynchronously and would otherwise pin the first value computed.
+  // 'resp' marks the branch that falls back to the response's own forecast_date.
+  const leadsBasePart = (forecastBaseDate && !isNaN(forecastBaseDate.getTime()))
+    ? forecastBaseDate.getTime()
+    : 'resp';
   const leadsCacheKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfig && selectedStationId != null
-    ? `${cachePrefix}leads|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfig}|${selectedStationId}`
+    ? `${cachePrefix}leads|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfig}|${selectedStationId}|${leadsBasePart}`
     : null;
   const {data: leadsRaw, loading: leadsLoading, error: leadsError} = useCachedRequest(
     leadsCacheKey,
