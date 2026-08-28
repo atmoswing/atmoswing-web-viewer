@@ -34,11 +34,11 @@ import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
 import {DEFAULT_PCTS, FULL_PCTS} from './common/plotConstants.js';
 import {
-  downloadBlob,
-  getSVGSize,
-  inlineAllStyles,
-  safeForFilename,
-  withTemporaryContainer
+  exportChartPDF,
+  exportChartPNG,
+  exportChartSVG,
+  formatExportDatePart,
+  safeForFilename
 } from './common/exportUtils.js';
 import {useTranslation} from 'react-i18next';
 
@@ -225,139 +225,16 @@ export default function TimeSeriesModal() {
   };
 
   const buildExportFilenamePrefix = () => {
-    let datePart = '';
-    if (activeForecastDate) {
-      try {
-        const d = parseForecastDate(activeForecastDate) || new Date(activeForecastDate);
-        if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
-      } catch { /* unparseable date: leave it out of the filename */
-      }
-    }
+    const datePart = formatExportDatePart(activeForecastDate);
     const entityPart = safeForFilename(stationName || selectedEntityId || 'entity');
     const methodIdPart = selectedMethodConfig?.method ? String(selectedMethodConfig.method.id || selectedMethodConfig.method.name || 'method') : 'method';
     const safeMethod = safeForFilename(methodIdPart);
-    return [datePart, entityPart, safeMethod].filter(p => p).join('_');
+    return [datePart, entityPart, safeMethod].filter(p => p).join('_') || 'series';
   };
 
-
-  const exportSVG = () => {
-    const svg = findChartSVG();
-    if (!svg) return;
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const serializer = new XMLSerializer();
-    withTemporaryContainer(clone, () => {
-      const svgStr = serializer.serializeToString(clone);
-      const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
-      const prefix = buildExportFilenamePrefix() || 'series';
-      const filename = `${prefix}.svg`;
-      downloadBlob(blob, filename);
-    });
-  };
-
-  const exportPNG = async () => {
-    const svg = findChartSVG();
-    if (!svg) return;
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const {width, height} = getSVGSize(clone);
-    const serializer = new XMLSerializer();
-    let svgStr;
-    withTemporaryContainer(clone, () => {
-      svgStr = serializer.serializeToString(clone);
-    });
-    const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(svgBlob);
-    try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = url;
-      });
-      const scale = 3;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(width * scale));
-      canvas.height = Math.max(1, Math.round(height * scale));
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      const prefix = buildExportFilenamePrefix() || 'series';
-      const filename = `${prefix}.png`;
-      downloadBlob(blob, filename);
-    } catch (e) {
-      console.error('Export PNG failed', e);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  const exportPDF = async () => {
-    const svg = findChartSVG();
-    if (!svg) return;
-    let jsPDFLib, svg2pdfModule;
-    try {
-      jsPDFLib = await import('jspdf');
-      svg2pdfModule = await import('svg2pdf.js');
-    } catch (e) {
-      console.error('Failed to load PDF libraries', e);
-      return;
-    }
-    const jsPDF = jsPDFLib.jsPDF || jsPDFLib.default || jsPDFLib;
-    const svg2pdf = svg2pdfModule.svg2pdf || svg2pdfModule.default || svg2pdfModule;
-    if (!jsPDF || !svg2pdf) {
-      console.error('PDF libraries did not provide expected exports', {jsPDF, svg2pdf});
-      return;
-    }
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.appendChild(clone);
-    document.body.appendChild(container);
-    try {
-      try {
-        inlineAllStyles(clone);
-      } catch { /* export without inlined styles rather than failing */
-      }
-      let {width: svgW, height: svgH} = getSVGSize(clone);
-      try {
-        const bbox = clone.getBBox();
-        if (bbox && Number.isFinite(bbox.width) && Number.isFinite(bbox.height) && bbox.width > 0 && bbox.height > 0) {
-          const pad = 2;
-          svgW = bbox.width + pad * 2;
-          svgH = bbox.height + pad * 2;
-          clone.setAttribute('viewBox', `${bbox.x - pad} ${bbox.y - pad} ${svgW} ${svgH}`);
-        } else {
-          clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-        }
-      } catch {
-        clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-      }
-      clone.setAttribute('width', String(Math.round(svgW)));
-      clone.setAttribute('height', String(Math.round(svgH)));
-      const pdfWidth = Math.round(svgW);
-      const pdfHeight = Math.round(svgH);
-      const pdf = new jsPDF({
-        unit: 'px',
-        format: [pdfWidth, pdfHeight],
-        orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait'
-      });
-      await svg2pdf(clone, pdf, {x: 0, y: 0, width: pdfWidth, height: pdfHeight});
-      const prefix = buildExportFilenamePrefix() || 'series';
-      const filename = `${prefix}.pdf`;
-      pdf.save(filename);
-    } catch (e) {
-      console.error('Export PDF (vector) failed', e);
-    } finally {
-      document.body.removeChild(container);
-    }
-  };
+  const exportSVG = () => exportChartSVG(findChartSVG(), buildExportFilenamePrefix());
+  const exportPNG = () => exportChartPNG(findChartSVG(), buildExportFilenamePrefix());
+  const exportPDF = () => exportChartPDF(findChartSVG(), buildExportFilenamePrefix());
 
   // When the modal closes the request keys all go null and the hooks reset themselves;
   // only the chart DOM and the cached entries still need clearing.

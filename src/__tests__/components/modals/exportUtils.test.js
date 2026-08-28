@@ -5,6 +5,10 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   downloadBlob,
+  exportChartPDF,
+  exportChartPNG,
+  exportChartSVG,
+  formatExportDatePart,
   getSVGSize,
   inlineAllStyles,
   safeForFilename,
@@ -234,5 +238,79 @@ describe('exportUtils', () => {
       expect(result).toBe(42);
     });
   });
-});
 
+  describe('formatExportDatePart', () => {
+    it('formats a forecast date as YYYY-MM-DD', () => {
+      expect(formatExportDatePart('2025-11-05T06:00:00')).toBe('2025-11-05');
+    });
+
+    it('zero-pads month and day', () => {
+      expect(formatExportDatePart('2025-01-02T00:00:00')).toBe('2025-01-02');
+    });
+
+    it('returns an empty string for missing or unparseable input', () => {
+      expect(formatExportDatePart(null)).toBe('');
+      expect(formatExportDatePart('')).toBe('');
+      expect(formatExportDatePart('not-a-date')).toBe('');
+    });
+  });
+
+  describe('chart exporters', () => {
+    function makeSVG() {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '200');
+      svg.setAttribute('height', '100');
+      document.body.appendChild(svg);
+      return svg;
+    }
+
+    afterEach(() => {
+      document.body.innerHTML = '';
+    });
+
+    it('exportChartSVG downloads a .svg named after the base name', () => {
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      });
+      let anchor = null;
+      const appendSpy = vi.spyOn(document.body, 'appendChild');
+
+      exportChartSVG(makeSVG(), 'my-chart');
+
+      anchor = appendSpy.mock.calls.map(c => c[0]).find(n => n.tagName === 'A');
+      expect(anchor).toBeTruthy();
+      expect(anchor.download).toBe('my-chart.svg');
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('exportChartSVG is a no-op without an SVG', () => {
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      });
+      exportChartSVG(null, 'my-chart');
+      expect(clickSpy).not.toHaveBeenCalled();
+    });
+
+    it('exportChartPNG is a no-op without an SVG', async () => {
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      });
+      await exportChartPNG(null, 'my-chart');
+      expect(clickSpy).not.toHaveBeenCalled();
+    });
+
+    it('exportChartPDF is a no-op without an SVG', async () => {
+      await expect(exportChartPDF(null, 'my-chart')).resolves.toBeUndefined();
+    });
+
+    it('exportChartPDF cleans up its temporary container on failure', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      });
+      const svg = makeSVG();
+      const before = document.body.childElementCount;
+
+      await exportChartPDF(svg, 'my-chart');
+
+      // jsdom cannot render a real PDF; what matters is that nothing is left mounted.
+      expect(document.body.childElementCount).toBe(before);
+      errorSpy.mockRestore();
+    });
+  });
+});

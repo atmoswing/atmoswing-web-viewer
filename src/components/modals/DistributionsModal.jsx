@@ -42,11 +42,11 @@ import {
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import ExportMenu from './common/ExportMenu.jsx';
 import {
-  downloadBlob,
-  getSVGSize,
-  inlineAllStyles,
-  safeForFilename,
-  withTemporaryContainer
+  exportChartPDF,
+  exportChartPNG,
+  exportChartSVG,
+  formatExportDatePart,
+  safeForFilename
 } from './common/exportUtils.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
@@ -211,124 +211,22 @@ export default function DistributionsModal({open, onClose}) {
     return match?.name || match?.id || resolvedEntityId || '';
   }, [entitiesForExport, resolvedEntityId]);
   const buildExportFilenamePrefix = () => {
-    let datePart = '';
-    if (activeForecastDate) {
-      try {
-        const d = new Date(activeForecastDate);
-        if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
-      } catch { /* ignore */
-      }
-    }
+    const datePart = formatExportDatePart(activeForecastDate);
     const entityPart = safeForFilename(stationName || 'entity');
-    const methodIdPart = resolvedMethodId || 'method';
-    const safeMethod = safeForFilename(methodIdPart);
+    const safeMethod = safeForFilename(resolvedMethodId || 'method');
     const leadPart = (selection.lead != null) ? `L${selection.lead}` : '';
     const tabPart = tabIndex === 0 ? 'distribution' : 'criteria';
-    return [datePart, entityPart, safeMethod, leadPart, tabPart].filter(Boolean).join('_');
+    return [datePart, entityPart, safeMethod, leadPart, tabPart].filter(Boolean).join('_') || 'distribution';
   };
+
   const findCurrentChartSVG = () => {
     const el = tabIndex === 0 ? precipRef.current : critRef.current;
     return el ? el.querySelector('svg') : null;
   };
-  const exportSVG = () => {
-    const svg = findCurrentChartSVG();
-    if (!svg) return;
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const serializer = new XMLSerializer();
-    withTemporaryContainer(clone, () => {
-      const svgStr = serializer.serializeToString(clone);
-      downloadBlob(new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'}), `${buildExportFilenamePrefix() || 'distribution'}.svg`);
-    });
-  };
-  const exportPNG = async () => {
-    const svg = findCurrentChartSVG();
-    if (!svg) return;
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const {width, height} = getSVGSize(clone);
-    const serializer = new XMLSerializer();
-    let svgStr;
-    withTemporaryContainer(clone, () => {
-      svgStr = serializer.serializeToString(clone);
-    });
-    const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(svgBlob);
-    try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = url;
-      });
-      const scale = 3;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(width * scale));
-      canvas.height = Math.max(1, Math.round(height * scale));
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      downloadBlob(blob, `${buildExportFilenamePrefix() || 'distribution'}.png`);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  };
-  const exportPDF = async () => {
-    const svg = findCurrentChartSVG();
-    if (!svg) return;
-    let jsPDFLib, svg2pdfModule;
-    try {
-      jsPDFLib = await import('jspdf');
-      svg2pdfModule = await import('svg2pdf.js');
-    } catch {
-      return;
-    }
-    const jsPDF = jsPDFLib.jsPDF || jsPDFLib.default || jsPDFLib;
-    const svg2pdf = svg2pdfModule.svg2pdf || svg2pdfModule.default || svg2pdfModule;
-    if (!jsPDF || !svg2pdf) return;
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.appendChild(clone);
-    document.body.appendChild(container);
-    try {
-      try {
-        inlineAllStyles(clone);
-      } catch { /* export without inlined styles rather than failing */
-      }
-      let {width: svgW, height: svgH} = getSVGSize(clone);
-      try {
-        const bbox = clone.getBBox();
-        if (bbox && Number.isFinite(bbox.width) && Number.isFinite(bbox.height) && bbox.width > 0 && bbox.height > 0) {
-          const pad = 2;
-          svgW = bbox.width + 2 * pad;
-          svgH = bbox.height + 2 * pad;
-          clone.setAttribute('viewBox', `${bbox.x - pad} ${bbox.y - pad} ${svgW} ${svgH}`);
-        } else {
-          clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-        }
-      } catch {
-        clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-      }
-      clone.setAttribute('width', String(Math.round(svgW)));
-      clone.setAttribute('height', String(Math.round(svgH)));
-      const pdf = new jsPDF({
-        unit: 'px',
-        format: [Math.round(svgW), Math.round(svgH)],
-        orientation: svgW > svgH ? 'landscape' : 'portrait'
-      });
-      await svg2pdf(clone, pdf, {x: 0, y: 0, width: Math.round(svgW), height: Math.round(svgH)});
-      pdf.save(`${buildExportFilenamePrefix() || 'distribution'}.pdf`);
-    } finally {
-      document.body.removeChild(container);
-    }
-  };
+
+  const exportSVG = () => exportChartSVG(findCurrentChartSVG(), buildExportFilenamePrefix());
+  const exportPNG = () => exportChartPNG(findCurrentChartSVG(), buildExportFilenamePrefix());
+  const exportPDF = () => exportChartPDF(findCurrentChartSVG(), buildExportFilenamePrefix());
 
   // Draw precipitation distribution
   useEffect(() => {
