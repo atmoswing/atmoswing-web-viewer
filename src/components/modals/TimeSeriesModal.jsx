@@ -22,7 +22,7 @@ import {
   getSeriesValuesPercentilesHistory
 } from '@/services/api.js';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
-import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {
   normalizeReferenceValues,
@@ -236,19 +236,15 @@ export default function TimeSeriesModal() {
   const exportPNG = () => exportChartPNG(findChartSVG(), buildExportFilenamePrefix());
   const exportPDF = () => exportChartPDF(findChartSVG(), buildExportFilenamePrefix());
 
-  // When the modal closes the request keys all go null and the hooks reset themselves;
-  // only the chart DOM and the cached entries still need clearing.
+  // When the modal closes the request keys all go null and the hooks reset themselves.
+  // The cached entries are deliberately kept: a forecast for a given station is immutable,
+  // so reopening it should be instant, and the TTLs still bound staleness.
   useEffect(() => {
     if (selectedEntityId == null) {
       try {
         if (chartRef.current) d3.select(chartRef.current).selectAll('*').remove();
       } catch { /* container already detached; nothing to clean up */
       }
-      // clear cached series-related keys
-      clearCachedRequests('series|');
-      clearCachedRequests('series_ref|');
-      clearCachedRequests('series_bestanalogs|');
-      clearCachedRequests('series_history|');
     }
   }, [selectedEntityId]);
 

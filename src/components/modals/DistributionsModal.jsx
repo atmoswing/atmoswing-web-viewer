@@ -31,7 +31,7 @@ import {
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 // add caching + normalizers + shared components
-import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {
   normalizeAnalogCriteriaArray,
   normalizeAnalogPercentiles,
@@ -50,7 +50,8 @@ import {
 } from './common/exportUtils.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
-import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
+import MethodConfigSelector from './common/MethodConfigSelector.jsx';
+import {useModalSelectionData} from './common/useModalSelectionData.js';
 
 function TabPanel({children, value, index, ...other}) {
   return (
@@ -178,7 +179,6 @@ export default function DistributionsModal({open, onClose}) {
         lead: null
       });
       setBestAnalogsData(null);
-      clearCachedRequests('dist_');
     }
   }, [open]);
 

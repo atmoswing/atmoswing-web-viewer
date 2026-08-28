@@ -3,16 +3,19 @@
  * @description Main application toolbar providing access to distribution and analog details modals and central navigation controls.
  */
 
-import React from 'react';
+import React, {lazy, Suspense} from 'react';
 
 import FrameDistributionsIcon from '@/assets/toolbar/frame_distributions.svg?react';
 import FrameAnalogsIcon from '@/assets/toolbar/frame_analogs.svg?react';
 
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';
-import {DetailsAnalogsModal, DistributionsModal} from '@/components/modals';
 import ToolbarSquares from './ToolbarSquares.jsx';
 import ToolbarCenter from './ToolbarCenter.jsx';
+
+// Lazy loaded: both pull in D3 and their chart components, which the toolbar itself never needs.
+const DetailsAnalogsModal = lazy(() => import('@/components/modals/DetailsAnalogsModal.jsx'));
+const DistributionsModal = lazy(() => import('@/components/modals/DistributionsModal.jsx'));
 
 export default function ToolBar() {
   /**
@@ -22,6 +25,21 @@ export default function ToolBar() {
 
   const [detailsAnalogsModalOpen, setDetailsAnalogsModalOpen] = React.useState(false);
   const [distributionsModalOpen, setDistributionsModalOpen] = React.useState(false);
+
+  // Each modal's chunk is only requested once it is first opened; from then on it stays
+  // mounted so that MUI's closing transition still runs.
+  const [detailsAnalogsLoaded, setDetailsAnalogsLoaded] = React.useState(false);
+  const [distributionsLoaded, setDistributionsLoaded] = React.useState(false);
+
+  const openDetailsAnalogsModal = () => {
+    setDetailsAnalogsLoaded(true);
+    setDetailsAnalogsModalOpen(true);
+  };
+
+  const openDistributionsModal = () => {
+    setDistributionsLoaded(true);
+    setDistributionsModalOpen(true);
+  };
 
   const handleDetailsAnalogsModalClose = () => {
     setDetailsAnalogsModalOpen(false);
@@ -42,7 +60,7 @@ export default function ToolBar() {
           <Tooltip title={t('toolbar.openDistributions', {defaultValue: 'Open distribution plots'})} arrow>
             <button
               className="toolbar-icon-btn"
-              onClick={() => setDistributionsModalOpen(true)}
+              onClick={openDistributionsModal}
               type="button"
               aria-label={t('toolbar.openDistributions', {defaultValue: 'Open distribution plots'})}
             ><FrameDistributionsIcon/></button>
@@ -50,15 +68,21 @@ export default function ToolBar() {
           <Tooltip title={t('toolbar.openAnalogs', {defaultValue: 'Open analogs details'})} arrow>
             <button
               className="toolbar-icon-btn"
-              onClick={() => setDetailsAnalogsModalOpen(true)}
+              onClick={openDetailsAnalogsModal}
               type="button"
               aria-label={t('toolbar.openAnalogs', {defaultValue: 'Open analogs details'})}
             ><FrameAnalogsIcon/></button>
           </Tooltip>
         </div>
       </header>
-      <DetailsAnalogsModal open={detailsAnalogsModalOpen} onClose={handleDetailsAnalogsModalClose}/>
-      <DistributionsModal open={distributionsModalOpen} onClose={handleDistributionsModalClose}/>
+      <Suspense fallback={null}>
+        {detailsAnalogsLoaded && (
+          <DetailsAnalogsModal open={detailsAnalogsModalOpen} onClose={handleDetailsAnalogsModalClose}/>
+        )}
+        {distributionsLoaded && (
+          <DistributionsModal open={distributionsModalOpen} onClose={handleDistributionsModalClose}/>
+        )}
+      </Suspense>
     </>
   );
 }

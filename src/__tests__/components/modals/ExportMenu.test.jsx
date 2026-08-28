@@ -22,6 +22,8 @@ describe('ExportMenu', () => {
     expect(screen.getByText('seriesModal.export')).toBeInTheDocument();
   });
 
+  // Three MUI portal open/close cycles driven by userEvent: fast in isolation (~1s) but
+  // slow enough under coverage instrumentation to overrun the 5s default.
   it('opens menu and triggers export handlers', async () => {
     const user = userEvent.setup();
     render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF}/>);
@@ -50,5 +52,5 @@ describe('ExportMenu', () => {
     const pdf2 = await screen.findByText('PDF');
     await user.click(pdf2);
     expect(onPDF).toHaveBeenCalled();
-  });
+  }, 20000);
 });

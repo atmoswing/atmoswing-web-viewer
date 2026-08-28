@@ -459,39 +459,3 @@ export default function MethodConfigSelector(
     </Box>
   );
 }
-
-/**
- * Hook returning resolved selection data (with fallback config if none explicitly chosen).
- * @param {string} cachePrefix - Cache key namespace prefix
- * @param {boolean} open - Whether owning modal is open
- * @param {Object} selection - Raw selection { methodId, configId, entityId }
- * @returns {Object} Object with resolvedMethodId, resolvedConfigId, resolvedEntityId
- * @example
- * const { resolvedMethodId, resolvedConfigId } = useModalSelectionData('dist_', open, selection);
- */
-export function useModalSelectionData(cachePrefix, open, selection) {
-  const {workspace, activeForecastDate} = useForecastSession();
-  const {methodId, configId, entityId} = selection;
-
-  // Re-compute resolvedConfig
-  const methodsCacheKey = open && workspace && activeForecastDate
-    ? `${cachePrefix}methods|${workspace}|${activeForecastDate}`
-    : null;
-  const {data: methodsData} = useCachedRequest(
-    methodsCacheKey,
-    async () => getMethodsAndConfigs(workspace, activeForecastDate),
-    {enabled: !!methodsCacheKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
-
-  const resolvedConfig = useMemo(() => {
-    if (!methodsData?.methods) return configId || null;
-    const m = methodsData.methods.find(mm => mm.id === methodId);
-    return configId || (m?.configurations?.[0]?.id) || null;
-  }, [methodsData, methodId, configId]);
-
-  return {
-    resolvedMethodId: methodId,
-    resolvedConfigId: resolvedConfig,
-    resolvedEntityId: entityId
-  };
-}

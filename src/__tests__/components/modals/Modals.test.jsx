@@ -52,7 +52,11 @@ vi.mock('@/utils/apiNormalization.js', () => ({
 vi.mock('@/components/modals/common/MethodConfigSelector.jsx', () => ({
   default: () => (
     <div data-testid="method-config-selector">Selector</div>
-  ),
+  )
+}));
+
+// Mock the selection-resolving hook
+vi.mock('@/components/modals/common/useModalSelectionData.js', () => ({
   useModalSelectionData: vi.fn(() => ({
     resolvedMethodId: 'method1',
     resolvedConfigId: 'config1',

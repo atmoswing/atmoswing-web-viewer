@@ -15,6 +15,21 @@ import {
   withTemporaryContainer,
 } from '@/components/modals/common/exportUtils.js';
 
+// jsPDF really does write a file when save() is called, even under jsdom, so both PDF
+// libraries are mocked out here.
+const savePdf = vi.fn();
+const svg2pdfSpy = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('jspdf', () => ({
+  jsPDF: vi.fn(function jsPDF() {
+    return {save: savePdf};
+  })
+}));
+
+vi.mock('svg2pdf.js', () => ({
+  svg2pdf: (...args) => svg2pdfSpy(...args)
+}));
+
 describe('exportUtils', () => {
   describe('safeForFilename', () => {
     it('returns "unknown" for empty input', () => {
@@ -300,16 +315,28 @@ describe('exportUtils', () => {
       await expect(exportChartPDF(null, 'my-chart')).resolves.toBeUndefined();
     });
 
-    it('exportChartPDF cleans up its temporary container on failure', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-      });
+    it('exportChartPDF saves under the base name and unmounts its container', async () => {
       const svg = makeSVG();
       const before = document.body.childElementCount;
 
       await exportChartPDF(svg, 'my-chart');
 
-      // jsdom cannot render a real PDF; what matters is that nothing is left mounted.
+      expect(savePdf).toHaveBeenCalledWith('my-chart.pdf');
+      expect(svg2pdfSpy).toHaveBeenCalled();
       expect(document.body.childElementCount).toBe(before);
+    });
+
+    it('exportChartPDF unmounts its container when rendering throws', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      });
+      svg2pdfSpy.mockRejectedValueOnce(new Error('render failed'));
+      const svg = makeSVG();
+      const before = document.body.childElementCount;
+
+      await exportChartPDF(svg, 'my-chart');
+
+      expect(document.body.childElementCount).toBe(before);
+      expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
     });
   });

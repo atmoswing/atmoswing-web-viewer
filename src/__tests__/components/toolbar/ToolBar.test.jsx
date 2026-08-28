@@ -20,10 +20,14 @@ vi.mock('@/components/toolbar/ToolbarCenter.jsx', () => ({
   default: () => <div data-testid="toolbar-center">ToolbarCenter</div>
 }));
 
-vi.mock('@/components/modals', () => ({
-  DetailsAnalogsModal: ({open, onClose}) =>
-    open ? <div data-testid="analogs-modal" onClick={() => onClose()}>Analogs Modal</div> : null,
-  DistributionsModal: ({open, onClose}) =>
+// Both modals are lazy loaded by ToolBar, so they are mocked at their own module paths.
+vi.mock('@/components/modals/DetailsAnalogsModal.jsx', () => ({
+  default: ({open, onClose}) =>
+    open ? <div data-testid="analogs-modal" onClick={() => onClose()}>Analogs Modal</div> : null
+}));
+
+vi.mock('@/components/modals/DistributionsModal.jsx', () => ({
+  default: ({open, onClose}) =>
     open ? <div data-testid="distributions-modal" onClick={() => onClose()}>Distributions Modal</div> : null
 }));
 
@@ -61,7 +65,7 @@ describe('ToolBar', () => {
     const distributionsButton = screen.getByLabelText('toolbar.openDistributions');
     await user.click(distributionsButton);
 
-    expect(screen.getByTestId('distributions-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('distributions-modal', {}, {timeout: 5000})).toBeInTheDocument();
   });
 
   it('opens analogs modal when button is clicked', async () => {
@@ -71,7 +75,7 @@ describe('ToolBar', () => {
     const analogsButton = screen.getByLabelText('toolbar.openAnalogs');
     await user.click(analogsButton);
 
-    expect(screen.getByTestId('analogs-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('analogs-modal', {}, {timeout: 5000})).toBeInTheDocument();
   });
 
   it('closes modals when close handler is called', async () => {
@@ -81,7 +85,7 @@ describe('ToolBar', () => {
     // Open and close distributions modal
     const distributionsButton = screen.getByLabelText('toolbar.openDistributions');
     await user.click(distributionsButton);
-    expect(screen.getByTestId('distributions-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('distributions-modal', {}, {timeout: 5000})).toBeInTheDocument();
 
     await user.click(screen.getByTestId('distributions-modal'));
     expect(screen.queryByTestId('distributions-modal')).not.toBeInTheDocument();

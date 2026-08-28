@@ -70,7 +70,6 @@ async function request(endpoint) {
 export const getConfig = () => request("/meta/show-config");
 export const getLastForecastDate = region => request(`/meta/${region}/last-forecast-date`);
 export const hasForecastDate = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/has-forecasts`);
-export const getAvailableMethods = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/methods`);
 export const getMethodsAndConfigs = (region, date) => request(`/meta/${region}/${encodeURIComponent(date)}/methods-and-configs`);
 export const getEntities = (region, date, methodId, configId) => request(`/meta/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/entities`);
 export const getRelevantEntities = (region, date, methodId, configId) => request(`/meta/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/relevant-entities`);
@@ -207,7 +206,6 @@ export const getAnalogValuesPercentiles = (region, date, methodId, configId, ent
   const path = `/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-percentiles`;
   return request(appendQuery(path, buildPercentilesQuery(percentiles)));
 };
-export const getAnalogValuesBest = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values-best`);
 
 // --- Aggregations ---
 export const getAggregatedEntitiesValues = (region, date, methodId, lead, perc, normalize) => {

@@ -22,10 +22,11 @@ import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
 import {getAnalogs} from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
 import {formatCriteria, formatDateLabel, formatPrecipitation} from '@/utils/formattingUtils.js';
-import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {normalizeAnalogsResponse} from '@/utils/apiNormalization.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
-import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
+import MethodConfigSelector from './common/MethodConfigSelector.jsx';
+import {useModalSelectionData} from './common/useModalSelectionData.js';
 
 // Stable identity for the empty case, so the sort memo below doesn't churn.
 const EMPTY_ANALOGS = [];
@@ -126,7 +127,6 @@ export default function DetailsAnalogsModal({open, onClose}) {
         entityId: null,
         lead: 0
       });
-      clearCachedRequests('modal_');
     }
   }, [open]);
 
