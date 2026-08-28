@@ -23,11 +23,11 @@ export default function ToolBar() {
   const [detailsAnalogsModalOpen, setDetailsAnalogsModalOpen] = React.useState(false);
   const [distributionsModalOpen, setDistributionsModalOpen] = React.useState(false);
 
-  const handleDetailsAnalogsModalClose = (result) => {
+  const handleDetailsAnalogsModalClose = () => {
     setDetailsAnalogsModalOpen(false);
   };
 
-  const handleDistributionsModalClose = (result) => {
+  const handleDistributionsModalClose = () => {
     setDistributionsModalOpen(false);
   };
 

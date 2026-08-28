@@ -10,7 +10,7 @@ function mockFetchSequence(responses) {
       statusText: r.statusText || (r.status === 200 ? 'OK' : 'ERR'),
       json: async () => r.jsonData,
       headers: {
-        forEach: (cb) => {
+        forEach: () => {
         }
       },
       clone: () => ({text: async () => JSON.stringify(r.jsonData || {})})

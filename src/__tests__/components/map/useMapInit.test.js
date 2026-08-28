@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
 
 // Mock OpenLayers primitives used by the hook
 vi.mock('ol/Map', () => ({
-  default: vi.fn(function (opts) {
+  default: vi.fn(function (_opts) {
     return {
       addControl: vi.fn(),
       addLayer: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock('ol/Map', () => ({
 }));
 
 vi.mock('ol/View', () => ({
-  default: vi.fn(function (opts) {
+  default: vi.fn(function (_opts) {
     return {setCenter: vi.fn(), setZoom: vi.fn()};
   })
 }));
@@ -65,7 +65,7 @@ vi.mock('ol/source/Vector', () => ({
 
 // Mock layer switcher control
 vi.mock('ol-layerswitcher', () => ({
-  default: vi.fn(function (opts) {
+  default: vi.fn(function (_opts) {
     return {renderPanel: vi.fn(), on: vi.fn()};
   })
 }));

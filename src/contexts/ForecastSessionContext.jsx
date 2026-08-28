@@ -9,14 +9,11 @@ import {useWorkspace} from './WorkspaceContext.jsx';
 import {formatForecastDateForApi, parseForecastDate} from '@/utils/forecastDateUtils.js';
 import {getLastForecastDate, getSynthesisTotal, hasForecastDate} from '@/services/api.js';
 import {normalizeHasForecastDate, normalizeSynthesisHasLeads} from '@/utils/apiNormalization.js';
-import {useCachedRequest as useCachedRequestHook} from '@/hooks/useCachedRequest.js';
 import config from '@/config.js';
-
-const SHORT_TTL = 1000 * 60 * 5; // 5 minutes (for cached requests)
 
 const ForecastSessionContext = createContext({});
 
-// Cached helper component (hook usage must be inside provider): we expose a function that reads caches via direct fetch but benefits from prior caching.
+// Plain async helper (not a hook): searches forward/back for a date that has a forecast with leads.
 async function findShiftedForecast(workspace, activeForecastDate, pattern, hours, maxAttempts = 12) {
   const start = parseForecastDate(activeForecastDate);
   if (!start || isNaN(start)) return null;
@@ -143,25 +140,6 @@ export function ForecastSessionProvider({children}) {
     fullReset(parseForecastDate(raw));
     setBaseDateSearchFailed(false);
   }, [workspaceData, fullReset, workspace]);
-
-  // Lightweight cached lookups for current active forecast date (reactive; shifting still uses direct function with short loops)
-  const hasForecastKey = workspace && activeForecastDate ? `has_date|${workspace}|${activeForecastDate}` : null;
-  const {data: hasDateData} = useCachedRequestHook(
-    hasForecastKey,
-    async () => await hasForecastDate(workspace, activeForecastDate),
-    [workspace, activeForecastDate],
-    {enabled: !!hasForecastKey, initialData: null, ttlMs: SHORT_TTL}
-  );
-  const synthesisCheckKey = workspace && activeForecastDate ? `synth_avail|${workspace}|${activeForecastDate}` : null;
-  const {data: synthesisAvailRaw} = useCachedRequestHook(
-    synthesisCheckKey,
-    async () => await getSynthesisTotal(workspace, activeForecastDate, 90, 10),
-    [workspace, activeForecastDate],
-    {enabled: !!synthesisCheckKey, initialData: null, ttlMs: SHORT_TTL}
-  );
-  // Lint: reference to avoid unused warnings in certain build modes
-  const _hasDateBool = hasDateData ? normalizeHasForecastDate(hasDateData) : null;
-  const _synthAvail = synthesisAvailRaw ? normalizeSynthesisHasLeads(synthesisAvailRaw) : null;
 
   const value = useMemo(() => ({
     workspace,

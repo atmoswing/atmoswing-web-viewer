@@ -58,7 +58,7 @@ vi.mock('@/contexts/ForecastsContext.jsx', () => ({
 }));
 
 vi.mock('@/components/panels/Panel.jsx', () => ({
-  default: ({children, title, defaultOpen}) => (
+  default: ({children, title}) => (
     <div data-testid="panel">
       <div data-testid="panel-title">{title}</div>
       <div>{children}</div>

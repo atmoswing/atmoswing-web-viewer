@@ -50,7 +50,6 @@ describe('ToolbarSquares', () => {
   it('renders empty state when no leads available', () => {
     render(<ToolbarSquares/>);
     // Component should render even with empty data
-    const container = document.querySelector('.toolbar-squares, .forecast-squares');
     // May or may not have specific class, just verify no crash
     expect(true).toBe(true);
   });

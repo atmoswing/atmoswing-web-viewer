@@ -26,11 +26,11 @@ vi.mock('@/components/sidebar/SidebarWorkspaceDropdown.jsx', () => ({
 }));
 
 vi.mock('@/components/panels', () => ({
-  PanelAnalogDates: ({defaultOpen}) => <div data-testid="panel-analog-dates">Analog Dates</div>,
-  PanelDisplay: ({defaultOpen}) => <div data-testid="panel-display">Display</div>,
-  PanelForecasts: ({defaultOpen}) => <div data-testid="panel-forecasts">Forecasts</div>,
-  PanelStations: ({defaultOpen}) => <div data-testid="panel-stations">Stations</div>,
-  PanelSynthesis: ({defaultOpen}) => <div data-testid="panel-synthesis">Synthesis</div>
+  PanelAnalogDates: () => <div data-testid="panel-analog-dates">Analog Dates</div>,
+  PanelDisplay: () => <div data-testid="panel-display">Display</div>,
+  PanelForecasts: () => <div data-testid="panel-forecasts">Forecasts</div>,
+  PanelStations: () => <div data-testid="panel-stations">Stations</div>,
+  PanelSynthesis: () => <div data-testid="panel-synthesis">Synthesis</div>
 }));
 
 describe('SideBar', () => {

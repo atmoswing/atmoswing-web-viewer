@@ -55,12 +55,10 @@ describe('EntitiesContext', () => {
     );
   };
 
-  let fetchSpy;
-
   beforeEach(() => {
     vi.clearAllMocks();
 
-    fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(global, 'fetch').mockResolvedValue({
       json: () => Promise.resolve({
         workspaces: [{key: 'test', name: 'Test'}],
         workspace_data: mockWorkspaceData

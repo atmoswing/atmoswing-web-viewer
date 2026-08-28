@@ -263,7 +263,7 @@ export default function TimeSeriesModal() {
       try {
         const d = parseForecastDate(activeForecastDate) || new Date(activeForecastDate);
         if (d && !isNaN(d)) datePart = d3.timeFormat('%Y-%m-%d')(d);
-      } catch {
+      } catch { /* unparseable date: leave it out of the filename */
       }
     }
     const entityPart = safeForFilename(stationName || selectedEntityId || 'entity');
@@ -356,7 +356,7 @@ export default function TimeSeriesModal() {
     try {
       try {
         inlineAllStyles(clone);
-      } catch {
+      } catch { /* export without inlined styles rather than failing */
       }
       let {width: svgW, height: svgH} = getSVGSize(clone);
       try {
@@ -401,7 +401,7 @@ export default function TimeSeriesModal() {
       setPastForecasts(null);
       try {
         if (chartRef.current) d3.select(chartRef.current).selectAll('*').remove();
-      } catch {
+      } catch { /* container already detached; nothing to clean up */
       }
       // clear cached series-related keys
       clearCachedRequests('series|');

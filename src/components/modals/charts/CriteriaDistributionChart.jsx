@@ -74,7 +74,7 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
       if (rightPart) parts.push(rightPart);
       const titleText = parts.join(' — ');
       svg.append('text').attr('x', margin.left + innerW / 2).attr('y', Math.max(12, margin.top - 12)).attr('text-anchor', 'middle').attr('fill', '#222').attr('font-size', 14).attr('font-weight', 600).text(titleText);
-    } catch {
+    } catch { /* title is decorative: skip it if composing it fails */
     }
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);

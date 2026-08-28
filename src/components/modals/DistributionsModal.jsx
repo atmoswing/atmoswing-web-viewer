@@ -193,11 +193,11 @@ export default function DistributionsModal({open, onClose}) {
       // Clear chart containers immediately for visual cleanup
       try {
         if (precipRef.current) d3.select(precipRef.current).selectAll('*').remove();
-      } catch {
+      } catch { /* container already detached; nothing to clean up */
       }
       try {
         if (critRef.current) d3.select(critRef.current).selectAll('*').remove();
-      } catch {
+      } catch { /* container already detached; nothing to clean up */
       }
       setSelection({
         methodId: null,
@@ -333,7 +333,7 @@ export default function DistributionsModal({open, onClose}) {
     try {
       try {
         inlineAllStyles(clone);
-      } catch {
+      } catch { /* export without inlined styles rather than failing */
       }
       let {width: svgW, height: svgH} = getSVGSize(clone);
       try {

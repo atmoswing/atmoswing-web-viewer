@@ -47,7 +47,7 @@ vi.mock('ol/format/GeoJSON', () => ({
 
 // Mock shpjs to resolve to a simple geojson
 vi.mock('shpjs', () => ({
-  default: vi.fn((url) => Promise.resolve({type: 'FeatureCollection', features: []})),
+  default: vi.fn((_url) => Promise.resolve({type: 'FeatureCollection', features: []})),
 }));
 
 // Mock projection/style utils
