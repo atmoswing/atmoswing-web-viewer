@@ -27,6 +27,9 @@ import {normalizeAnalogsResponse} from '@/utils/apiNormalization.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import MethodConfigSelector, {useModalSelectionData} from './common/MethodConfigSelector.jsx';
 
+// Stable identity for the empty case, so the sort memo below doesn't churn.
+const EMPTY_ANALOGS = [];
+
 export default function DetailsAnalogsModal({open, onClose}) {
   /**
    * DetailsAnalogsModal component.
@@ -50,7 +53,6 @@ export default function DetailsAnalogsModal({open, onClose}) {
   // Get resolved IDs from the selector
   const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('modal_', open, selection);
 
-  const [analogs, setAnalogs] = useState(null);
   const [sortColumn, setSortColumn] = useState('rank');
   const [sortDirection, setSortDirection] = useState('asc');
 
@@ -64,13 +66,10 @@ export default function DetailsAnalogsModal({open, onClose}) {
       const resp = await getAnalogs(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead);
       return normalizeAnalogsResponse(resp);
     },
-    [workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead, open],
     {enabled: !!analogsCacheKey, initialData: [], ttlMs: SHORT_TTL}
   );
 
-  useEffect(() => {
-    setAnalogs(Array.isArray(analogsData) ? analogsData : []);
-  }, [analogsData]);
+  const analogs = Array.isArray(analogsData) ? analogsData : EMPTY_ANALOGS;
 
   // Handle sort request
   const handleSortRequest = (column) => {
@@ -127,7 +126,6 @@ export default function DetailsAnalogsModal({open, onClose}) {
         entityId: null,
         lead: 0
       });
-      setAnalogs([]);
       clearCachedRequests('modal_');
     }
   }, [open]);

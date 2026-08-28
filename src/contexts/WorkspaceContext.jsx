@@ -101,7 +101,6 @@ export function WorkspaceProvider({children}) {
       if (!workspace) return null;
       return await getLastForecastDate(workspace);
     },
-    [workspace],
     {enabled: !!workspace, initialData: null, ttlMs: DEFAULT_TTL}
   );
 
@@ -115,7 +114,6 @@ export function WorkspaceProvider({children}) {
       // keep raw shape; normalization happens later in MethodsContext for tree
       return resp ?? null;
     },
-    [workspace, lastDateResp?.last_forecast_date],
     {enabled: !!methodsPrefetchKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
 

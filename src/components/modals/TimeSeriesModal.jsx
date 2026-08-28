@@ -53,14 +53,6 @@ export default function TimeSeriesModal() {
   const {entities} = useEntities();
   const {t} = useTranslation();
 
-  const [series, setSeries] = useState(null);
-  // referenceValues stores { axis: number[], values: number[] } or null
-  const [referenceValues, setReferenceValues] = useState(null);
-  // bestAnalogs: { items: Array<{label, values: number[]}>, dates?: Date[] }
-  const [bestAnalogs, setBestAnalogs] = useState(null);
-  // previous forecasts history
-  const [pastForecasts, setPastForecasts] = useState(null);
-
   // Sidebar state
   const [options, setOptions] = useState({
     mainQuantiles: true,
@@ -157,30 +149,20 @@ export default function TimeSeriesModal() {
     return null; // no config yet
   }, [selectedMethodConfig, autoConfigId, resolvingConfig]);
 
-  // Clear series while waiting for config resolution to avoid flashing stale data
-  useEffect(() => {
-    setSeries(null);
-  }, [resolvedConfigId, selectedEntityId, selectedMethodConfig, workspace, activeForecastDate]);
-
   // Series via useCachedRequest with normalization
   const seriesKey = useMemo(() => {
     if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
     const pctsKey = requestedPercentiles?.length ? requestedPercentiles.join(',') : '';
     return `series|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}|${pctsKey}`;
   }, [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles]);
-  const {data: seriesData, loading, error} = useCachedRequest(
+  const {data: series, loading, error} = useCachedRequest(
     seriesKey,
     async () => {
       const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId, requestedPercentiles);
       return normalizeSeriesValuesPercentiles(resp, parseForecastDate);
     },
-    [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles],
     {enabled: !!seriesKey, initialData: null, ttlMs: SHORT_TTL}
   );
-  useEffect(() => {
-    setSeries(seriesData || null);
-  }, [seriesData]);
-
   const stationName = useMemo(() => {
     if (selectedEntityId == null) return '';
     const match = entities?.find(e => e.id === selectedEntityId);
@@ -192,25 +174,20 @@ export default function TimeSeriesModal() {
     if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
     return `series_ref|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
   }, [options.tenYearReturn, options.allReturnPeriods, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-  const {data: refData} = useCachedRequest(
+  const {data: referenceValues} = useCachedRequest(
     referenceKey,
     async () => {
       const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
       return normalizeReferenceValues(resp);
     },
-    [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, options.tenYearReturn, options.allReturnPeriods],
     {enabled: !!referenceKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
-  useEffect(() => {
-    setReferenceValues(refData || null);
-  }, [refData]);
-
   const bestAnalogsKey = useMemo(() => {
     if (!options.bestAnalogs) return null;
     if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
     return `series_bestanalogs|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
   }, [options.bestAnalogs, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-  const {data: bestAnalogsData} = useCachedRequest(
+  const {data: bestAnalogs} = useCachedRequest(
     bestAnalogsKey,
     async () => {
       const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
@@ -221,31 +198,21 @@ export default function TimeSeriesModal() {
       }
       return parsed;
     },
-    [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, t],
     {enabled: !!bestAnalogsKey, initialData: null, ttlMs: SHORT_TTL}
   );
-  useEffect(() => {
-    setBestAnalogs(bestAnalogsData || null);
-  }, [bestAnalogsData]);
-
   const pastKey = useMemo(() => {
     if (!options.previousForecasts) return null;
     if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
     return `series_history|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
   }, [options.previousForecasts, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-  const {data: pastData} = useCachedRequest(
+  const {data: pastForecasts} = useCachedRequest(
     pastKey,
     async () => {
       const resp = await getSeriesValuesPercentilesHistory(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
       return normalizeSeriesValuesPercentilesHistory(resp, parseForecastDate);
     },
-    [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId],
     {enabled: !!pastKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
-  useEffect(() => {
-    setPastForecasts(pastData || null);
-  }, [pastData]);
-
   const handleClose = () => setSelectedEntityId(null);
 
   const showHover = (anchorEl, title) => setAnalogTooltip({open: true, anchorEl, title});
@@ -392,13 +359,10 @@ export default function TimeSeriesModal() {
     }
   };
 
-  // When modal closes (selectedEntityId becomes null), clear series state, caches, and chart DOM
+  // When the modal closes the request keys all go null and the hooks reset themselves;
+  // only the chart DOM and the cached entries still need clearing.
   useEffect(() => {
     if (selectedEntityId == null) {
-      setSeries(null);
-      setReferenceValues(null);
-      setBestAnalogs(null);
-      setPastForecasts(null);
       try {
         if (chartRef.current) d3.select(chartRef.current).selectAll('*').remove();
       } catch { /* container already detached; nothing to clean up */

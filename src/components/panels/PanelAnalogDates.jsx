@@ -89,7 +89,6 @@ export default function PanelAnalogDates(props) {
         criteria: (criteria && criteria.length > idx) ? criteria[idx] : null
       }));
     },
-    [workspace, activeForecastDate, methodId, configId, leadHours],
     {enabled, initialData: [], ttlMs: SHORT_TTL}
   );
 

@@ -29,9 +29,6 @@ export function SynthesisProvider({children}) {
   const [selectedLead, setSelectedLead] = useState(0);
   const [selectedTargetDate, setSelectedTargetDate] = useState(null);
 
-  // Reintroduced state for per-method synthesis
-  const [perMethodSynthesis, setPerMethodSynthesis] = useState([]);
-
   // Parse series_percentiles into daily/subDaily and base date
   const parseTotalSynthesis = useCallback((resp) => {
     const arr = Array.isArray(resp?.series_percentiles) ? resp.series_percentiles : [];
@@ -60,7 +57,6 @@ export function SynthesisProvider({children}) {
     async () => {
       return await getSynthesisTotal(workspace, activeForecastDate, BASELINE_PERCENTILE, BASELINE_NORMALIZATION_REF);
     },
-    [workspace, activeForecastDate],
     {enabled: !!totalSynthKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
 
@@ -107,7 +103,7 @@ export function SynthesisProvider({children}) {
   // Fetch per-method synthesis (baseline)
   const perMethodKey = workspace && activeForecastDate ? `synth_per_method|${workspace}|${activeForecastDate}|${BASELINE_PERCENTILE}` : null;
   const {
-    data: fetchedPerMethodData,
+    data: perMethodSynthesis,
     loading: perMethodSynthesisLoading,
     error: perMethodSynthesisError
   } = useCachedRequest(
@@ -116,14 +112,8 @@ export function SynthesisProvider({children}) {
       const resp = await getSynthesisPerMethod(workspace, activeForecastDate, BASELINE_PERCENTILE);
       return normalizePerMethodSynthesis(resp);
     },
-    [workspace, activeForecastDate],
     {enabled: !!workspace && !!activeForecastDate, initialData: [], ttlMs: DEFAULT_TTL}
   );
-
-  useEffect(() => {
-    // keep state name same for external API
-    if (fetchedPerMethodData) setPerMethodSynthesis(fetchedPerMethodData);
-  }, [fetchedPerMethodData]);
 
   // Public selection helper
   const selectTargetDate = useCallback((date, preferSub) => {

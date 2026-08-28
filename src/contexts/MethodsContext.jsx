@@ -45,7 +45,6 @@ export function MethodsProvider({children}) {
       keyRef.current = cacheKey;
       return fetched;
     },
-    [workspace, activeForecastDate, preloaded],
     {enabled: !!workspace && !!activeForecastDate, initialData: null, ttlMs: DEFAULT_TTL}
   );
 

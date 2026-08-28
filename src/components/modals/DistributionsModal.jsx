@@ -84,15 +84,10 @@ export default function DistributionsModal({open, onClose}) {
   // Get resolved IDs from the selector
   const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('dist_', open, selection);
 
-  const [analogValues, setAnalogValues] = useState(null);
-  const [criteriaValues, setCriteriaValues] = useState(null);
-
   const [tabIndex, setTabIndex] = useState(0);
   // options for precipitation plot (best analogs / return periods)
   const [options, setOptions] = useState({bestAnalogs: false, tenYearReturn: true, allReturnPeriods: false});
   const [bestAnalogsData, setBestAnalogsData] = useState(null);
-  const [percentileMarkers, setPercentileMarkers] = useState(null); // map percentile -> value
-  const [referenceValues, setReferenceValues] = useState(null); // { axis:number[], values:number[] }
   // trigger to force chart redraw on resize/tab change
   const [renderTick, setRenderTick] = useState(0);
 
@@ -120,73 +115,50 @@ export default function DistributionsModal({open, onClose}) {
   // Analog values via cache
   const analogKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null && selection.lead != null ?
     `dist_analogs|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}` : null;
-  const {data: analogResp, loading: analogLoading, error: analogError} = useCachedRequest(
+  const {data: analogRespRaw, loading: analogLoading, error: analogError} = useCachedRequest(
     analogKey,
     async () => normalizeAnalogsResponse(await getAnalogValues(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead)),
-    [workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead, open],
     {enabled: !!analogKey, initialData: [], ttlMs: SHORT_TTL}
   );
-  useEffect(() => {
-    setAnalogValues(Array.isArray(analogResp) ? analogResp : null);
-  }, [analogResp]);
-
+  const analogValues = Array.isArray(analogRespRaw) && analogRespRaw.length ? analogRespRaw : null;
   // Criteria via cache (per-lead; endpoint does not take entity)
   const criteriaKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && selection.lead != null ?
     `dist_criteria|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${selection.lead}` : null;
   const {data: criteriaResp, loading: criteriaLoading} = useCachedRequest(
     criteriaKey,
     async () => normalizeAnalogCriteriaArray(await getAnalogyCriteria(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, selection.lead)),
-    [workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, selection.lead, open],
     {enabled: !!criteriaKey, initialData: null, ttlMs: SHORT_TTL}
   );
-  useEffect(() => {
+  // Prefer API-provided criteria; otherwise derive them from the analog values for this lead.
+  const criteriaValues = useMemo(() => {
     if (Array.isArray(criteriaResp) && criteriaResp.length) {
-      setCriteriaValues(criteriaResp.map((v, i) => ({index: i + 1, value: v})).filter(x => x.value != null));
-    } else {
-      setCriteriaValues(null);
+      return criteriaResp.map((v, i) => ({index: i + 1, value: v})).filter(x => x.value != null);
     }
-  }, [criteriaResp]);
-
-  // Fallback: if no criteriaResp available, derive criteria from current analogValues for the selected lead
-  useEffect(() => {
-    if (Array.isArray(criteriaResp) && criteriaResp.length) return; // prefer API-provided criteria
     if (Array.isArray(analogValues) && analogValues.length) {
       const derived = analogValues
         .map(a => (a && a.criteria != null ? Number(a.criteria) : null))
         .filter(v => v != null && Number.isFinite(v));
-      if (derived.length) {
-        setCriteriaValues(derived.map((v, i) => ({index: i + 1, value: v})));
-      }
+      if (derived.length) return derived.map((v, i) => ({index: i + 1, value: v}));
     }
-    // otherwise keep as null
-  }, [criteriaResp, analogValues, selection.lead]);
+    return null;
+  }, [criteriaResp, analogValues]);
 
   // Percentile markers via cache
   const pctsKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null && selection.lead != null ?
     `dist_percentiles|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}` : null;
-  const {data: percentilesMap} = useCachedRequest(
+  const {data: percentileMarkers} = useCachedRequest(
     pctsKey,
     async () => normalizeAnalogPercentiles(await getAnalogValuesPercentiles(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead, [20, 60, 90])),
-    [workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead, open],
     {enabled: !!pctsKey, initialData: null, ttlMs: SHORT_TTL}
   );
-  useEffect(() => {
-    setPercentileMarkers(percentilesMap || null);
-  }, [percentilesMap]);
-
   // Reference values via cache
   const refKey = open && (options.tenYearReturn || options.allReturnPeriods) && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null ?
     `dist_reference|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}` : null;
-  const {data: refResp} = useCachedRequest(
+  const {data: referenceValues} = useCachedRequest(
     refKey,
     async () => normalizeReferenceValues(await getReferenceValues(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId)),
-    [workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, options.tenYearReturn, options.allReturnPeriods, open],
     {enabled: !!refKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
-  useEffect(() => {
-    setReferenceValues(refResp || null);
-  }, [refResp]);
-
   // Cleanup on close: reset and clear caches for this modal
   useEffect(() => {
     if (!open) {
@@ -205,11 +177,7 @@ export default function DistributionsModal({open, onClose}) {
         entityId: null,
         lead: null
       });
-      setAnalogValues(null);
-      setCriteriaValues(null);
       setBestAnalogsData(null);
-      setPercentileMarkers(null);
-      setReferenceValues(null);
       clearCachedRequests('dist_');
     }
   }, [open]);
@@ -235,7 +203,6 @@ export default function DistributionsModal({open, onClose}) {
   const {data: entitiesForExport} = useCachedRequest(
     entitiesForExportKey,
     async () => normalizeEntitiesResponse(await getEntities(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId)),
-    [workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, open],
     {enabled: !!entitiesForExportKey, initialData: [], ttlMs: DEFAULT_TTL}
   );
 

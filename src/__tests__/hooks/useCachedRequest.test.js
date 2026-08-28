@@ -10,7 +10,7 @@ describe('useCachedRequest', () => {
   it('should return initial data and loading state', () => {
     const fetchFn = vi.fn(() => Promise.resolve({data: 'test'}));
     const {result} = renderHook(() =>
-      useCachedRequest('test-key', fetchFn, [])
+      useCachedRequest('test-key', fetchFn)
     );
 
     expect(result.current.data).toBeNull();
@@ -22,7 +22,7 @@ describe('useCachedRequest', () => {
     const mockData = {data: 'test'};
     const fetchFn = vi.fn(() => Promise.resolve(mockData));
     const {result} = renderHook(() =>
-      useCachedRequest('test-key-unique-1', fetchFn, [])
+      useCachedRequest('test-key-unique-1', fetchFn)
     );
 
     await waitFor(() => {
@@ -37,7 +37,7 @@ describe('useCachedRequest', () => {
     const mockError = new Error('Fetch failed');
     const fetchFn = vi.fn(() => Promise.reject(mockError));
     const {result} = renderHook(() =>
-      useCachedRequest('test-key-unique-2', fetchFn, [])
+      useCachedRequest('test-key-unique-2', fetchFn)
     );
 
     await waitFor(() => {
@@ -52,7 +52,7 @@ describe('useCachedRequest', () => {
     const fetchFn = vi.fn(() => Promise.resolve(mockData));
 
     const {result, rerender} = renderHook(() =>
-      useCachedRequest('test-key-unique-3', fetchFn, [])
+      useCachedRequest('test-key-unique-3', fetchFn)
     );
 
     await waitFor(() => {
@@ -71,7 +71,7 @@ describe('useCachedRequest', () => {
   it('should skip fetch when enabled is false', () => {
     const fetchFn = vi.fn(() => Promise.resolve({data: 'test'}));
     renderHook(() =>
-      useCachedRequest('test-key', fetchFn, [], {enabled: false})
+      useCachedRequest('test-key', fetchFn, {enabled: false})
     );
 
     expect(fetchFn).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe('useCachedRequest', () => {
   it('should skip fetch when key is null', () => {
     const fetchFn = vi.fn(() => Promise.resolve({data: 'test'}));
     renderHook(() =>
-      useCachedRequest(null, fetchFn, [])
+      useCachedRequest(null, fetchFn)
     );
 
     expect(fetchFn).not.toHaveBeenCalled();
@@ -90,7 +90,7 @@ describe('useCachedRequest', () => {
     const initialData = {initial: 'value'};
     const fetchFn = vi.fn(() => Promise.resolve({data: 'test'}));
     const {result} = renderHook(() =>
-      useCachedRequest('test-key', fetchFn, [], {initialData})
+      useCachedRequest('test-key', fetchFn, {initialData})
     );
 
     // Initially should show initialData while loading
@@ -109,7 +109,7 @@ describe('useCachedRequest', () => {
   it('should provide cacheHit as alias for fromCache', async () => {
     const mockData = {data: 'test'};
     const fetchFn = vi.fn(() => Promise.resolve(mockData));
-    const {result, rerender} = renderHook(() => useCachedRequest('alias-key', fetchFn, []));
+    const {result, rerender} = renderHook(() => useCachedRequest('alias-key', fetchFn));
     await waitFor(() => expect(result.current.loading).toBe(false));
     rerender();
     expect(result.current.cacheHit).toBe(result.current.fromCache);

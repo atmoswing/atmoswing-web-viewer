@@ -4,7 +4,7 @@
  * Handles lead time resolution, availability detection, and percentile/normalization parameters.
  */
 
-import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import React, {createContext, useContext, useMemo} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {useSynthesis} from './SynthesisContext.jsx';
@@ -17,6 +17,9 @@ import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 const ForecastValuesContext = createContext({});
 
+// Stable identities for the empty case, so consumers memoising on these don't churn.
+const EMPTY_VALUES = {};
+
 /**
  * ForecastValuesProvider component.
  * @param {Object} props
@@ -28,23 +31,11 @@ export function ForecastValuesProvider({children}) {
   const {selectedMethodConfig, methodConfigTree} = useMethods();
   const {selectedLead, leadResolution, dailyLeads, subDailyLeads, selectedTargetDate} = useSynthesis();
 
-  const [forecastValuesNorm, setForecastValuesNorm] = useState({});
-  const [forecastValues, setForecastValues] = useState({});
-  const [forecastLoading, setForecastLoading] = useState(false);
-  const [forecastError, setForecastError] = useState(null);
-  const [forecastUnavailable, setForecastUnavailable] = useState(false);
-
-  // Immediate availability feedback based on selection vs leads
-  useEffect(() => {
-    if (!isMethodSelectionValid(selectedMethodConfig, workspace) || !activeForecastDate) {
-      setForecastUnavailable(false);
-      return;
-    }
-    if (!selectedTargetDate) {
-      setForecastUnavailable(false);
-      return;
-    }
-    setForecastUnavailable(!hasTargetDate(leadResolution, selectedTargetDate, dailyLeads, subDailyLeads));
+  // Immediate availability feedback: the selected target date is not among the known leads.
+  const targetDateMissing = useMemo(() => {
+    if (!isMethodSelectionValid(selectedMethodConfig, workspace) || !activeForecastDate) return false;
+    if (!selectedTargetDate) return false;
+    return !hasTargetDate(leadResolution, selectedTargetDate, dailyLeads, subDailyLeads);
   }, [selectedMethodConfig, workspace, activeForecastDate, leadResolution, selectedTargetDate, dailyLeads, subDailyLeads]);
 
   const leadHours = computeLeadHours(forecastBaseDate, selectedTargetDate, leadResolution, selectedLead, dailyLeads, subDailyLeads);
@@ -53,7 +44,7 @@ export function ForecastValuesProvider({children}) {
   const configId = selectedMethodConfig?.config?.id;
   const key = canQuery ? keyForForecastValues(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef) : null;
 
-  const {data: valuesData, loading: valuesReqLoading, error: valuesReqError} = useCachedRequest(
+  const {data: valuesData, loading: forecastLoading, error: forecastError} = useCachedRequest(
     key,
     async () => {
       const resp = configId
@@ -61,41 +52,18 @@ export function ForecastValuesProvider({children}) {
         : await getAggregatedEntitiesValues(workspace, activeForecastDate, methodId, leadHours, percentile, normalizationRef);
       return normalizeForecastValuesResponse(resp);
     },
-    [workspace, activeForecastDate, selectedMethodConfig, percentile, normalizationRef, selectedLead, leadResolution, dailyLeads, subDailyLeads, forecastBaseDate, selectedTargetDate, methodConfigTree],
     {enabled: !!key, initialData: null, ttlMs: SHORT_TTL}
   );
 
-  useEffect(() => {
-    if (!key) {
-      setForecastValuesNorm({});
-      setForecastValues({});
-      setForecastLoading(false);
-      setForecastError(null);
-      // don't leave stale "unavailable" if nothing is selected
-      setForecastUnavailable(false);
-      return;
-    }
-    // entering a new fetch cycle: clear stale unavailable while loading
-    setForecastLoading(valuesReqLoading);
-    setForecastError(valuesReqError || null);
-    if (valuesReqLoading) {
-      setForecastUnavailable(false);
-    }
-    if (valuesData) {
-      setForecastValuesNorm(valuesData.norm || {});
-      setForecastValues(valuesData.raw || {});
-      setForecastUnavailable(!!valuesData.unavailable);
-    }
-  }, [key, valuesData, valuesReqLoading, valuesReqError]);
+  const forecastValuesNorm = valuesData?.norm || EMPTY_VALUES;
+  const forecastValues = valuesData?.raw || EMPTY_VALUES;
 
-  // Clear all data when workspace changes
-  useEffect(() => {
-    setForecastValuesNorm({});
-    setForecastValues({});
-    setForecastLoading(false);
-    setForecastError(null);
-    setForecastUnavailable(false);
-  }, [workspace]);
+  // Nothing selected, or a fetch in flight, must not show a stale "unavailable" overlay.
+  // Once a response is in, it is authoritative; otherwise fall back to the lead check.
+  let forecastUnavailable = false;
+  if (key && !forecastLoading) {
+    forecastUnavailable = valuesData ? !!valuesData.unavailable : targetDateMissing;
+  }
 
   const value = useMemo(() => ({
     forecastValues,

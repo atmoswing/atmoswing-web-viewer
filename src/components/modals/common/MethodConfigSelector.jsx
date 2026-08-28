@@ -72,7 +72,6 @@ export default function MethodConfigSelector(
   const {data: methodsData, loading: methodsLoading, error: methodsError} = useCachedRequest(
     methodsCacheKey,
     async () => getMethodsAndConfigs(workspace, activeForecastDate),
-    [workspace, activeForecastDate, open],
     {enabled: !!methodsCacheKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
 
@@ -118,7 +117,6 @@ export default function MethodConfigSelector(
       const resp = await getEntities(workspace, activeForecastDate, selectedMethodId, resolvedConfig);
       return normalizeEntitiesResponse(resp);
     },
-    [workspace, activeForecastDate, selectedMethodId, resolvedConfig, open],
     {enabled: !!entitiesCacheKey, initialData: [], ttlMs: DEFAULT_TTL}
   );
 
@@ -179,7 +177,6 @@ export default function MethodConfigSelector(
         return {lead: leadNum, date: d, label};
       }).filter(x => x.lead != null && !isNaN(x.lead));
     },
-    [workspace, activeForecastDate, selectedMethodId, resolvedConfig, selectedStationId, forecastBaseDate, open],
     {enabled: !!leadsCacheKey, initialData: [], ttlMs: SHORT_TTL}
   );
 
@@ -224,7 +221,6 @@ export default function MethodConfigSelector(
       );
       return Object.fromEntries(results);
     },
-    [workspace, activeForecastDate, selectedMethodId, selectedStationId, methodsData, open],
     {enabled: !!relevanceKey && !!methodsData?.methods?.length, initialData: null, ttlMs: DEFAULT_TTL}
   );
 
@@ -478,7 +474,6 @@ export function useModalSelectionData(cachePrefix, open, selection) {
   const {data: methodsData} = useCachedRequest(
     methodsCacheKey,
     async () => getMethodsAndConfigs(workspace, activeForecastDate),
-    [workspace, activeForecastDate, open],
     {enabled: !!methodsCacheKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
 

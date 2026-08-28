@@ -1,10 +1,11 @@
 /**
  * @module contexts/EntitiesContext
  * @description Manages fetching and caching of forecast entities (stations/points) and relevant subsets.
- * Handles automatic clearing on workspace or configuration changes and derives cache keys.
+ * Selection changes are expressed through the cache keys, so the request hook clears itself
+ * whenever the workspace, date or method/config selection stops being queryable.
  */
 
-import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {createContext, useContext, useMemo} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {getEntities, getRelevantEntities} from '@/services/api.js';
@@ -29,76 +30,34 @@ const EntitiesContext = createContext({});
  * @returns {React.ReactElement}
  */
 export function EntitiesProvider({children}) {
-  const {workspace, activeForecastDate, resetVersion} = useForecastSession();
+  const {workspace, activeForecastDate} = useForecastSession();
   const {selectedMethodConfig, methodConfigTree, methodsLoading} = useMethods();
-
-  const [entities, setEntities] = useState([]);
-  const [entitiesLoading, setEntitiesLoading] = useState(false);
-  const [entitiesError, setEntitiesError] = useState(null);
-  const [relevantEntities, setRelevantEntities] = useState(null);
-
-  const prevWorkspaceRef = useRef(workspace);
-  const prevConfigRef = useRef(selectedMethodConfig?.config?.id || null);
-
-  // Clear derived state on session reset or workspace change
-  useEffect(() => {
-    if (prevWorkspaceRef.current !== workspace) {
-      setEntities([]);
-      setRelevantEntities(null);
-      prevWorkspaceRef.current = workspace;
-    }
-  }, [workspace]);
-
-  useEffect(() => {
-    const currConfigId = selectedMethodConfig?.config?.id || null;
-    if (prevConfigRef.current !== currConfigId) {
-      setRelevantEntities(null);
-      prevConfigRef.current = currConfigId;
-    }
-  }, [selectedMethodConfig]);
-
-  useEffect(() => {
-    setEntities([]);
-    setRelevantEntities(null);
-  }, [resetVersion]);
 
   const effectiveConfigId = deriveConfigId(selectedMethodConfig, methodConfigTree);
   const canQueryEntities = !!workspace && !!activeForecastDate && !methodsLoading && isMethodSelectionValid(selectedMethodConfig, workspace) && !!effectiveConfigId && methodExists(methodConfigTree, selectedMethodConfig?.method?.id);
 
   const entitiesKey = canQueryEntities ? keyForEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId) : null;
 
-  const {data: entitiesData, loading: entitiesReqLoading, error: entitiesReqError} = useCachedRequest(
+  const {data: entities, loading: entitiesLoading, error: entitiesError} = useCachedRequest(
     entitiesKey,
     async () => {
       const resp = await getEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId);
       return normalizeEntitiesResponse(resp);
     },
-    [workspace, activeForecastDate, selectedMethodConfig, effectiveConfigId, methodConfigTree, methodsLoading],
     {enabled: !!entitiesKey, initialData: [], ttlMs: DEFAULT_TTL}
   );
-
-  useEffect(() => {
-    setEntities(entitiesData || []);
-    setEntitiesLoading(!!entitiesReqLoading);
-    setEntitiesError(entitiesReqError || null);
-  }, [entitiesData, entitiesReqLoading, entitiesReqError]);
 
   const canQueryRelevant = canQueryEntities && !!selectedMethodConfig?.config?.id;
   const relevantKey = canQueryRelevant ? keyForRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id) : null;
 
-  const {data: relevantData} = useCachedRequest(
+  const {data: relevantEntities} = useCachedRequest(
     relevantKey,
     async () => {
       const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id);
       return normalizeRelevantEntityIds(resp);
     },
-    [workspace, activeForecastDate, selectedMethodConfig, methodConfigTree],
     {enabled: !!relevantKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
-
-  useEffect(() => {
-    setRelevantEntities(relevantData || null);
-  }, [relevantData]);
 
   const value = useMemo(() => ({
     entities,
