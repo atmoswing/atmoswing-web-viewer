@@ -14,25 +14,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import Popper from '@mui/material/Popper';
 import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
-import {
-  getReferenceValues,
-  getRelevantEntities,
-  getSeriesBestAnalogs,
-  getSeriesValuesPercentiles,
-  getSeriesValuesPercentilesHistory
-} from '@/services/api.js';
-import {parseForecastDate} from '@/utils/forecastDateUtils.js';
-import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
-import {
-  normalizeReferenceValues,
-  normalizeSeriesBestAnalogs,
-  normalizeSeriesValuesPercentiles,
-  normalizeSeriesValuesPercentilesHistory
-} from '@/utils/apiNormalization.js';
+import {useTimeSeriesData} from './hooks/useTimeSeriesData.js';
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
-import {DEFAULT_PCTS, FULL_PCTS} from './common/plotConstants.js';
 import {
   exportChartPDF,
   exportChartPNG,
@@ -48,8 +32,8 @@ export default function TimeSeriesModal() {
    * @returns {React.ReactElement|null}
    */
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
-  const {selectedMethodConfig, methodConfigTree} = useMethods();
-  const {workspace, activeForecastDate} = useForecastSession();
+  const {selectedMethodConfig} = useMethods();
+  const {activeForecastDate} = useForecastSession();
   const {entities} = useEntities();
   const {t} = useTranslation();
 
@@ -62,9 +46,6 @@ export default function TimeSeriesModal() {
     allReturnPeriods: false,
     previousForecasts: false,
   });
-
-  // Percentile sets used for requests (arrays lifted out of component to stabilize deps)
-  const requestedPercentiles = useMemo(() => (options.allQuantiles ? FULL_PCTS : DEFAULT_PCTS), [options.allQuantiles]);
 
   const handleOptionChange = (key) => (e) => {
     const checked = e.target.checked;
@@ -81,138 +62,27 @@ export default function TimeSeriesModal() {
     });
   };
 
+  const {
+    series,
+    referenceValues,
+    bestAnalogs,
+    pastForecasts,
+    loading,
+    error,
+    resolvedConfigId,
+    resolvingConfig
+  } = useTimeSeriesData(options);
+
   const chartRef = useRef(null);
   // Tooltip state for best analogs (MUI Popper anchored to hovered D3 circle)
   const [analogTooltip, setAnalogTooltip] = useState({open: false, anchorEl: null, title: ''});
 
-  const [autoConfigId, setAutoConfigId] = useState(null);
-  const [resolvingConfig, setResolvingConfig] = useState(false);
-  const autoConfigCache = useRef(new Map()); // key: workspace|date|methodId|entityId -> configId
-
-  // Effect to auto-determine config for selected entity if none chosen explicitly
-  useEffect(() => {
-    let cancelled = false;
-
-    async function resolve() {
-      // Reset previous auto config when dependencies change
-      setAutoConfigId(null);
-      setResolvingConfig(false);
-      if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || selectedMethodConfig?.config || selectedEntityId == null) {
-        // Explicit config selected or insufficient info; nothing to resolve
-        return;
-      }
-      const methodNode = methodConfigTree.find(m => m.id === selectedMethodConfig.method.id);
-      if (!methodNode || !methodNode.children?.length) {
-        return;
-      }
-      const cacheKey = `${workspace}|${selectedMethodConfig.method.id}|${selectedEntityId}`;
-      if (autoConfigCache.current.has(cacheKey)) {
-        setAutoConfigId(autoConfigCache.current.get(cacheKey));
-        return;
-      }
-      setResolvingConfig(true);
-      // Try each config until entity is relevant
-      for (const cfg of methodNode.children) {
-        try {
-          const rel = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, cfg.id);
-          if (cancelled) return;
-          if (Array.isArray(rel?.entities) && rel.entities.find(e => e.id === selectedEntityId)) {
-            autoConfigCache.current.set(cacheKey, cfg.id);
-            setAutoConfigId(cfg.id);
-            setResolvingConfig(false);
-            return;
-          }
-        } catch {
-          if (cancelled) return; // ignore individual errors and continue
-        }
-      }
-      // Fallback to first config if none matched
-      const fallback = methodNode.children[0].id;
-      autoConfigCache.current.set(cacheKey, fallback);
-      if (!cancelled) {
-        setAutoConfigId(fallback);
-        setResolvingConfig(false);
-      }
-    }
-
-    resolve();
-    return () => {
-      cancelled = true;
-    };
-  }, [workspace, activeForecastDate, selectedMethodConfig, selectedEntityId, methodConfigTree]);
-
-  const resolvedConfigId = useMemo(() => {
-    if (!selectedMethodConfig?.method) return null;
-    if (selectedMethodConfig.config) return selectedMethodConfig.config.id; // user selection overrides
-    if (resolvingConfig) return null; // delay until auto config determined
-    if (autoConfigId) return autoConfigId;
-    return null; // no config yet
-  }, [selectedMethodConfig, autoConfigId, resolvingConfig]);
-
-  // Series via useCachedRequest with normalization
-  const seriesKey = useMemo(() => {
-    if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
-    const pctsKey = requestedPercentiles?.length ? requestedPercentiles.join(',') : '';
-    return `series|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}|${pctsKey}`;
-  }, [workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId, requestedPercentiles]);
-  const {data: series, loading, error} = useCachedRequest(
-    seriesKey,
-    async () => {
-      const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId, requestedPercentiles);
-      return normalizeSeriesValuesPercentiles(resp, parseForecastDate);
-    },
-    {enabled: !!seriesKey, initialData: null, ttlMs: SHORT_TTL}
-  );
   const stationName = useMemo(() => {
     if (selectedEntityId == null) return '';
     const match = entities?.find(e => e.id === selectedEntityId);
     return match?.name || match?.id || selectedEntityId;
   }, [selectedEntityId, entities]);
 
-  const referenceKey = useMemo(() => {
-    if (!(options.tenYearReturn || options.allReturnPeriods)) return null;
-    if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
-    return `series_ref|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
-  }, [options.tenYearReturn, options.allReturnPeriods, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-  const {data: referenceValues} = useCachedRequest(
-    referenceKey,
-    async () => {
-      const resp = await getReferenceValues(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
-      return normalizeReferenceValues(resp);
-    },
-    {enabled: !!referenceKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
-  const bestAnalogsKey = useMemo(() => {
-    if (!options.bestAnalogs) return null;
-    if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
-    return `series_bestanalogs|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
-  }, [options.bestAnalogs, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-  const {data: bestAnalogs} = useCachedRequest(
-    bestAnalogsKey,
-    async () => {
-      const resp = await getSeriesBestAnalogs(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
-      const parsed = normalizeSeriesBestAnalogs(resp, parseForecastDate);
-      if (parsed && Array.isArray(parsed.items)) {
-        // add labels for display consistency
-        parsed.items = parsed.items.map((it, idx) => ({label: t('seriesModal.analogWithIndex', {index: idx + 1}), ...it}));
-      }
-      return parsed;
-    },
-    {enabled: !!bestAnalogsKey, initialData: null, ttlMs: SHORT_TTL}
-  );
-  const pastKey = useMemo(() => {
-    if (!options.previousForecasts) return null;
-    if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || !resolvedConfigId || selectedEntityId == null) return null;
-    return `series_history|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${resolvedConfigId}|${selectedEntityId}`;
-  }, [options.previousForecasts, workspace, activeForecastDate, selectedMethodConfig, resolvedConfigId, selectedEntityId]);
-  const {data: pastForecasts} = useCachedRequest(
-    pastKey,
-    async () => {
-      const resp = await getSeriesValuesPercentilesHistory(workspace, activeForecastDate, selectedMethodConfig.method.id, resolvedConfigId, selectedEntityId);
-      return normalizeSeriesValuesPercentilesHistory(resp, parseForecastDate);
-    },
-    {enabled: !!pastKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
   const handleClose = () => setSelectedEntityId(null);
 
   const showHover = (anchorEl, title) => setAnalogTooltip({open: true, anchorEl, title});

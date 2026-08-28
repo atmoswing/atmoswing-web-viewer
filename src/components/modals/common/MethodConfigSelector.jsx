@@ -4,7 +4,7 @@
  * Handles chained data fetching, validity maintenance and relevance highlighting.
  */
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useMemo} from 'react';
 import {
   Box,
   CircularProgress,
@@ -16,21 +16,8 @@ import {
   Typography
 } from '@mui/material';
 import {useTranslation} from 'react-i18next';
-import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
-import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {
-  getEntities,
-  getMethodsAndConfigs,
-  getRelevantEntities,
-  getSeriesValuesPercentiles
-} from '@/services/api.js';
-import {
-  extractTargetDatesArray,
-  normalizeEntitiesResponse,
-  normalizeRelevantEntityIds
-} from '@/utils/apiNormalization.js';
-import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
-import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
+import {useMethodConfigOptions} from '../hooks/useMethodConfigOptions.js';
+import {useSelectionDefaults} from '../hooks/useSelectionDefaults.js';
 
 /**
  * MethodConfigSelector component.
@@ -51,7 +38,6 @@ export default function MethodConfigSelector(
     children
   }
 ) {
-  const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();
   const {t} = useTranslation();
 
   const {
@@ -61,191 +47,21 @@ export default function MethodConfigSelector(
     lead: selectedLead
   } = value;
 
-  // Relevant config highlighting: configId -> boolean
-  const relevantRef = useRef(new Map());
-  const [, setRelevantMapVersion] = useState(0);
+  const {
+    methodOptions,
+    methodsLoading,
+    methodsError,
+    configsForSelectedMethod,
+    stations,
+    stationsLoading,
+    stationsError,
+    leads,
+    leadsLoading,
+    leadsError,
+    relevantConfigIds
+  } = useMethodConfigOptions({cachePrefix, open, value});
 
-  // METHODS via cached request
-  const methodsCacheKey = open && workspace && activeForecastDate
-    ? `${cachePrefix}methods|${workspace}|${activeForecastDate}`
-    : null;
-  const {data: methodsData, loading: methodsLoading, error: methodsError} = useCachedRequest(
-    methodsCacheKey,
-    async () => getMethodsAndConfigs(workspace, activeForecastDate),
-    {enabled: !!methodsCacheKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
-
-  // Default select first method/config when methodsData arrives
-  useEffect(() => {
-    if (!open || !methodsData?.methods?.length) return;
-    const first = methodsData.methods[0];
-    const updates = {};
-    if (!selectedMethodId) updates.methodId = first.id;
-    if (!selectedConfigId && first.configurations?.length) {
-      updates.configId = first.configurations[0].id;
-    }
-    if (Object.keys(updates).length > 0) {
-      onChange({...value, ...updates});
-    }
-  }, [methodsData, open, selectedMethodId, selectedConfigId, onChange, value]);
-
-  // Ensure a config gets selected if method changes
-  useEffect(() => {
-    if (!methodsData?.methods || !selectedMethodId) return;
-    const m = methodsData.methods.find(mm => mm.id === selectedMethodId);
-    if (!m) return;
-    if (!selectedConfigId && m.configurations?.length) {
-      onChange({...value, configId: m.configurations[0].id});
-    }
-  }, [methodsData, selectedMethodId, selectedConfigId, onChange, value]);
-
-  // Resolve config ID
-  const resolvedConfig = useMemo(() => {
-    if (!methodsData?.methods) return null;
-    const m = methodsData.methods.find(mm => mm.id === selectedMethodId);
-    if (!m) return null;
-    return selectedConfigId || (m.configurations?.[0]?.id) || null;
-  }, [methodsData, selectedMethodId, selectedConfigId]);
-
-  // ENTITIES via cached request
-  const entitiesCacheKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfig
-    ? `${cachePrefix}entities|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfig}`
-    : null;
-  const {data: entitiesDataRaw, loading: stationsLoading, error: stationsError} = useCachedRequest(
-    entitiesCacheKey,
-    async () => {
-      const resp = await getEntities(workspace, activeForecastDate, selectedMethodId, resolvedConfig);
-      return normalizeEntitiesResponse(resp);
-    },
-    {enabled: !!entitiesCacheKey, initialData: [], ttlMs: DEFAULT_TTL}
-  );
-
-  // Process and sort entities
-  const stations = useMemo(() => {
-    if (!Array.isArray(entitiesDataRaw)) return [];
-    return [...entitiesDataRaw].sort(compareEntitiesByName);
-  }, [entitiesDataRaw]);
-
-  // Set default entity and maintain validity
-  useEffect(() => {
-    if (!open || !stations.length) return;
-    const updates = {};
-    if (selectedStationId == null) {
-      // No entity selected, pick the first
-      updates.entityId = stations[0].id;
-    } else if (!stations.find(e => e.id === selectedStationId)) {
-      // Previously selected entity is no longer available, pick the first
-      updates.entityId = stations[0].id;
-    }
-    // Otherwise, keep the current selectedStationId (it's still valid)
-    if (Object.keys(updates).length > 0) {
-      onChange({...value, ...updates});
-    }
-  }, [stations, open, selectedStationId, onChange, value]);
-
-  // LEADS via cached request (series percentiles)
-  // The cached entry holds lead numbers computed against forecastBaseDate, so the base date is
-  // part of the key: it arrives asynchronously and would otherwise pin the first value computed.
-  // 'resp' marks the branch that falls back to the response's own forecast_date.
-  const leadsBasePart = (forecastBaseDate && !isNaN(forecastBaseDate.getTime()))
-    ? forecastBaseDate.getTime()
-    : 'resp';
-  const leadsCacheKey = open && workspace && activeForecastDate && selectedMethodId && resolvedConfig && selectedStationId != null
-    ? `${cachePrefix}leads|${workspace}|${activeForecastDate}|${selectedMethodId}|${resolvedConfig}|${selectedStationId}|${leadsBasePart}`
-    : null;
-  const {data: leadsRaw, loading: leadsLoading, error: leadsError} = useCachedRequest(
-    leadsCacheKey,
-    async () => {
-      const resp = await getSeriesValuesPercentiles(
-        workspace,
-        activeForecastDate,
-        selectedMethodId,
-        resolvedConfig,
-        selectedStationId
-      );
-      const rawDates = extractTargetDatesArray(resp);
-      const baseDate = (forecastBaseDate && !isNaN(forecastBaseDate.getTime()))
-        ? forecastBaseDate
-        : (resp?.parameters?.forecast_date ? new Date(resp.parameters.forecast_date) : null);
-
-      return rawDates.map(s => {
-        let d = null;
-        try {
-          d = s ? new Date(s) : null;
-          if (d && isNaN(d)) d = null;
-        } catch {
-          d = null;
-        }
-        const label = d ? formatDateLabel(d) : String(s);
-        const leadNum = (d && baseDate && !isNaN(baseDate.getTime()))
-          ? Math.round((d.getTime() - baseDate.getTime()) / 3600000)
-          : null;
-        return {lead: leadNum, date: d, label};
-      }).filter(x => x.lead != null && !isNaN(x.lead));
-    },
-    {enabled: !!leadsCacheKey, initialData: [], ttlMs: SHORT_TTL}
-  );
-
-  const leads = useMemo(() => Array.isArray(leadsRaw) ? leadsRaw : [], [leadsRaw]);
-
-  // Set default lead and maintain validity
-  useEffect(() => {
-    if (!leads.length) return;
-    const updates = {};
-    if (selectedLead == null || selectedLead === '') {
-      // No lead selected, pick the first
-      updates.lead = leads[0].lead;
-    } else if (!leads.find(l => l.lead === selectedLead)) {
-      // Previously selected lead is no longer available, pick the first
-      updates.lead = leads[0].lead;
-    }
-    // Otherwise, keep the current selectedLead (it's still valid)
-    if (Object.keys(updates).length > 0) {
-      onChange({...value, ...updates});
-    }
-  }, [leads, selectedLead, onChange, value]);
-
-  // Cached relevance map (configId -> boolean) for selected entity
-  const relevanceKey = open && workspace && activeForecastDate && selectedMethodId && selectedStationId != null
-    ? `${cachePrefix}relevance|${workspace}|${activeForecastDate}|${selectedMethodId}|${selectedStationId}`
-    : null;
-  const {data: relevanceMap, loading: relevanceLoading} = useCachedRequest(
-    relevanceKey,
-    async () => {
-      const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-      if (!methodNode?.configurations) return {};
-      const results = await Promise.all(
-        methodNode.configurations.map(async cfg => {
-          try {
-            const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodId, cfg.id);
-            const idsSet = normalizeRelevantEntityIds(resp);
-            return [cfg.id, idsSet.has(selectedStationId)];
-          } catch {
-            return [cfg.id, false];
-          }
-        })
-      );
-      return Object.fromEntries(results);
-    },
-    {enabled: !!relevanceKey && !!methodsData?.methods?.length, initialData: null, ttlMs: DEFAULT_TTL}
-  );
-
-  useEffect(() => {
-    if (relevanceMap && typeof relevanceMap === 'object') {
-      relevantRef.current = new Map(Object.entries(relevanceMap));
-      setRelevantMapVersion(v => v + 1);
-    } else if (!relevanceLoading && relevanceKey) {
-      relevantRef.current.clear();
-      setRelevantMapVersion(v => v + 1);
-    }
-  }, [relevanceMap, relevanceLoading, relevanceKey]);
-
-  const methodOptions = useMemo(() => methodsData?.methods || [], [methodsData]);
-
-  const configsForSelectedMethod = useMemo(() => {
-    const m = methodOptions.find(x => x.id === selectedMethodId);
-    return m?.configurations || [];
-  }, [methodOptions, selectedMethodId]);
+  useSelectionDefaults({open, value, onChange, methodOptions, stations, leads});
 
   // Ensure selected values exist in available options, otherwise use empty string
   const safeMethodId = useMemo(() => {
@@ -270,7 +86,7 @@ export default function MethodConfigSelector(
 
   // Render helpers
   const renderConfigLabel = (cfg) => {
-    const relevant = !!relevantRef.current.get(cfg.id);
+    const relevant = !!relevantConfigIds.get(cfg.id);
     return (
       <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
         <ListItemText primary={cfg.name || cfg.id}/>
@@ -295,8 +111,6 @@ export default function MethodConfigSelector(
       methodId: newMethodId,
       configId: configStillValid ? selectedConfigId : null
     });
-    relevantRef.current.clear();
-    setRelevantMapVersion(v => v + 1);
   };
 
   const handleConfigChange = (e) => {
@@ -305,7 +119,6 @@ export default function MethodConfigSelector(
 
   const handleEntityChange = (e) => {
     onChange({...value, entityId: e.target.value});
-    setRelevantMapVersion(v => v + 1);
   };
 
   const handleLeadChange = (e) => {

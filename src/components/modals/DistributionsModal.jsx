@@ -4,7 +4,7 @@
  * Provides percentile markers, reference return periods, best analog overlays and export options.
  */
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -21,25 +21,9 @@ import {
   Typography
 } from '@mui/material';
 import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
-import {
-  getAnalogValues,
-  getAnalogValuesPercentiles,
-  getAnalogyCriteria,
-  getEntities,
-  getReferenceValues
-} from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
-// add caching + normalizers + shared components
-import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {
-  normalizeAnalogCriteriaArray,
-  normalizeAnalogPercentiles,
-  normalizeAnalogsResponse,
-  normalizeEntitiesResponse,
-  normalizeReferenceValues
-} from '@/utils/apiNormalization.js';
-import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
+import {useDistributionData} from './hooks/useDistributionData.js';
 import ExportMenu from './common/ExportMenu.jsx';
 import {
   exportChartPDF,
@@ -51,7 +35,6 @@ import {
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
-import {useModalSelectionData} from './common/useModalSelectionData.js';
 
 function TabPanel({children, value, index, ...other}) {
   return (
@@ -71,7 +54,7 @@ export default function DistributionsModal({open, onClose}) {
    * @param {Function} props.onClose - Close callback
    * @returns {React.ReactElement}
    */
-  const {workspace, activeForecastDate} = useForecastSession();
+  const {activeForecastDate} = useForecastSession();
   const {t} = useTranslation();
 
   // Local selections managed by shared selector component
@@ -82,19 +65,29 @@ export default function DistributionsModal({open, onClose}) {
     lead: null
   });
 
-  // Get resolved IDs from the selector
-  const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('dist_', open, selection);
-
   const [tabIndex, setTabIndex] = useState(0);
   // options for precipitation plot (best analogs / return periods)
   const [options, setOptions] = useState({bestAnalogs: false, tenYearReturn: true, allReturnPeriods: false});
-  const [bestAnalogsData, setBestAnalogsData] = useState(null);
   // trigger to force chart redraw on resize/tab change
   const [renderTick, setRenderTick] = useState(0);
 
   // chart refs
   const precipRef = useRef(null);
   const critRef = useRef(null);
+
+  const {
+    analogValues,
+    analogLoading,
+    analogError,
+    criteriaValues,
+    criteriaLoading,
+    bestAnalogsData,
+    percentileMarkers,
+    referenceValues,
+    stationName,
+    resolvedMethodId,
+    resolvedConfigId
+  } = useDistributionData({open, selection, options});
 
   // redraw on window resize (debounced)
   useEffect(() => {
@@ -112,55 +105,8 @@ export default function DistributionsModal({open, onClose}) {
     };
   }, []);
 
-
-  // Analog values via cache
-  const analogKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null && selection.lead != null ?
-    `dist_analogs|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}` : null;
-  const {data: analogRespRaw, loading: analogLoading, error: analogError} = useCachedRequest(
-    analogKey,
-    async () => normalizeAnalogsResponse(await getAnalogValues(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead)),
-    {enabled: !!analogKey, initialData: [], ttlMs: SHORT_TTL}
-  );
-  const analogValues = Array.isArray(analogRespRaw) && analogRespRaw.length ? analogRespRaw : null;
-  // Criteria via cache (per-lead; endpoint does not take entity)
-  const criteriaKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && selection.lead != null ?
-    `dist_criteria|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${selection.lead}` : null;
-  const {data: criteriaResp, loading: criteriaLoading} = useCachedRequest(
-    criteriaKey,
-    async () => normalizeAnalogCriteriaArray(await getAnalogyCriteria(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, selection.lead)),
-    {enabled: !!criteriaKey, initialData: null, ttlMs: SHORT_TTL}
-  );
-  // Prefer API-provided criteria; otherwise derive them from the analog values for this lead.
-  const criteriaValues = useMemo(() => {
-    if (Array.isArray(criteriaResp) && criteriaResp.length) {
-      return criteriaResp.map((v, i) => ({index: i + 1, value: v})).filter(x => x.value != null);
-    }
-    if (Array.isArray(analogValues) && analogValues.length) {
-      const derived = analogValues
-        .map(a => (a && a.criteria != null ? Number(a.criteria) : null))
-        .filter(v => v != null && Number.isFinite(v));
-      if (derived.length) return derived.map((v, i) => ({index: i + 1, value: v}));
-    }
-    return null;
-  }, [criteriaResp, analogValues]);
-
-  // Percentile markers via cache
-  const pctsKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null && selection.lead != null ?
-    `dist_percentiles|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}` : null;
-  const {data: percentileMarkers} = useCachedRequest(
-    pctsKey,
-    async () => normalizeAnalogPercentiles(await getAnalogValuesPercentiles(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead, [20, 60, 90])),
-    {enabled: !!pctsKey, initialData: null, ttlMs: SHORT_TTL}
-  );
-  // Reference values via cache
-  const refKey = open && (options.tenYearReturn || options.allReturnPeriods) && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null ?
-    `dist_reference|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}` : null;
-  const {data: referenceValues} = useCachedRequest(
-    refKey,
-    async () => normalizeReferenceValues(await getReferenceValues(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId)),
-    {enabled: !!refKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
-  // Cleanup on close: reset and clear caches for this modal
+  // Cleanup on close: the request keys go null with `open`, so only the chart DOM
+  // and the local selection need resetting.
   useEffect(() => {
     if (!open) {
       // Clear chart containers immediately for visual cleanup
@@ -178,7 +124,6 @@ export default function DistributionsModal({open, onClose}) {
         entityId: null,
         lead: null
       });
-      setBestAnalogsData(null);
     }
   }, [open]);
 
@@ -197,19 +142,6 @@ export default function DistributionsModal({open, onClose}) {
     });
   };
 
-  // Export helpers and filename builder - fetch entities for display name
-  const entitiesForExportKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId ?
-    `dist_entities|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}` : null;
-  const {data: entitiesForExport} = useCachedRequest(
-    entitiesForExportKey,
-    async () => normalizeEntitiesResponse(await getEntities(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId)),
-    {enabled: !!entitiesForExportKey, initialData: [], ttlMs: DEFAULT_TTL}
-  );
-
-  const stationName = useMemo(() => {
-    const match = entitiesForExport?.find(s => s.id === resolvedEntityId);
-    return match?.name || match?.id || resolvedEntityId || '';
-  }, [entitiesForExport, resolvedEntityId]);
   const buildExportFilenamePrefix = () => {
     const datePart = formatExportDatePart(activeForecastDate);
     const entityPart = safeForFilename(stationName || 'entity');
@@ -227,38 +159,6 @@ export default function DistributionsModal({open, onClose}) {
   const exportSVG = () => exportChartSVG(findCurrentChartSVG(), buildExportFilenamePrefix());
   const exportPNG = () => exportChartPNG(findCurrentChartSVG(), buildExportFilenamePrefix());
   const exportPDF = () => exportChartPDF(findCurrentChartSVG(), buildExportFilenamePrefix());
-
-  // Draw precipitation distribution
-  useEffect(() => {
-    // removed: drawing moved to PrecipitationDistributionChart
-  }, []);
-
-  // Draw criteria distribution
-  useEffect(() => {
-    // removed: drawing moved to CriteriaDistributionChart
-  }, []);
-
-
-  // Derive 10 best analogs from already loaded analogValues when option enabled
-  useEffect(() => {
-    setBestAnalogsData(null);
-    if (!options.bestAnalogs) return;
-    const list = Array.isArray(analogValues) ? analogValues : [];
-    if (!list.length) return;
-    // Prefer sorting by criteria (ascending = better) if available, otherwise by rank ascending
-    const withCriteria = list.filter(a => a && a.criteria != null && isFinite(Number(a.criteria)) && a.value != null && isFinite(Number(a.value)));
-    const withValue = list.filter(a => a && a.value != null && isFinite(Number(a.value)));
-    let selected;
-    if (withCriteria.length >= 10) {
-      selected = [...withCriteria].sort((a, b) => Number(a.criteria) - Number(b.criteria)).slice(0, 10);
-    } else {
-      selected = [...withValue].sort((a, b) => (Number(a.rank ?? Infinity) - Number(b.rank ?? Infinity))).slice(0, 10);
-    }
-    if (selected.length) {
-      setBestAnalogsData(selected.map(a => ({rank: a.rank, value: Number(a.value)})));
-    }
-  }, [options.bestAnalogs, analogValues]);
-
 
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
