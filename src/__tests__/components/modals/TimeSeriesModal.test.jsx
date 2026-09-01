@@ -14,7 +14,7 @@ setupI18nMock();
 setupUseCachedRequestMock();
 
 // Mocks must be before component import
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useSelectedEntity: vi.fn(() => ({
     selectedEntityId: 1,
     setSelectedEntityId: vi.fn()

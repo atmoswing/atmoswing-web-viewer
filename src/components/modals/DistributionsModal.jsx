@@ -20,7 +20,7 @@ import {
   Tabs,
   Typography
 } from '@mui/material';
-import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
+import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 import {useDistributionData} from './hooks/useDistributionData.js';

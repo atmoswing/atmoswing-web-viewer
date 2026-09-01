@@ -4,11 +4,11 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
-import {MethodsProvider, useMethods} from '@/contexts/MethodsContext.jsx';
+import {MethodsProvider, useMethods} from '@/contexts/forecast/MethodsContext.jsx';
 import {normalizeMethodsAndConfigs} from '@/utils/apiNormalization.js';
 
 // Mock dependent contexts to provide synchronous workspace & forecast date
-vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({
   useForecastSession: () => ({
     workspace: 'test',
     activeForecastDate: '2024-01-01_12'

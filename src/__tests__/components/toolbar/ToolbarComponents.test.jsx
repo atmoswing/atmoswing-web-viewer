@@ -11,7 +11,7 @@ import ToolbarCenter from '@/components/toolbar/ToolbarCenter.jsx';
 setupI18nMock();
 
 // Mock contexts
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useSynthesis: vi.fn(() => ({
     dailyLeads: [],
     subDailyLeads: [],

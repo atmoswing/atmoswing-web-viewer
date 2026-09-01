@@ -21,7 +21,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import {useForecastSession, useMethods} from '@/contexts/ForecastsContext.jsx';
+import {useForecastSession, useMethods} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import {useTranslation} from 'react-i18next';
 import {SUB_HOURS} from '@/utils/targetDateUtils.js';

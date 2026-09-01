@@ -8,7 +8,7 @@ import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import {useEntities, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
+import {useEntities, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTranslation} from 'react-i18next';
 import PanelStatus from './PanelStatus.jsx';
 import {compareEntitiesByName} from '@/utils/formattingUtils.js';

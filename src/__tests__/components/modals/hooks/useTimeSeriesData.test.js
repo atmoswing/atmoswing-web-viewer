@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: (k, opts) => (opts && opts.index ? `${k}${opts.index}` : k), i18n: {language: 'en'}})
 }));
 
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useSelectedEntity: vi.fn(() => ({selectedEntityId: 7})),
   useMethods: vi.fn(() => ({
     selectedMethodConfig: {method: {id: 'm1'}, config: {id: 'c1'}},

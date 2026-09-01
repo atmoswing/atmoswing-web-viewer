@@ -4,9 +4,9 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import {EntitiesProvider, useEntities} from '@/contexts/EntitiesContext.jsx';
-import {ForecastSessionProvider} from '@/contexts/ForecastSessionContext.jsx';
-import {MethodsProvider} from '@/contexts/MethodsContext.jsx';
+import {EntitiesProvider, useEntities} from '@/contexts/forecast/EntitiesContext.jsx';
+import {ForecastSessionProvider} from '@/contexts/forecast/ForecastSessionContext.jsx';
+import {MethodsProvider} from '@/contexts/forecast/MethodsContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import * as api from '@/services/api.js';

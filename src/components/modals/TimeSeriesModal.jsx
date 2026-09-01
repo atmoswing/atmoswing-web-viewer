@@ -13,7 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography} from '@mui/material';
 import Popper from '@mui/material/Popper';
-import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
+import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTimeSeriesData} from './hooks/useTimeSeriesData.js';
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';

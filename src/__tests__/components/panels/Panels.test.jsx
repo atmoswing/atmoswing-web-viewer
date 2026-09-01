@@ -14,7 +14,7 @@ import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
 setupI18nMock();
 
 // Mock contexts
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useMethods: vi.fn(() => ({
     methodConfigTree: [
       {

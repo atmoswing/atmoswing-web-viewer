@@ -12,7 +12,7 @@ import PanelStatus from '@/components/panels/PanelStatus.jsx';
 setupI18nMock();
 
 // Mock contexts
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useForecastParameters: vi.fn(() => ({
     percentile: 90,
     setPercentile: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('@/contexts/ForecastsContext.jsx', () => ({
   }))
 }));
 
-vi.mock('@/contexts/SynthesisContext.jsx', () => ({
+vi.mock('@/contexts/forecast/SynthesisContext.jsx', () => ({
   useSynthesis: vi.fn(() => ({
     selectedTargetDate: new Date('2024-01-02')
   }))

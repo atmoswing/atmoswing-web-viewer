@@ -17,7 +17,7 @@ import {
   useForecastValues,
   useSelectedEntity,
   useSynthesis
-} from '@/contexts/ForecastsContext.jsx';
+} from '@/contexts/forecast/ForecastsContext.jsx';
 import CircularProgress from '@mui/material/CircularProgress';
 import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import {useConfig} from '@/contexts/ConfigContext.jsx';

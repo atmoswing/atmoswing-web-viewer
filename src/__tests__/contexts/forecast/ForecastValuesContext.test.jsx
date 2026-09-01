@@ -4,10 +4,10 @@
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import {ForecastValuesProvider, useForecastValues} from '@/contexts/ForecastValuesContext.jsx';
-import {ForecastSessionProvider} from '@/contexts/ForecastSessionContext.jsx';
-import {MethodsProvider} from '@/contexts/MethodsContext.jsx';
-import {SynthesisProvider} from '@/contexts/SynthesisContext.jsx';
+import {ForecastValuesProvider, useForecastValues} from '@/contexts/forecast/ForecastValuesContext.jsx';
+import {ForecastSessionProvider} from '@/contexts/forecast/ForecastSessionContext.jsx';
+import {MethodsProvider} from '@/contexts/forecast/MethodsContext.jsx';
+import {SynthesisProvider} from '@/contexts/forecast/SynthesisContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import {

@@ -5,6 +5,8 @@
 
 import {useState} from 'react';
 
+import '@/styles/panel.css';
+
 /**
  * Collapsible panel with toggle header.
  *

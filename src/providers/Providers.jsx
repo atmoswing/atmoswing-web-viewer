@@ -13,7 +13,7 @@ import React from 'react';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import {SnackbarProvider} from '@/contexts/SnackbarContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
-import {ForecastsProvider} from '@/contexts/ForecastsContext.jsx';
+import {ForecastsProvider} from '@/contexts/forecast/ForecastsContext.jsx';
 
 /**
  * Combines all application providers in the correct order.

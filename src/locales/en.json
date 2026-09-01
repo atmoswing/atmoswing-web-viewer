@@ -1,0 +1,149 @@
+{
+  "panel": {
+    "display": "Display",
+    "forecasts": "Forecasts",
+    "synthesis": "Synthesis",
+    "stationSelection": "Station selection",
+    "analogDates": "Analog dates",
+    "loading": "Loading…",
+    "noData": "No data",
+    "errorLoading": "Error loading {{what}}"
+  },
+  "workspace": {
+    "noWorkspaces": "No workspaces available. Please check your configuration.",
+    "label": "Workspace",
+    "invalidFromUrl": "Unknown workspace '{{key}}' from URL. Using default instead."
+  },
+  "stations": {
+    "loading": "Loading stations…",
+    "errorLoading": "Error loading stations",
+    "select": "Select a station"
+  },
+  "display": {
+    "normalization": "Normalization",
+    "percentile": "Percentile"
+  },
+  "synthesis": {
+    "normalizedValues": "Normalized values"
+  },
+  "toolbar": {
+    "forecastOf": "Forecast of {{date}}",
+    "pickDateTime": "Pick forecast date and hour",
+    "date": "Date",
+    "hour": "Hour",
+    "loading": "Loading...",
+    "searching": "Searching...",
+    "restoreLastForecast": "Restore last forecast",
+    "selectLeadTime": "Select lead time",
+    "colorSynthesis": "Color: synthesis of all methods",
+    "openDistributions": "Open distribution plots",
+    "openAnalogs": "Open analogs details"
+  },
+  "forecasts": {
+    "loading": "Loading..."
+  },
+  "analog": {
+    "columns": {
+      "rank": "Rank",
+      "date": "Date",
+      "criteria": "Criteria"
+    }
+  },
+  "map": {
+    "baseLayers": "Base maps",
+    "overlays": "Overlays",
+    "layers": {
+      "esri": "Esri World Imagery",
+      "osm": "OpenStreetMap",
+      "shadow": "Shaded relief (IGN)",
+      "ortho": "Orthophotos (IGN)",
+      "planIgn": "Map IGN",
+      "adminIgn": "Admin (IGN)",
+      "bcae": "Waterways BCAE (IGN)",
+      "hydro": "Hydrography (IGN)"
+    },
+    "tooltip": {
+      "value": "Value"
+    },
+    "legend": {
+      "title": "Normalized values"
+    },
+    "layerSwitcherTip": "Layers",
+    "loading": {
+      "noForecastAvailable": "No forecast available for the selected method and lead time",
+      "noForecastFoundSearch": "No forecast found within the searched time range"
+    }
+  },
+  "seriesModal": {
+    "selectStation": "Select a station to view the forecast series.",
+    "seriesAriaLabel": "Forecast percentiles time series",
+    "loadingPreviousForecasts": "Loading previous forecasts…",
+    "errorLoadingPreviousForecasts": "Error loading previous forecasts",
+    "loadingSeries": "Loading series…",
+    "resolvingConfig": "Resolving configuration…",
+    "errorLoadingSeries": "Error loading series.",
+    "noDataForStation": "No data available for this station.",
+    "mainQuantiles": "Main quantiles",
+    "allQuantiles": "All quantiles",
+    "bestAnalogs": "Best analogs",
+    "tenYearReturn": "10 year return period",
+    "allReturnPeriods": "All return periods",
+    "previousForecasts": "Previous forecasts",
+    "precipitation": "Precipitation [mm]",
+    "quantile90": "Quantile 90",
+    "quantile60": "Quantile 60",
+    "quantile20": "Quantile 20",
+    "median": "Median",
+    "analog": "Analog",
+    "analogWithIndex": "Analog {{index}}",
+    "p10": "P10",
+    "unexpectedHistoryResponse": "Unexpected history response",
+    "close": "Close",
+    "loadingBestAnalogs": "Loading best analogs…",
+    "noBestAnalogs": "No best analogs",
+    "loadingReference": "Loading reference values…",
+    "noReferenceValues": "No reference values",
+    "noPreviousForecastsAvailable": "No previous forecasts available",
+    "export": "Export"
+  },
+  "distributionPlots": {
+    "title": "Distribution plots",
+    "predist": "Predictands distribution",
+    "critdist": "Criteria distribution",
+    "analogsPrecipTitle": "Analogs precipitation distribution",
+    "cumulativeFrequency": "Cumulative frequency",
+    "noAnalogs": "No analog values for the selected method/config/entity/lead.",
+    "criteriaTitle": "Criteria distribution",
+    "noCriteria": "No criteria values available for the selected selection."
+  },
+  "detailsAnalogsModal": {
+    "title": "Analogs details",
+    "close": "Close",
+    "entity": "Entity",
+    "method": "Method",
+    "config": "Configuration",
+    "station": "Station",
+    "lead": "Lead time",
+    "analogsList": "Analogs",
+    "loading": "Loading...",
+    "noMethods": "No methods",
+    "noConfigs": "No configurations",
+    "loadingMethods": "Loading methods...",
+    "loadingStations": "Loading stations...",
+    "noStations": "No stations",
+    "loadingEntities": "Loading entities...",
+    "noEntities": "No entities",
+    "noLeads": "No lead times",
+    "loadingAnalogs": "Loading analogs...",
+    "errorLoadingMethods": "Error loading methods",
+    "errorLoadingAnalogs": "Error loading analogs",
+    "colDate": "Date",
+    "colValue": "Value",
+    "colPrecipitation": "Precipitation",
+    "precipitation": "Precipitation",
+    "colCriteria": "Criteria",
+    "relevant": "Relevant"
+  },
+  "cancel": "Cancel",
+  "ok": "OK"
+}

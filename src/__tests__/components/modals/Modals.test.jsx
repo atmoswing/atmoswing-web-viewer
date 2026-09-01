@@ -11,7 +11,7 @@ setupI18nMock();
 setupUseCachedRequestMock();
 
 // Mock contexts
-vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({
   useForecastSession: vi.fn(() => ({
     workspace: 'test-workspace',
     activeForecastDate: '2024-01-01',
@@ -19,7 +19,7 @@ vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
   }))
 }));
 
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useMethods: vi.fn(() => ({
     methods: [{id: 'method1', name: 'Method 1'}],
     methodConfigTree: []

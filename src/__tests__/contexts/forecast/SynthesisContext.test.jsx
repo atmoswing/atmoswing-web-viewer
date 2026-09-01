@@ -4,8 +4,8 @@
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
-import {SynthesisProvider, useSynthesis} from '@/contexts/SynthesisContext.jsx';
-import {ForecastSessionProvider} from '@/contexts/ForecastSessionContext.jsx';
+import {SynthesisProvider, useSynthesis} from '@/contexts/forecast/SynthesisContext.jsx';
+import {ForecastSessionProvider} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import {getLastForecastDate, getMethodsAndConfigs, getSynthesisPerMethod, getSynthesisTotal} from '@/services/api.js';

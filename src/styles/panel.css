@@ -1,0 +1,30 @@
+/**
+ * Collapsible sidebar panel styles.
+ * Imported by Panel.jsx.
+ */
+
+.panel-header {
+  font-size: 1em;
+  background: #333;
+  padding: 0.5em;
+  border-radius: 6px;
+  margin: 0 0.5em;
+  text-align: center;
+  cursor: pointer;
+}
+
+.panel-content {
+  background: #2a2a2a;
+  padding: 0;
+  border-radius: 6px;
+  margin: 0 0.5em;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.panel-secondary-text {
+  font-size: 0.9em;
+  color: #aaa;
+  display: block;
+  margin: 0.3em;
+}

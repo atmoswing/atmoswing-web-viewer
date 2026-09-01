@@ -5,6 +5,8 @@
 
 import React from 'react';
 
+import '@/styles/sidebar.css';
+
 import {useConfig} from '@/contexts/ConfigContext.jsx';
 import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
 import {PanelAnalogDates, PanelDisplay, PanelForecasts, PanelStations, PanelSynthesis} from "../panels";

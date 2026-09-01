@@ -36,7 +36,7 @@ let SNACK = {
 
 // vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'en' } }) }));
 
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useEntities: () => ENTITIES,
   useForecastValues: () => FORECAST_VALUES,
   useForecastParameters: () => FORECAST_PARAMS,

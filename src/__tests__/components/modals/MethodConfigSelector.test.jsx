@@ -16,7 +16,7 @@ setupI18nMock();
 setupUseCachedRequestMock();
 
 // Mock ForecastSession context
-vi.mock('@/contexts/ForecastSessionContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({
   useForecastSession: () => ({
     workspace: 'ws',
     activeForecastDate: '2024-01-01',

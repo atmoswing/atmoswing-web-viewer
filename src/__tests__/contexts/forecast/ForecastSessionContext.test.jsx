@@ -4,7 +4,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
-import {ForecastSessionProvider, useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
+import {ForecastSessionProvider, useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import {getLastForecastDate, getMethodsAndConfigs, getSynthesisTotal, hasForecastDate} from '@/services/api.js';

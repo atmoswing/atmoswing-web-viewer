@@ -28,7 +28,7 @@ vi.mock('@/components/panels/PanelStatus.jsx', () => ({
 }));
 
 // Provide mocked context hooks (we'll set return values per-test)
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useMethods: vi.fn(),
   useSynthesis: vi.fn()
 }));
@@ -47,7 +47,7 @@ describe('PanelSynthesis (more tests)', () => {
   });
 
   it('shows loading PanelStatus when synthesis is loading', async () => {
-    const ctx = await import('@/contexts/ForecastsContext.jsx');
+    const ctx = await import('@/contexts/forecast/ForecastsContext.jsx');
     ctx.useMethods.mockReturnValue({
       methodConfigTree: [],
       selectedMethodConfig: null,
@@ -68,7 +68,7 @@ describe('PanelSynthesis (more tests)', () => {
   });
 
   it('renders daily single segment cells and clicking selects method/date', async () => {
-    const ctx = await import('@/contexts/ForecastsContext.jsx');
+    const ctx = await import('@/contexts/forecast/ForecastsContext.jsx');
 
     const setSelectedMethodConfig = vi.fn();
     const selectTargetDate = vi.fn();
@@ -106,7 +106,7 @@ describe('PanelSynthesis (more tests)', () => {
 
   // Skipped: sub-daily rendering is flaky in jsdom due to timezone handling of dates; keep test for future rework
   it.skip('renders sub-daily strip when multiple segments exist and clicking sub-segment selects', async () => {
-    const ctx = await import('@/contexts/ForecastsContext.jsx');
+    const ctx = await import('@/contexts/forecast/ForecastsContext.jsx');
 
     const setSelectedMethodConfig = vi.fn();
     const selectTargetDate = vi.fn();

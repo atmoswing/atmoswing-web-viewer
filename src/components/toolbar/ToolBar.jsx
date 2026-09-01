@@ -5,6 +5,8 @@
 
 import React, {lazy, Suspense} from 'react';
 
+import '@/styles/toolbar.css';
+
 import FrameDistributionsIcon from '@/assets/toolbar/frame_distributions.svg?react';
 import FrameAnalogsIcon from '@/assets/toolbar/frame_analogs.svg?react';
 

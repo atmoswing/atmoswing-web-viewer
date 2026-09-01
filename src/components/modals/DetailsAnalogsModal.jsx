@@ -18,18 +18,10 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Paper from '@mui/material/Paper';
-import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
-import {getAnalogs} from '@/services/api.js';
 import {useTranslation} from 'react-i18next';
 import {formatCriteria, formatDateLabel, formatPrecipitation} from '@/utils/formattingUtils.js';
-import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeAnalogsResponse} from '@/utils/apiNormalization.js';
-import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
-import {useModalSelectionData} from './common/useModalSelectionData.js';
-
-// Stable identity for the empty case, so the sort memo below doesn't churn.
-const EMPTY_ANALOGS = [];
+import {useAnalogDetails} from './hooks/useAnalogDetails.js';
 
 export default function DetailsAnalogsModal({open, onClose}) {
   /**
@@ -40,7 +32,6 @@ export default function DetailsAnalogsModal({open, onClose}) {
    * @returns {React.ReactElement}
    */
 
-  const {workspace, activeForecastDate} = useForecastSession();
   const {t} = useTranslation();
 
   // Local selections managed by shared selector component
@@ -51,26 +42,10 @@ export default function DetailsAnalogsModal({open, onClose}) {
     lead: 0
   });
 
-  // Get resolved IDs from the selector
-  const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('modal_', open, selection);
-
   const [sortColumn, setSortColumn] = useState('rank');
   const [sortDirection, setSortDirection] = useState('asc');
 
-  // ANALOGS via cached request
-  const analogsCacheKey = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId && resolvedEntityId != null && selection.lead != null
-    ? `modal_analogs|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}`
-    : null;
-  const {data: analogsData, loading: analogsLoading, error: analogsError} = useCachedRequest(
-    analogsCacheKey,
-    async () => {
-      const resp = await getAnalogs(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, selection.lead);
-      return normalizeAnalogsResponse(resp);
-    },
-    {enabled: !!analogsCacheKey, initialData: [], ttlMs: SHORT_TTL}
-  );
-
-  const analogs = Array.isArray(analogsData) ? analogsData : EMPTY_ANALOGS;
+  const {analogs, analogsLoading, analogsError} = useAnalogDetails({open, selection});
 
   // Handle sort request
   const handleSortRequest = (column) => {

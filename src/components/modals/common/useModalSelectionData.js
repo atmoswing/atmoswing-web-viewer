@@ -5,7 +5,7 @@
  */
 
 import {useMemo} from 'react';
-import {useForecastSession} from '@/contexts/ForecastSessionContext.jsx';
+import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {getMethodsAndConfigs} from '@/services/api.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';

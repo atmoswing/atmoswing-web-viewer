@@ -5,7 +5,7 @@
  */
 
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {useWorkspace} from './WorkspaceContext.jsx';
+import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 
 const SelectedEntityContext = createContext({});
 

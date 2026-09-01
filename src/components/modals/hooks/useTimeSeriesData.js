@@ -6,7 +6,7 @@
 
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
+import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {
   getReferenceValues,
   getSeriesBestAnalogs,

@@ -5,6 +5,7 @@
 
 import React, {forwardRef, useEffect} from 'react';
 import * as d3 from 'd3';
+import {buildDistributionTitle, drawChartTitle} from './draw/chartChrome.js';
 
 // Criteria distribution chart component (cumulative / ordered criteria values)
 const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
@@ -53,29 +54,13 @@ const CriteriaDistributionChart = forwardRef(function CriteriaDistributionChart(
     const innerH = Math.max(40, height - margin.top - margin.bottom);
 
     const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
-    try {
-      const methodIdStr = selectedMethodId ? String(selectedMethodId) : '';
-      const cfgStr = selectedConfigId ? String(selectedConfigId) : '';
-      const leadMatch = Array.isArray(leads) ? leads.find(l => l.lead === selectedLead) : null;
-      const tgt = leadMatch?.date && !isNaN(leadMatch.date) ? leadMatch.date : null;
-      const fmt = d3.timeFormat('%Y-%m-%d');
-      const tgtStr = tgt ? fmt(tgt) : (selectedLead != null ? `L${selectedLead}` : '');
-      let fcDate = null;
-      try {
-        fcDate = activeForecastDate ? new Date(activeForecastDate) : null;
-        if (fcDate && isNaN(fcDate)) fcDate = null;
-      } catch {
-        fcDate = null;
-      }
-      const fcStr = fcDate ? fmt(fcDate) : '';
-      const foText = fcStr ? t('toolbar.forecastOf', {date: fcStr}) : '';
-      const parts = [(stationName || ''), methodIdStr, cfgStr].filter(Boolean);
-      const rightPart = [tgtStr, foText ? `(${foText})` : ''].filter(Boolean).join(' ');
-      if (rightPart) parts.push(rightPart);
-      const titleText = parts.join(' — ');
-      svg.append('text').attr('x', margin.left + innerW / 2).attr('y', Math.max(12, margin.top - 12)).attr('text-anchor', 'middle').attr('fill', '#222').attr('font-size', 14).attr('font-weight', 600).text(titleText);
-    } catch { /* title is decorative: skip it if composing it fails */
-    }
+    drawChartTitle(svg, {
+      text: buildDistributionTitle({
+        stationName, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, t
+      }),
+      centerX: margin.left + innerW / 2,
+      y: Math.max(12, margin.top - 12)
+    });
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 

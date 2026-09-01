@@ -13,7 +13,7 @@ import {
   useMethods,
   useSelectedEntity,
   useSynthesis
-} from '@/contexts/ForecastsContext.jsx';
+} from '@/contexts/forecast/ForecastsContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import * as api from '@/services/api.js';

@@ -5,7 +5,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/ForecastsContext.jsx';
+import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {getRelevantEntities} from '@/services/api.js';
 
 /**

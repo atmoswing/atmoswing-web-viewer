@@ -19,7 +19,7 @@ vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
   WorkspaceProvider: ({children}) => <div data-testid="workspace-provider">{children}</div>
 }));
 
-vi.mock('@/contexts/ForecastsContext.jsx', () => ({
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   ForecastsProvider: ({children}) => <div data-testid="forecasts-provider">{children}</div>
 }));
 

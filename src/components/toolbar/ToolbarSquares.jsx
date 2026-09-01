@@ -6,7 +6,7 @@
 import React from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';
-import {useSynthesis} from '@/contexts/ForecastsContext.jsx';
+import {useSynthesis} from '@/contexts/forecast/ForecastsContext.jsx';
 import {valueToColorCSS} from '@/utils/colorUtils.js';
 import {isSameDay, makeDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';

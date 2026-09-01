@@ -4,7 +4,7 @@
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
-import {SelectedEntityProvider, useSelectedEntity} from '@/contexts/SelectedEntityContext.jsx';
+import {SelectedEntityProvider, useSelectedEntity} from '@/contexts/forecast/SelectedEntityContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 
