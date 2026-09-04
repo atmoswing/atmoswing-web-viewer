@@ -1,5 +1,5 @@
 /**
- * @module components/modals/common/plotConstants
+ * @module components/modals/charts/plotConstants
  * @description Shared constants and color palettes used by modal charts (time series & distributions).
  */
 

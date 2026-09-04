@@ -5,7 +5,7 @@
  */
 
 import * as d3 from 'd3';
-import {ANALOG_MARKER_COLOR, QUANTILE_COLORS, SELECTED_RPS, TEN_YEAR_COLOR} from '../../common/plotConstants.js';
+import {ANALOG_MARKER_COLOR, QUANTILE_COLORS, SELECTED_RPS, TEN_YEAR_COLOR} from '../plotConstants.js';
 
 /** Percentiles drawn for each previous forecast run. */
 const HISTORY_PCTS = [20, 60, 90];

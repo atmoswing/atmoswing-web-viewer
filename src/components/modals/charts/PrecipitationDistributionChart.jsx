@@ -6,7 +6,7 @@
 import React, {forwardRef, useEffect} from 'react';
 import * as d3 from 'd3';
 import {buildDistributionTitle, drawChartTitle} from './draw/chartChrome.js';
-import {SELECTED_RPS, TEN_YEAR_COLOR} from '@/components/modals/common/plotConstants.js';
+import {SELECTED_RPS, TEN_YEAR_COLOR} from './plotConstants.js';
 
 // Precipitation (predictand) cumulative distribution chart
 /**

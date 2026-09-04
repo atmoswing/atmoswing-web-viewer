@@ -21,7 +21,7 @@ import {
   normalizeSeriesValuesPercentilesHistory
 } from '@/utils/apiNormalization.js';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
-import {DEFAULT_PCTS, FULL_PCTS} from '../common/plotConstants.js';
+import {DEFAULT_PCTS, FULL_PCTS} from '../charts/plotConstants.js';
 import {useResolvedEntityConfig} from './useResolvedEntityConfig.js';
 
 /**
