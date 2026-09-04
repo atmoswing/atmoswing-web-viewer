@@ -194,12 +194,14 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
     g.append('g').call(yAxisLeft);
     svg.append('text').attr('transform', 'rotate(-90)').attr('x', -(margin.top + innerH / 2)).attr('y', 12).attr('text-anchor', 'middle').text(t('distributionPlots.cumulativeFrequency') || 'Cumulative frequency');
     g.selectAll('path.domain').remove();
-  }, [analogValues, bestAnalogsData, percentileMarkers, referenceValues, options, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, stationName, t, renderTick]);
+  }, [ref, analogValues, bestAnalogsData, percentileMarkers, referenceValues, options, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, stationName, t, renderTick]);
 
-  // Cleanup on unmount: clear container content
+  // Cleanup on unmount: clear container content. The node is captured here rather than read
+  // in the cleanup, so it is the element this effect ran against that gets cleared.
   useEffect(() => {
+    const node = ref?.current;
     return () => {
-      if (ref?.current) d3.select(ref.current).selectAll('*').remove();
+      if (node) d3.select(node).selectAll('*').remove();
     };
   }, [ref]);
 

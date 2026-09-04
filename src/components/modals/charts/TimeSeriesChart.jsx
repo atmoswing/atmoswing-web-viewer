@@ -59,7 +59,10 @@ export default function TimeSeriesChart(
 ) {
   const pctList = useMemo(() => (series?.pctList ?? []), [series]);
   const dates = useMemo(() => (series?.dates ?? []), [series]);
-  const percentilesMap = series?.percentiles || {};
+  // Memoized so it can go in the effect's dependencies: a bare `series?.percentiles || {}`
+  // yields a fresh object on every render whenever the series carries no percentiles,
+  // which would redraw the chart on each render.
+  const percentilesMap = useMemo(() => series?.percentiles || {}, [series]);
 
   useEffect(() => {
     const container = containerRef?.current;
@@ -135,12 +138,12 @@ export default function TimeSeriesChart(
     });
 
     return () => {
-      // Only cleanup SVG; avoid calling parent state in cleanup to prevent update loops
-      if (containerRef?.current) {
-        d3.select(containerRef.current).selectAll('*').remove();
-      }
+      // Clears the node this run drew into, rather than whatever the ref points at by the
+      // time cleanup fires. Only the SVG is touched: calling back into parent state here
+      // would risk an update loop.
+      d3.select(container).selectAll('*').remove();
     };
-  }, [containerRef, t, dates, series, bestAnalogs, referenceValues, pastForecasts, options, activeForecastDate, selectedMethodConfig, stationName, onHoverShow, onHoverHide]);
+  }, [containerRef, t, dates, series, pctList, percentilesMap, bestAnalogs, referenceValues, pastForecasts, options, activeForecastDate, selectedMethodConfig, stationName, onHoverShow, onHoverHide]);
 
   return null;
 }

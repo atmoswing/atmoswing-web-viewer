@@ -9,7 +9,6 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
-import shp from 'shpjs';
 import {ensureProjDefined} from '@/components/map/utils/olProjectionUtils.js';
 import {resolveOverlayStyle} from '@/components/map/utils/olStyleUtils.js';
 import {
@@ -139,8 +138,11 @@ export default function useOverlayConfigLayers(
         } catch { /* best-effort */
         }
       } else if (lower.endsWith('.zip') || lower.endsWith('.shp')) {
-        // shpjs doesn't support AbortController; use cancelled flag
-        shp(url)
+        // Only workspaces declaring shapefile overlays need the parser, and it is large, so it
+        // is loaded on demand like the PDF libraries. shpjs has no AbortController support
+        // either, hence the cancelled flag.
+        import('shpjs')
+          .then(mod => (mod.default || mod)(url))
           .then(geojson => {
             if (cancelled) return;
             const fmt = new GeoJSON();
