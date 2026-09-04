@@ -37,6 +37,19 @@ describe('i18n', () => {
     expect(i18n.t('panel.display', {lng: 'fr'})).toBe('Affichage');
   });
 
+  it('stamps the active language onto <html lang>', () => {
+    // Screen readers and browser translation read this attribute; index.html ships the
+    // default and i18n keeps it in step from here on.
+    expect(document.documentElement.lang).toBe('fr');
+  });
+
+  it('updates <html lang> when the language changes', async () => {
+    await i18n.changeLanguage('en');
+    expect(document.documentElement.lang).toBe('en');
+    await i18n.changeLanguage('fr');
+    expect(document.documentElement.lang).toBe('fr');
+  });
+
   it('interpolates values', () => {
     const out = i18n.t('seriesModal.analogWithIndex', {index: 3, lng: 'en'});
     expect(out).toContain('3');

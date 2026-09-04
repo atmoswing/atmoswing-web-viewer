@@ -1,17 +1,10 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react-swc';
-import svgr from 'vite-plugin-svgr';
-import { fileURLToPath } from 'node:url';
+import {defineConfig, mergeConfig} from 'vitest/config';
 
-const srcDir = fileURLToPath(new URL('./src', import.meta.url));
+import viteConfig from './vite.config.js';
 
-export default defineConfig({
-  plugins: [react(), svgr()],
-  resolve: {
-    alias: {
-      '@': srcDir
-    }
-  },
+// Plugins and the `@` alias come from vite.config.js, so tests resolve modules exactly the
+// way the built app does and the two files cannot drift apart.
+export default mergeConfig(viteConfig, defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
@@ -41,4 +34,4 @@ export default defineConfig({
       }
     }
   }
-});
+}));
