@@ -2,8 +2,9 @@
  * @fileoverview Smoke tests for additional Panel components
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {setupI18nMock} from '../../testUtils.js';
 import PanelDisplay from '@/components/panels/PanelDisplay.jsx';
 import PanelAnalogDates from '@/components/panels/PanelAnalogDates.jsx';
@@ -11,13 +12,19 @@ import PanelStatus from '@/components/panels/PanelStatus.jsx';
 
 setupI18nMock();
 
+// Stable spies, so the change handlers can be asserted on.
+const {setPercentile, setNormalizationRef} = vi.hoisted(() => ({
+  setPercentile: vi.fn(),
+  setNormalizationRef: vi.fn()
+}));
+
 // Mock contexts
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useForecastParameters: vi.fn(() => ({
     percentile: 90,
-    setPercentile: vi.fn(),
+    setPercentile,
     normalizationRef: 10,
-    setNormalizationRef: vi.fn()
+    setNormalizationRef
   })),
   useForecastSession: vi.fn(() => ({
     workspace: 'test',
@@ -153,3 +160,31 @@ describe('PanelStatus', () => {
     expect(screen.queryByText('No data')).not.toBeInTheDocument();
   });
 });
+
+describe('PanelDisplay interactions', () => {
+  beforeEach(() => {
+    setPercentile.mockClear();
+    setNormalizationRef.mockClear();
+  });
+
+  it('reports the chosen normalization reference as a number', async () => {
+    const user = userEvent.setup();
+    render(<PanelDisplay/>);
+
+    await user.click(screen.getByLabelText('display.normalization'));
+    await user.click(await screen.findByRole('option', {name: 'P/P5'}));
+
+    expect(setNormalizationRef).toHaveBeenCalledWith(5);
+  });
+
+  it('reports the chosen percentile as a number', async () => {
+    const user = userEvent.setup();
+    render(<PanelDisplay/>);
+
+    await user.click(screen.getByLabelText('display.percentile'));
+    // q90 is already selected, so pick a different one to trigger the change.
+    await user.click(await screen.findByRole('option', {name: 'q20'}));
+
+    expect(setPercentile).toHaveBeenCalledWith(20);
+  });
+}, 20000);

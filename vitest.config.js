@@ -28,18 +28,17 @@ export default defineConfig({
         'public/',
         'src/main.jsx',
         'src/assets/',
-        'src/styles/',
-        // Exclude heavy/charting modal components from coverage
-        'src/components/modals/DetailsAnalogsModal.jsx',
-        'src/components/modals/DistributionsModal.jsx',
-        'src/components/modals/TimeSeriesModal.jsx'
+        'src/styles/'
       ],
       include: ['src/**/*.{js,jsx}'],
       all: true,
-      lines: 80,
-      functions: 80,
-      branches: 75,
-      statements: 80
+      // Must be nested under `thresholds`: set directly on `coverage` they are silently ignored.
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80
+      }
     }
   }
 });

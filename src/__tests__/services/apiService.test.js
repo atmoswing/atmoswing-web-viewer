@@ -93,3 +93,97 @@ describe('api service endpoint builders', () => {
     expect(fetch.mock.calls.length).toBe(3);
   });
 });
+
+/**
+ * Every endpoint builder, with the exact URL it must produce.
+ * A path typo here is a silent 404 at runtime, so the URLs are asserted literally.
+ */
+describe('api service endpoint URLs', () => {
+  // Contains a colon, so any missing encodeURIComponent shows up in the expected URL.
+  const DATE = '2025-01-01T06:00';
+  const ENC = '2025-01-01T06%3A00';
+
+  const cases = [
+    ['getConfig', () => api.getConfig(), '/meta/show-config'],
+    ['getLastForecastDate', () => api.getLastForecastDate('r'), '/meta/r/last-forecast-date'],
+    ['hasForecastDate', () => api.hasForecastDate('r', DATE), `/meta/r/${ENC}/has-forecasts`],
+    ['getMethodsAndConfigs', () => api.getMethodsAndConfigs('r', DATE), `/meta/r/${ENC}/methods-and-configs`],
+    ['getEntities', () => api.getEntities('r', DATE, 'm', 'c'), `/meta/r/${ENC}/m/c/entities`],
+    ['getRelevantEntities', () => api.getRelevantEntities('r', DATE, 'm', 'c'), `/meta/r/${ENC}/m/c/relevant-entities`],
+
+    ['getAnalogDates', () => api.getAnalogDates('r', DATE, 'm', 'c', 24), `/forecasts/r/${ENC}/m/c/24/analog-dates`],
+    ['getAnalogyCriteria', () => api.getAnalogyCriteria('r', DATE, 'm', 'c', 24), `/forecasts/r/${ENC}/m/c/24/analogy-criteria`],
+    ['getReferenceValues', () => api.getReferenceValues('r', DATE, 'm', 'c', 7), `/forecasts/r/${ENC}/m/c/7/reference-values`],
+    ['getSeriesBestAnalogs', () => api.getSeriesBestAnalogs('r', DATE, 'm', 'c', 7), `/forecasts/r/${ENC}/m/c/7/series-values-best-analogs`],
+    ['getAnalogs', () => api.getAnalogs('r', DATE, 'm', 'c', 7, 24), `/forecasts/r/${ENC}/m/c/7/24/analogs`],
+    ['getAnalogValues', () => api.getAnalogValues('r', DATE, 'm', 'c', 7, 24), `/forecasts/r/${ENC}/m/c/7/24/analog-values`],
+
+    ['getSynthesisPerMethod', () => api.getSynthesisPerMethod('r', DATE, 90), `/aggregations/r/${ENC}/series-synthesis-per-method/90`],
+  ];
+
+  it.each(cases)('%s builds the right URL', async (_name, call, expected) => {
+    mockFetchOnce(200, {});
+    await call();
+    expect(fetch).toHaveBeenCalledWith(expected, {cache: 'no-store'});
+  });
+
+  it('getSeriesValuesPercentiles appends a repeated percentiles parameter', async () => {
+    mockFetchOnce(200, {});
+    await api.getSeriesValuesPercentiles('r', DATE, 'm', 'c', 7, [20, 60, 90]);
+    expect(fetch).toHaveBeenCalledWith(
+      `/forecasts/r/${ENC}/m/c/7/series-values-percentiles?percentiles=20&percentiles=60&percentiles=90`,
+      {cache: 'no-store'}
+    );
+  });
+
+  it('getSeriesValuesPercentiles omits the query when no percentiles are given', async () => {
+    mockFetchOnce(200, {});
+    await api.getSeriesValuesPercentiles('r', DATE, 'm', 'c', 7, []);
+    expect(fetch).toHaveBeenCalledWith(`/forecasts/r/${ENC}/m/c/7/series-values-percentiles`, {cache: 'no-store'});
+  });
+
+  it('getSeriesValuesPercentilesHistory defaults to three previous runs', async () => {
+    mockFetchOnce(200, {});
+    await api.getSeriesValuesPercentilesHistory('r', DATE, 'm', 'c', 7);
+    expect(fetch).toHaveBeenCalledWith(
+      `/forecasts/r/${ENC}/m/c/7/series-values-percentiles-history?number=3`,
+      {cache: 'no-store'}
+    );
+  });
+
+  it('getSeriesValuesPercentilesHistory honours an explicit count', async () => {
+    mockFetchOnce(200, {});
+    await api.getSeriesValuesPercentilesHistory('r', DATE, 'm', 'c', 7, 5);
+    expect(fetch).toHaveBeenCalledWith(
+      `/forecasts/r/${ENC}/m/c/7/series-values-percentiles-history?number=5`,
+      {cache: 'no-store'}
+    );
+  });
+
+  it('getAnalogValuesPercentiles appends the percentiles parameter', async () => {
+    mockFetchOnce(200, {});
+    await api.getAnalogValuesPercentiles('r', DATE, 'm', 'c', 7, 24, [20, 90]);
+    expect(fetch).toHaveBeenCalledWith(
+      `/forecasts/r/${ENC}/m/c/7/24/analog-values-percentiles?percentiles=20&percentiles=90`,
+      {cache: 'no-store'}
+    );
+  });
+
+  it('getEntitiesValuesPercentile omits the normalize query when it is null', async () => {
+    mockFetchOnce(200, {});
+    await api.getEntitiesValuesPercentile('r', DATE, 'm', 'c', 24, 90, null);
+    expect(fetch).toHaveBeenCalledWith(
+      `/forecasts/r/${ENC}/m/c/24/entities-values-percentile/90`,
+      {cache: 'no-store'}
+    );
+  });
+
+  it('getAggregatedEntitiesValues targets the aggregations route', async () => {
+    mockFetchOnce(200, {});
+    await api.getAggregatedEntitiesValues('r', DATE, 'm', 24, 90, 10);
+    expect(fetch).toHaveBeenCalledWith(
+      `/aggregations/r/${ENC}/m/24/entities-values-percentile/90?normalize=10`,
+      {cache: 'no-store'}
+    );
+  });
+});
