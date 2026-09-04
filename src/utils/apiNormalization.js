@@ -234,12 +234,28 @@ export function normalizeAnalogPercentiles(resp) {
   return Object.keys(out).length ? out : null;
 }
 
+/**
+ * Parses an API date with the caller's parser, falling back to `Date` when it cannot.
+ *
+ * The series endpoints return dates in the application's own forecast format, which `Date`
+ * does not understand, so callers pass `parseForecastDate`. The fallback keeps plain ISO
+ * responses working and makes the parser optional.
+ *
+ * @private
+ * @param {*} value - Raw date from the API
+ * @param {Function} [parseDateFn] - Preferred parser
+ * @returns {Date} Parsed date, possibly invalid — callers filter with `isNaN`
+ */
+function toDate(value, parseDateFn) {
+  return parseDateFn ? (parseDateFn(value) || new Date(value)) : new Date(value);
+}
+
 // Normalize series values percentiles -> { dates: Date[], percentiles: Record<number, number[]>, pctList: number[] }
 export function normalizeSeriesValuesPercentiles(resp, parseDateFn) {
   if (!resp || typeof resp !== 'object') return {dates: [], percentiles: {}, pctList: []};
   const rawDates = resp?.series_values?.target_dates || [];
   const dates = Array.isArray(rawDates)
-    ? rawDates.map(d => (parseDateFn ? (parseDateFn(d) || new Date(d)) : new Date(d))).filter(dt => dt && !isNaN(dt))
+    ? rawDates.map(d => toDate(d, parseDateFn)).filter(dt => dt && !isNaN(dt))
     : [];
   const seriesPercentiles = Array.isArray(resp?.series_values?.series_percentiles) ? resp.series_values.series_percentiles : [];
   const pctMap = {};
@@ -257,8 +273,10 @@ export function normalizeSeriesValuesPercentiles(resp, parseDateFn) {
 export function normalizeSeriesValuesPercentilesHistory(resp, parseDateFn) {
   const raw = Array.isArray(resp?.past_forecasts) ? resp.past_forecasts : [];
   return raw.map(item => {
-    const forecastDate = parseDateFn ? (parseDateFn(item.forecast_date) || new Date(item.forecast_date)) : new Date(item.forecast_date);
-    const dates = (Array.isArray(item.target_dates) ? item.target_dates.map(d => (parseDateFn ? (parseDateFn(d) || new Date(d)) : new Date(d))).filter(dt => dt && !isNaN(dt)) : []);
+    const forecastDate = toDate(item.forecast_date, parseDateFn);
+    const dates = Array.isArray(item.target_dates)
+      ? item.target_dates.map(d => toDate(d, parseDateFn)).filter(dt => dt && !isNaN(dt))
+      : [];
     const pctMap = {};
     if (Array.isArray(item.series_percentiles)) {
       item.series_percentiles.forEach(sp => {
@@ -275,7 +293,7 @@ export function normalizeSeriesValuesPercentilesHistory(resp, parseDateFn) {
 export function normalizeSeriesBestAnalogs(resp, parseDateFn) {
   if (!resp || typeof resp !== 'object' || !Array.isArray(resp.series_values) || !resp.series_values.length) return null;
   const parsedTargetDates = Array.isArray(resp.target_dates)
-    ? resp.target_dates.map(d => (parseDateFn ? (parseDateFn(d) || new Date(d)) : new Date(d)))
+    ? resp.target_dates.map(d => toDate(d, parseDateFn))
     : null;
   const rowsValues = resp.series_values;
   const nRows = rowsValues.length;
@@ -292,7 +310,7 @@ export function normalizeSeriesBestAnalogs(resp, parseDateFn) {
       values.push(typeof v === 'number' ? v : (v == null ? null : Number(v)));
       if (rowsDates && Array.isArray(rowsDates[r])) {
         const rawDate = rowsDates[r].length > c ? rowsDates[r][c] : null;
-        const dt = rawDate ? (parseDateFn ? (parseDateFn(rawDate) || new Date(rawDate)) : new Date(rawDate)) : null;
+        const dt = rawDate ? toDate(rawDate, parseDateFn) : null;
         analogDates.push(dt && !isNaN(dt) ? dt : null);
         if (dt && (dt.getHours() !== 0 || dt.getMinutes() !== 0 || dt.getSeconds() !== 0)) {
           hasAnalogHours = true;

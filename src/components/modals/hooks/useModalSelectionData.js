@@ -1,5 +1,5 @@
 /**
- * @module components/modals/common/useModalSelectionData
+ * @module components/modals/hooks/useModalSelectionData
  * @description Resolves the effective method/config/entity for a modal's raw selection,
  * filling in the first configuration when the user has not chosen one explicitly.
  */

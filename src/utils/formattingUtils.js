@@ -101,3 +101,54 @@ export function formatDateLabel(date) {
   }
   return base;
 }
+
+/**
+ * Formats a date as the `YYYY-MM-DD` form used by `<input type="date">` and filename prefixes.
+ *
+ * Uses local date parts rather than `toISOString()`, which would shift the day for any
+ * timezone east or west of UTC.
+ *
+ * @param {Date|string|number} dateLike - Date object, timestamp, or date string
+ * @returns {string} Formatted date, or an empty string when it cannot be parsed
+ * @example
+ * formatDateISO(new Date(2025, 10, 5)) // Returns: "2025-11-05"
+ */
+export function formatDateISO(dateLike) {
+  if (!dateLike && dateLike !== 0) return '';
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (!(d instanceof Date) || isNaN(d)) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Formats a date as `DD.MM.YYYY HHh`, the form the toolbar uses for a forecast run.
+ *
+ * @param {Date|string|number} dateLike - Date object, timestamp, or date string
+ * @returns {string} Formatted date, or an empty string when it cannot be parsed
+ * @example
+ * formatDateHour(new Date(2025, 10, 5, 6)) // Returns: "05.11.2025 06h"
+ */
+export function formatDateHour(dateLike) {
+  const base = formatDateDDMMYYYY(dateLike);
+  if (!base) return '';
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  return `${base} ${String(d.getHours()).padStart(2, '0')}h`;
+}
+
+/**
+ * Resolves an entity's display name, preferring its name and falling back to its id.
+ *
+ * @param {Array|null} entities - Entity list to look the id up in
+ * @param {string|number|null} entityId - Selected entity id
+ * @returns {string} Display name, or an empty string when nothing is selected
+ * @example
+ * entityDisplayName([{id: 3, name: 'Sion'}], 3) // Returns: "Sion"
+ * entityDisplayName([], 3)                      // Returns: "3"
+ * entityDisplayName([{id: 3}], null)            // Returns: ""
+ */
+export function entityDisplayName(entities, entityId) {
+  if (entityId == null) return '';
+  const match = Array.isArray(entities) ? entities.find(e => e?.id === entityId) : null;
+  return String(match?.name || match?.id || entityId);
+}

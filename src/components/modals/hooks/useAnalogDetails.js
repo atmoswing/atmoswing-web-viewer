@@ -8,7 +8,7 @@ import {getAnalogs} from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {normalizeAnalogsResponse} from '@/utils/apiNormalization.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
-import {useModalSelectionData} from '../common/useModalSelectionData.js';
+import {useModalSelectionData} from './useModalSelectionData.js';
 
 const EMPTY_ANALOGS = [];
 

@@ -1,7 +1,10 @@
 import {describe, expect, it} from 'vitest';
 import {
   compareEntitiesByName,
+  entityDisplayName,
   formatCriteria,
+  formatDateHour,
+  formatDateISO,
   formatDateDDMMYYYY,
   formatDateLabel,
   formatPrecipitation
@@ -192,3 +195,79 @@ describe('formattingUtils', () => {
   });
 });
 
+describe('formatDateISO', () => {
+  it('formats a date as YYYY-MM-DD', () => {
+    expect(formatDateISO(new Date(2025, 10, 5))).toBe('2025-11-05');
+  });
+
+  it('pads single-digit months and days', () => {
+    expect(formatDateISO(new Date(2025, 0, 2))).toBe('2025-01-02');
+  });
+
+  it('uses local date parts, so a late-evening time keeps its own day', () => {
+    // toISOString() would roll this back to the 4th for any timezone east of UTC.
+    expect(formatDateISO(new Date(2025, 10, 5, 23, 30))).toBe('2025-11-05');
+  });
+
+  it('accepts strings and timestamps', () => {
+    expect(formatDateISO('2025-11-05T06:00')).toBe('2025-11-05');
+    expect(formatDateISO(new Date(2025, 10, 5).getTime())).toBe('2025-11-05');
+  });
+
+  it('returns an empty string for unusable input', () => {
+    expect(formatDateISO(null)).toBe('');
+    expect(formatDateISO(undefined)).toBe('');
+    expect(formatDateISO('')).toBe('');
+    expect(formatDateISO('not a date')).toBe('');
+  });
+});
+
+describe('formatDateHour', () => {
+  it('appends the zero-padded hour to the date', () => {
+    expect(formatDateHour(new Date(2025, 10, 5, 6))).toBe('05.11.2025 06h');
+    expect(formatDateHour(new Date(2025, 10, 5, 18))).toBe('05.11.2025 18h');
+  });
+
+  it('keeps midnight as 00h rather than dropping it', () => {
+    expect(formatDateHour(new Date(2025, 10, 5, 0))).toBe('05.11.2025 00h');
+  });
+
+  it('returns an empty string for unusable input', () => {
+    expect(formatDateHour(null)).toBe('');
+    expect(formatDateHour('not a date')).toBe('');
+  });
+});
+
+describe('entityDisplayName', () => {
+  const entities = [{id: 3, name: 'Sion'}, {id: 4, name: ''}, {id: 5}];
+
+  it('prefers the entity name', () => {
+    expect(entityDisplayName(entities, 3)).toBe('Sion');
+  });
+
+  it('falls back to the id when the name is missing or blank', () => {
+    expect(entityDisplayName(entities, 4)).toBe('4');
+    expect(entityDisplayName(entities, 5)).toBe('5');
+  });
+
+  it('falls back to the requested id when the entity is not in the list', () => {
+    expect(entityDisplayName(entities, 99)).toBe('99');
+    expect(entityDisplayName([], 99)).toBe('99');
+  });
+
+  it('returns an empty string when nothing is selected', () => {
+    expect(entityDisplayName(entities, null)).toBe('');
+    expect(entityDisplayName(entities, undefined)).toBe('');
+  });
+
+  it('treats id 0 as a real selection', () => {
+    // A truthiness check here would render an empty label for a valid entity.
+    expect(entityDisplayName([{id: 0, name: 'Zero'}], 0)).toBe('Zero');
+    expect(entityDisplayName([], 0)).toBe('0');
+  });
+
+  it('tolerates a missing or non-array entity list', () => {
+    expect(entityDisplayName(null, 3)).toBe('3');
+    expect(entityDisplayName(undefined, 3)).toBe('3');
+  });
+});

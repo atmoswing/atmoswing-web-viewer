@@ -13,7 +13,7 @@ import PanelStatus from './PanelStatus.jsx';
 
 // Presentational component for method/config selection tree.
 // Props: methodConfigTree, selectedMethodConfig, onSelect
-export function MethodConfigTree({methodConfigTree, selectedMethodConfig, onSelect}) {
+function MethodConfigTree({methodConfigTree, selectedMethodConfig, onSelect}) {
   const handleSelectedItemsChange = React.useCallback((_, itemIds) => {
     if (!itemIds || itemIds.length === 0) return;
     const itemId = Array.isArray(itemIds) ? itemIds[0] : itemIds;

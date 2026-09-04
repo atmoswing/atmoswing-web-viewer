@@ -12,7 +12,7 @@ vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({
   useForecastSession: vi.fn(() => ({workspace: 'ws', activeForecastDate: '2025-01-01'}))
 }));
 
-vi.mock('@/components/modals/common/useModalSelectionData.js', () => ({
+vi.mock('@/components/modals/hooks/useModalSelectionData.js', () => ({
   useModalSelectionData: vi.fn(() => ({
     resolvedMethodId: 'm1',
     resolvedConfigId: 'c1',

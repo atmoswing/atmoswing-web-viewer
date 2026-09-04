@@ -12,6 +12,15 @@ import GeoJSON from 'ol/format/GeoJSON';
 import shp from 'shpjs';
 import {ensureProjDefined} from '@/components/map/utils/olProjectionUtils.js';
 import {resolveOverlayStyle} from '@/components/map/utils/olStyleUtils.js';
+import {
+  OVERLAY_LINE_COLOR,
+  OVERLAY_POINT_FILL,
+  OVERLAY_POINT_RADIUS,
+  OVERLAY_POINT_STROKE_COLOR,
+  OVERLAY_POINT_STROKE_WIDTH,
+  OVERLAY_POLYGON_FILL,
+  OVERLAY_STROKE_WIDTH
+} from '@/components/map/mapConstants.js';
 import config from '@/config.js';
 
  /**
@@ -63,16 +72,18 @@ export default function useOverlayConfigLayers(
     if (!items.length) return () => {
     };
 
-    const lineStyle = new Style({stroke: new Stroke({color: 'rgba(0, 102, 255, 0.9)', width: 2})});
+    const lineStyle = new Style({
+      stroke: new Stroke({color: OVERLAY_LINE_COLOR, width: OVERLAY_STROKE_WIDTH})
+    });
     const polygonStyle = new Style({
-      stroke: new Stroke({color: 'rgba(0, 102, 255, 0.9)', width: 2}),
-      fill: new Fill({color: 'rgba(0, 102, 255, 0.15)'})
+      stroke: new Stroke({color: OVERLAY_LINE_COLOR, width: OVERLAY_STROKE_WIDTH}),
+      fill: new Fill({color: OVERLAY_POLYGON_FILL})
     });
     const pointStyle = new Style({
       image: new CircleStyle({
-        radius: 5,
-        stroke: new Stroke({color: '#003b8e', width: 1.5}),
-        fill: new Fill({color: 'rgba(0, 102, 255, 0.7)'})
+        radius: OVERLAY_POINT_RADIUS,
+        stroke: new Stroke({color: OVERLAY_POINT_STROKE_COLOR, width: OVERLAY_POINT_STROKE_WIDTH}),
+        fill: new Fill({color: OVERLAY_POINT_FILL})
       })
     });
     const styleFn = feature => {

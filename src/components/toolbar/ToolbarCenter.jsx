@@ -26,6 +26,7 @@ import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import {useTranslation} from 'react-i18next';
 import {SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatForecastDateForApi} from '@/utils/forecastDateUtils.js';
+import {formatDateHour, formatDateISO} from '@/utils/formattingUtils.js';
 
 /**
  * ToolbarCenter component.
@@ -46,17 +47,7 @@ export default function ToolbarCenter() {
   } = useForecastSession();
   const {workspaceData} = useWorkspace();
   const isShowingLastForecast = !!(activeForecastDate && workspaceData?.date?.last_forecast_date && activeForecastDate === workspaceData.date.last_forecast_date);
-  const forecastDateStr = React.useMemo(() => {
-    if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
-      const fd = forecastBaseDate;
-      const dd = String(fd.getDate()).padStart(2, '0');
-      const mm = String(fd.getMonth() + 1).padStart(2, '0');
-      const yyyy = fd.getFullYear();
-      const HH = String(fd.getHours()).padStart(2, '0');
-      return `${dd}.${mm}.${yyyy} ${HH}h`;
-    }
-    return '';
-  }, [forecastBaseDate]);
+  const forecastDateStr = React.useMemo(() => formatDateHour(forecastBaseDate), [forecastBaseDate]);
   const buttonsDisabled = !activeForecastDate || baseDateSearching;
   const statusLabel = baseDateSearching ? t('toolbar.searching') : (forecastDateStr ? t('toolbar.forecastOf', {date: forecastDateStr}) : t('toolbar.loading'));
 
@@ -70,10 +61,7 @@ export default function ToolbarCenter() {
     if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
       const d = forecastBaseDate;
       const pad = n => String(n).padStart(2, '0');
-      const yyyy = d.getFullYear();
-      const MM = pad(d.getMonth() + 1);
-      const dd = pad(d.getDate());
-      setDialogDate(`${yyyy}-${MM}-${dd}`);
+      setDialogDate(formatDateISO(d));
       const h = d.getHours();
       let nearest = allowedHours[0];
       for (const ah of allowedHours) {

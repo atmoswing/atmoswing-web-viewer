@@ -15,7 +15,8 @@ import {
   normalizeAnalogsResponse
 } from '@/utils/apiNormalization.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
-import {useModalSelectionData} from '../common/useModalSelectionData.js';
+import {entityDisplayName} from '@/utils/formattingUtils.js';
+import {useModalSelectionData} from './useModalSelectionData.js';
 
 /** Percentiles marked on the precipitation distribution. */
 const MARKER_PERCENTILES = [20, 60, 90];
@@ -127,10 +128,10 @@ export function useDistributionData({open, selection, options}) {
     {enabled: !!methodConfigPart}
   );
 
-  const stationName = useMemo(() => {
-    const match = entitiesForExport?.find(s => s.id === resolvedEntityId);
-    return match?.name || match?.id || resolvedEntityId || '';
-  }, [entitiesForExport, resolvedEntityId]);
+  const stationName = useMemo(
+    () => entityDisplayName(entitiesForExport, resolvedEntityId),
+    [entitiesForExport, resolvedEntityId]
+  );
 
   const bestAnalogsData = useMemo(
     () => (options.bestAnalogs ? pickBestAnalogs(analogValues) : null),

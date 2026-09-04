@@ -9,6 +9,7 @@
  */
 
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {formatDateISO} from '@/utils/formattingUtils.js';
 
 /**
  * Sanitize a string for safe use as a filename (drops/normalizes problematic characters)
@@ -146,10 +147,7 @@ function cloneForExport(svg) {
 export function formatExportDatePart(forecastDate) {
   if (!forecastDate) return '';
   try {
-    const d = parseForecastDate(forecastDate) || new Date(forecastDate);
-    if (!d || isNaN(d)) return '';
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    return formatDateISO(parseForecastDate(forecastDate) || new Date(forecastDate));
   } catch {
     return '';
   }

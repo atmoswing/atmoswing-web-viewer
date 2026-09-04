@@ -11,7 +11,7 @@ import Select from '@mui/material/Select';
 import {useEntities, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTranslation} from 'react-i18next';
 import PanelStatus from './PanelStatus.jsx';
-import {compareEntitiesByName} from '@/utils/formattingUtils.js';
+import {compareEntitiesByName, entityDisplayName} from '@/utils/formattingUtils.js';
 
 /**
  * PanelStations component rendering a dropdown of entities with loading/error/empty states.
@@ -82,8 +82,7 @@ export default function PanelStations(props) {
           disabled={disabled}
           renderValue={(value) => {
             if (value === '' || value == null) return entitiesLoading ? t('stations.loading') : (entitiesError ? t('stations.errorLoading') : t('stations.select'));
-            const match = entities?.find(e => e.id === value);
-            return match?.name || match?.id || value;
+            return entityDisplayName(entities, value);
           }}
         >
           <MenuItem value="" disabled={entitiesLoading || !!entitiesError || entities.length === 0}>

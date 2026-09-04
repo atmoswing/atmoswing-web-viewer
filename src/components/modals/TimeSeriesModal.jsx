@@ -25,6 +25,7 @@ import {
   safeForFilename
 } from './common/exportUtils.js';
 import {useTranslation} from 'react-i18next';
+import {entityDisplayName} from '@/utils/formattingUtils.js';
 
 /**
  * TimeSeriesModal component (no props - visibility controlled via selectedEntityId presence).
@@ -77,11 +78,10 @@ export default function TimeSeriesModal() {
   // Tooltip state for best analogs (MUI Popper anchored to hovered D3 circle)
   const [analogTooltip, setAnalogTooltip] = useState({open: false, anchorEl: null, title: ''});
 
-  const stationName = useMemo(() => {
-    if (selectedEntityId == null) return '';
-    const match = entities?.find(e => e.id === selectedEntityId);
-    return match?.name || match?.id || selectedEntityId;
-  }, [selectedEntityId, entities]);
+  const stationName = useMemo(
+    () => entityDisplayName(entities, selectedEntityId),
+    [entities, selectedEntityId]
+  );
 
   const handleClose = () => setSelectedEntityId(null);
 

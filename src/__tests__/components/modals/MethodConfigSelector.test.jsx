@@ -10,7 +10,7 @@ import {
   useCachedRequestMock
 } from '../../testUtils.js';
 import MethodConfigSelector from '@/components/modals/common/MethodConfigSelector.jsx';
-import {useModalSelectionData} from '@/components/modals/common/useModalSelectionData.js';
+import {useModalSelectionData} from '@/components/modals/hooks/useModalSelectionData.js';
 
 setupI18nMock();
 setupUseCachedRequestMock();
