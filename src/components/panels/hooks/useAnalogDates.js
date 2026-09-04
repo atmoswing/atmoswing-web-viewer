@@ -8,7 +8,7 @@ import {useForecastSession, useMethods} from '@/contexts/forecast/ForecastsConte
 import {useSynthesis} from '@/contexts/forecast/SynthesisContext.jsx';
 import {getAnalogDates, getAnalogyCriteria} from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeAnalogCriteriaArray, normalizeAnalogDatesArray} from '@/utils/apiNormalization.js';
+import {normalizeAnalogCriteriaArray, normalizeAnalogDatesArray} from '@/utils/normalize/analogs.js';
 import {computeLeadHours} from '@/utils/targetDateUtils.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 

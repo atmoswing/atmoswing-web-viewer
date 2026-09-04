@@ -12,7 +12,7 @@ import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '@/servic
 import {computeLeadHours, hasTargetDate} from '@/utils/targetDateUtils.js';
 import {isMethodSelectionValid, methodExists} from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeForecastValuesResponse} from '@/utils/apiNormalization.js';
+import {normalizeForecastValuesResponse} from '@/utils/normalize/values.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 const ForecastValuesContext = createContext({});

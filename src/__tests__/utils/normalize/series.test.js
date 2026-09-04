@@ -1,12 +1,57 @@
-import {describe, expect, it} from 'vitest';
-import {
-  normalizeReferenceValues,
-  normalizeSeriesBestAnalogs,
-  normalizeSeriesValuesPercentiles,
-  normalizeSeriesValuesPercentilesHistory
-} from '@/utils/apiNormalization.js';
+/**
+ * @fileoverview Tests for the series response normalizers.
+ */
 
-describe('apiNormalization - edge cases', () => {
+import {describe, expect, it} from 'vitest';
+import {extractTargetDatesArray, normalizeSeriesBestAnalogs, normalizeSeriesValuesPercentiles, normalizeSeriesValuesPercentilesHistory} from '@/utils/normalize/series.js';
+
+describe('normalize/series', () => {
+  describe('extractTargetDatesArray', () => {
+    it('should extract from series_values.target_dates', () => {
+      const input = {
+        series_values: {target_dates: ['2023-01-15', '2023-01-16']}
+      };
+      expect(extractTargetDatesArray(input)).toEqual(['2023-01-15', '2023-01-16']);
+    });
+
+    it('should extract from target_dates property', () => {
+      const input = {target_dates: ['2023-01-15', '2023-01-16']};
+      expect(extractTargetDatesArray(input)).toEqual(['2023-01-15', '2023-01-16']);
+    });
+
+    it('should extract from series_percentiles[0].target_dates', () => {
+      const input = {
+        series_percentiles: [{target_dates: ['2023-01-15']}]
+      };
+      expect(extractTargetDatesArray(input)).toEqual(['2023-01-15']);
+    });
+
+    it('should extract from series[0].target_dates', () => {
+      const input = {
+        series: [{target_dates: ['2023-01-15']}]
+      };
+      expect(extractTargetDatesArray(input)).toEqual(['2023-01-15']);
+    });
+
+    it('should return array of strings directly', () => {
+      const input = ['2023-01-15', '2023-01-16'];
+      expect(extractTargetDatesArray(input)).toEqual(input);
+    });
+
+    it('should extract from first element if array of objects with target_dates', () => {
+      const input = [{target_dates: ['2023-01-15']}];
+      expect(extractTargetDatesArray(input)).toEqual(['2023-01-15']);
+    });
+
+    it('should return empty array for null', () => {
+      expect(extractTargetDatesArray(null)).toEqual([]);
+    });
+
+    it('should return empty array for object without target dates', () => {
+      expect(extractTargetDatesArray({other: 'data'})).toEqual([]);
+    });
+  });
+
   describe('normalizeSeriesValuesPercentiles', () => {
     it('handles missing series_values gracefully', () => {
       const result = normalizeSeriesValuesPercentiles({}, null);
@@ -200,63 +245,41 @@ describe('apiNormalization - edge cases', () => {
     });
   });
 
-  describe('normalizeReferenceValues', () => {
-    it('handles items with return_period instead of rp', () => {
-      const resp = {
-        items: [
-          {return_period: 5, value: 100},
-          {return_period: 10, value: 200}
-        ]
-      };
-      const result = normalizeReferenceValues(resp);
-      expect(result.axis).toEqual([5, 10]);
-      expect(result.values).toEqual([100, 200]);
-    });
+  it('normalizeSeriesValuesPercentiles builds pct map', () => {
+    const resp = {
+      series_values: {
+        target_dates: ['2020-01-01'],
+        series_percentiles: [{percentile: 50, series_values: [1]}]
+      }
+    };
+    const out = normalizeSeriesValuesPercentiles(resp);
+    expect(out.pctList).toEqual([50]);
+    expect(out.percentiles[50][0]).toBe(1);
+  });
 
-    it('handles items with x/y instead of rp/value', () => {
-      const resp = {
-        items: [
-          {x: 5, y: 100},
-          {x: 10, y: 200}
-        ]
-      };
-      const result = normalizeReferenceValues(resp);
-      expect(result.axis).toEqual([5, 10]);
-      expect(result.values).toEqual([100, 200]);
-    });
+  it('normalizeSeriesValuesPercentilesHistory parses past forecasts', () => {
+    const resp = {
+      past_forecasts: [{
+        forecast_date: '2020-01-01',
+        target_dates: ['2020-01-02'],
+        series_percentiles: [{percentile: 10, series_values: [2]}]
+      }]
+    };
+    const out = normalizeSeriesValuesPercentilesHistory(resp);
+    expect(out[0].percentiles[10][0]).toBe(2);
+  });
 
-    it('returns null for mismatched axis/values lengths', () => {
-      const resp = {
-        reference_axis: [1, 2, 3],
-        reference_values: [10, 20]
-      };
-      const result = normalizeReferenceValues(resp);
-      expect(result).toBeNull();
-    });
+  it('normalizeSeriesBestAnalogs returns null for invalid shape', () => {
+    expect(normalizeSeriesBestAnalogs({})).toBeNull();
+  });
 
-    it('returns null for empty arrays', () => {
-      const resp = {
-        reference_axis: [],
-        reference_values: []
-      };
-      const result = normalizeReferenceValues(resp);
-      expect(result).toBeNull();
-    });
-
-    it('returns null for null response', () => {
-      const result = normalizeReferenceValues(null);
-      expect(result).toBeNull();
-    });
-
-    it('handles axis/values as alternative keys', () => {
-      const resp = {
-        axis: [1, 2],
-        values: [10, 20]
-      };
-      const result = normalizeReferenceValues(resp);
-      expect(result.axis).toEqual([1, 2]);
-      expect(result.values).toEqual([10, 20]);
-    });
+  it('normalizeSeriesBestAnalogs parses values & dates', () => {
+    const resp = {
+      series_values: [[1, 2], [3, 4]],
+      series_dates: [['2020-01-01', '2020-01-02'], ['2020-01-03', '2020-01-04']]
+    };
+    const out = normalizeSeriesBestAnalogs(resp);
+    expect(out.items.length).toBe(2);
+    expect(out.items[0].values[0]).toBe(1);
   });
 });
-

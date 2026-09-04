@@ -31,11 +31,13 @@ vi.mock('@/services/api.js', () => ({
   getRelevantEntities: vi.fn(() => Promise.resolve({entities: []}))
 }));
 
-vi.mock('@/utils/apiNormalization.js', () => ({
+vi.mock('@/utils/normalize/series.js', () => ({
   normalizeSeriesValuesPercentiles: vi.fn(() => ({percentiles: [10, 50, 90]})),
-  normalizeReferenceValues: vi.fn(() => ({axis: [], values: []})),
   normalizeSeriesBestAnalogs: vi.fn(() => ({items: [{values: []}]})),
   normalizeSeriesValuesPercentilesHistory: vi.fn(() => ({past: true}))
+}));
+vi.mock('@/utils/normalize/values.js', () => ({
+  normalizeReferenceValues: vi.fn(() => ({axis: [], values: []}))
 }));
 
 import * as api from '@/services/api.js';

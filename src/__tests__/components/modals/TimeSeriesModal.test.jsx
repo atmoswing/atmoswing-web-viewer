@@ -39,9 +39,13 @@ vi.mock('@/services/api.js', () => ({
   getEntities: vi.fn(() => Promise.resolve({entities: []}))
 }));
 
-vi.mock('@/utils/apiNormalization.js', () => ({
-  normalizeSeriesValuesPercentiles: vi.fn(d => d),
-  normalizeEntitiesResponse: vi.fn(d => d),
+vi.mock('@/utils/normalize/entities.js', () => ({
+  normalizeEntitiesResponse: vi.fn(d => d)
+}));
+vi.mock('@/utils/normalize/series.js', () => ({
+  normalizeSeriesValuesPercentiles: vi.fn(d => d)
+}));
+vi.mock('@/utils/normalize/values.js', () => ({
   normalizeReferenceValues: vi.fn(d => d)
 }));
 

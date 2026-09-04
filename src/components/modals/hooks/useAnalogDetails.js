@@ -6,7 +6,7 @@
 import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {getAnalogs} from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeAnalogsResponse} from '@/utils/apiNormalization.js';
+import {normalizeAnalogsResponse} from '@/utils/normalize/analogs.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {useModalSelectionData} from './useModalSelectionData.js';
 

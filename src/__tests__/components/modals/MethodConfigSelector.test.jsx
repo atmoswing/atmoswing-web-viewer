@@ -33,10 +33,12 @@ vi.mock('@/services/api.js', () => ({
 }));
 
 // Normalization utils
-vi.mock('@/utils/apiNormalization.js', () => ({
-  extractTargetDatesArray: vi.fn(() => []),
+vi.mock('@/utils/normalize/entities.js', () => ({
   normalizeEntitiesResponse: vi.fn((d) => d),
   normalizeRelevantEntityIds: vi.fn(() => new Set())
+}));
+vi.mock('@/utils/normalize/series.js', () => ({
+  extractTargetDatesArray: vi.fn(() => [])
 }));
 
 describe('MethodConfigSelector (smoke)', () => {

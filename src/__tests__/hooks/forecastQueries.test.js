@@ -16,8 +16,10 @@ const {getMethodsAndConfigs, getEntities, getReferenceValues} = vi.hoisted(() =>
 }));
 
 vi.mock('@/services/api.js', () => ({getMethodsAndConfigs, getEntities, getReferenceValues}));
-vi.mock('@/utils/apiNormalization.js', () => ({
-  normalizeEntitiesResponse: (r) => r?.entities ?? [],
+vi.mock('@/utils/normalize/entities.js', () => ({
+  normalizeEntitiesResponse: (r) => r?.entities ?? []
+}));
+vi.mock('@/utils/normalize/values.js', () => ({
   normalizeReferenceValues: (r) => r?.values ?? null
 }));
 

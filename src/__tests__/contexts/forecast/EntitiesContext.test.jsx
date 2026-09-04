@@ -10,11 +10,13 @@ import {MethodsProvider} from '@/contexts/forecast/MethodsContext.jsx';
 import {WorkspaceProvider} from '@/contexts/WorkspaceContext.jsx';
 import {ConfigProvider} from '@/contexts/ConfigContext.jsx';
 import * as api from '@/services/api.js';
-import * as apiNormalization from '@/utils/apiNormalization.js';
+import * as normalizeEntities from '@/utils/normalize/entities.js';
+import * as normalizeMethods from '@/utils/normalize/methods.js';
 
 // Mock dependencies
 vi.mock('@/services/api.js');
-vi.mock('@/utils/apiNormalization.js');
+vi.mock('@/utils/normalize/entities.js');
+vi.mock('@/utils/normalize/methods.js');
 vi.mock('@/config.js', () => ({
   default: {API_BASE_URL: 'http://localhost:3000', DEFAULT_WORKSPACE: 'test'}
 }));
@@ -71,9 +73,9 @@ describe('EntitiesContext', () => {
     api.getMethodsAndConfigs = vi.fn().mockResolvedValue(mockWorkspaceData.methodsAndConfigs);
 
     // Mock normalization
-    apiNormalization.normalizeEntitiesResponse = vi.fn(resp => resp.entities || []);
-    apiNormalization.normalizeRelevantEntityIds = vi.fn(resp => resp.relevant_entity_ids || null);
-    apiNormalization.normalizeMethodsAndConfigs = vi.fn(data => data.methods || []);
+    normalizeEntities.normalizeEntitiesResponse = vi.fn(resp => resp.entities || []);
+    normalizeEntities.normalizeRelevantEntityIds = vi.fn(resp => resp.relevant_entity_ids || null);
+    normalizeMethods.normalizeMethodsAndConfigs = vi.fn(data => data.methods || []);
   });
 
   afterEach(() => {

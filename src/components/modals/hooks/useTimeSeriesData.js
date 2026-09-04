@@ -15,11 +15,7 @@ import {
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {useReferenceValues} from '@/hooks/forecastQueries.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
-import {
-  normalizeSeriesBestAnalogs,
-  normalizeSeriesValuesPercentiles,
-  normalizeSeriesValuesPercentilesHistory
-} from '@/utils/apiNormalization.js';
+import {normalizeSeriesBestAnalogs, normalizeSeriesValuesPercentiles, normalizeSeriesValuesPercentilesHistory} from '@/utils/normalize/series.js';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
 import {DEFAULT_PCTS, FULL_PCTS} from '../charts/plotConstants.js';
 import {useResolvedEntityConfig} from './useResolvedEntityConfig.js';

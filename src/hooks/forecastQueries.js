@@ -17,7 +17,8 @@
 
 import {getEntities, getMethodsAndConfigs, getReferenceValues} from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeEntitiesResponse, normalizeReferenceValues} from '@/utils/apiNormalization.js';
+import {normalizeEntitiesResponse} from '@/utils/normalize/entities.js';
+import {normalizeReferenceValues} from '@/utils/normalize/values.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 /**

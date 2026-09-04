@@ -7,7 +7,7 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
-import {normalizeMethodsAndConfigs} from '@/utils/apiNormalization.js';
+import {normalizeMethodsAndConfigs} from '@/utils/normalize/methods.js';
 
 const MethodsContext = createContext({});
 

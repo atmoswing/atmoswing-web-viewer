@@ -40,11 +40,15 @@ vi.mock('@/services/api.js', () => ({
 }));
 
 // Mock normalization utils
-vi.mock('@/utils/apiNormalization.js', () => ({
+vi.mock('@/utils/normalize/analogs.js', () => ({
   normalizeAnalogCriteriaArray: vi.fn(d => d),
   normalizeAnalogPercentiles: vi.fn(d => d),
-  normalizeAnalogsResponse: vi.fn(d => d),
-  normalizeEntitiesResponse: vi.fn(d => d),
+  normalizeAnalogsResponse: vi.fn(d => d)
+}));
+vi.mock('@/utils/normalize/entities.js', () => ({
+  normalizeEntitiesResponse: vi.fn(d => d)
+}));
+vi.mock('@/utils/normalize/values.js', () => ({
   normalizeReferenceValues: vi.fn(d => d)
 }));
 

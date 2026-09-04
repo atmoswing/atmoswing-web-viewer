@@ -8,7 +8,7 @@ import React, {createContext, useCallback, useContext, useEffect, useMemo, useRe
 import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import {formatForecastDateForApi, parseForecastDate} from '@/utils/forecastDateUtils.js';
 import {getLastForecastDate, getSynthesisTotal, hasForecastDate} from '@/services/api.js';
-import {normalizeHasForecastDate, normalizeSynthesisHasLeads} from '@/utils/apiNormalization.js';
+import {normalizeHasForecastDate, normalizeSynthesisHasLeads} from '@/utils/normalize/synthesis.js';
 import config from '@/config.js';
 
 const ForecastSessionContext = createContext({});

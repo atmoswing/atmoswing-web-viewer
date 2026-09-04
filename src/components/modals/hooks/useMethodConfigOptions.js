@@ -9,7 +9,8 @@ import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {useEntitiesList, useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
 import {getRelevantEntities, getSeriesValuesPercentiles} from '@/services/api.js';
-import {extractTargetDatesArray, normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
+import {normalizeRelevantEntityIds} from '@/utils/normalize/entities.js';
+import {extractTargetDatesArray} from '@/utils/normalize/series.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
 

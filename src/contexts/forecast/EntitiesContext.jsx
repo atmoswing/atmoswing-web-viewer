@@ -12,7 +12,7 @@ import {getRelevantEntities} from '@/services/api.js';
 import {deriveConfigId, isMethodSelectionValid, methodExists} from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {useEntitiesList} from '@/hooks/forecastQueries.js';
-import {normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
+import {normalizeRelevantEntityIds} from '@/utils/normalize/entities.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const EntitiesContext = createContext({});

@@ -9,11 +9,7 @@ import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx
 import {getAnalogValues, getAnalogValuesPercentiles, getAnalogyCriteria} from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {useEntitiesList, useReferenceValues} from '@/hooks/forecastQueries.js';
-import {
-  normalizeAnalogCriteriaArray,
-  normalizeAnalogPercentiles,
-  normalizeAnalogsResponse
-} from '@/utils/apiNormalization.js';
+import {normalizeAnalogCriteriaArray, normalizeAnalogPercentiles, normalizeAnalogsResponse} from '@/utils/normalize/analogs.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {entityDisplayName} from '@/utils/formattingUtils.js';
 import {useModalSelectionData} from './useModalSelectionData.js';

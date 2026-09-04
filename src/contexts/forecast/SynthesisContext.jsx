@@ -10,7 +10,7 @@ import {getSynthesisPerMethod, getSynthesisTotal} from '@/services/api.js';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
 import {isSameDay, isSameInstant} from '@/utils/targetDateUtils.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizePerMethodSynthesis} from '@/utils/apiNormalization.js';
+import {normalizePerMethodSynthesis} from '@/utils/normalize/synthesis.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const SynthesisContext = createContext({});
