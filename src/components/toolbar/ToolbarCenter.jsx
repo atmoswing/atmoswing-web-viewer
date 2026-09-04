@@ -27,12 +27,11 @@ import {useTranslation} from 'react-i18next';
 import {SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatForecastDateForApi} from '@/utils/forecastDateUtils.js';
 
+/**
+ * ToolbarCenter component.
+ * @returns {React.ReactElement}
+ */
 export default function ToolbarCenter() {
-  /**
-   * ToolbarCenter component.
-   * @returns {React.ReactElement}
-   */
-
   const {t} = useTranslation();
   const {selectedMethodConfig} = useMethods();
   const {

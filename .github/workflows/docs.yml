@@ -8,7 +8,7 @@ on:
     paths:
       - 'src/**/*.js'
       - 'src/**/*.jsx'
-      - 'generate-docs.js'
+      - 'generate-docs.cjs'
       - 'jsdoc.config.json'
       - '.github/workflows/docs.yml'
   pull_request:

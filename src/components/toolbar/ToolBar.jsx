@@ -19,12 +19,11 @@ import ToolbarCenter from './ToolbarCenter.jsx';
 const DetailsAnalogsModal = lazy(() => import('@/components/modals/DetailsAnalogsModal.jsx'));
 const DistributionsModal = lazy(() => import('@/components/modals/DistributionsModal.jsx'));
 
+/**
+ * ToolBar component.
+ * @returns {React.ReactElement}
+ */
 export default function ToolBar() {
-  /**
-   * ToolBar component.
-   * @returns {React.ReactElement}
-   */
-
   const [detailsAnalogsModalOpen, setDetailsAnalogsModalOpen] = React.useState(false);
   const [distributionsModalOpen, setDistributionsModalOpen] = React.useState(false);
 

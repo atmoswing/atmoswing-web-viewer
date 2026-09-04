@@ -5,16 +5,16 @@
 
 import React from 'react';
 
+/**
+ * MapLegend component.
+ * @param {Object} props
+ * @param {Array<{color:string,pct:number}>} props.legendStops - Gradient stops
+ * @param {number} props.legendMax - Maximum value for scale labels
+ * @param {boolean} props.dark - Whether dark theme styling is applied
+ * @param {string} props.title - Legend title
+ * @returns {React.ReactElement|null}
+ */
 export default function MapLegend({legendStops, legendMax, dark, title}) {
-  /**
-   * MapLegend component.
-   * @param {Object} props
-   * @param {Array<{color:string,pct:number}>} props.legendStops - Gradient stops
-   * @param {number} props.legendMax - Maximum value for scale labels
-   * @param {boolean} props.dark - Whether dark theme styling is applied
-   * @param {string} props.title - Legend title
-   * @returns {React.ReactElement|null}
-   */
   if (!legendStops || legendStops.length === 0) return null;
   const gradientCSS = `linear-gradient(to right, ${legendStops.map(s => `${s.color} ${s.pct}%`).join(', ')})`;
   return (

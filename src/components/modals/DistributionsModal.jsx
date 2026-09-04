@@ -46,14 +46,14 @@ function TabPanel({children, value, index, ...other}) {
   );
 }
 
+/**
+ * DistributionsModal component.
+ * @param {Object} props
+ * @param {boolean} props.open - Whether modal is open
+ * @param {Function} props.onClose - Close callback
+ * @returns {React.ReactElement}
+ */
 export default function DistributionsModal({open, onClose}) {
-  /**
-   * DistributionsModal component.
-   * @param {Object} props
-   * @param {boolean} props.open - Whether modal is open
-   * @param {Function} props.onClose - Close callback
-   * @returns {React.ReactElement}
-   */
   const {activeForecastDate} = useForecastSession();
   const {t} = useTranslation();
 

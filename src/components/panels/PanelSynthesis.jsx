@@ -69,13 +69,13 @@ function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate, isM
   );
 }
 
+/**
+ * PanelSynthesis component.
+ * @param {Object} props
+ * @param {boolean} [props.defaultOpen] - Initial open state
+ * @returns {React.ReactElement}
+ */
 export default function PanelSynthesis(props) {
-  /**
-   * PanelSynthesis component.
-   * @param {Object} props
-   * @param {boolean} [props.defaultOpen] - Initial open state
-   * @returns {React.ReactElement}
-   */
   const {t} = useTranslation();
   const {perMethodSynthesis, perMethodSynthesisLoading, perMethodSynthesisError} = useSynthesis();
   const {methodConfigTree, setSelectedMethodConfig, selectedMethodConfig} = useMethods();

@@ -9,6 +9,17 @@ const TITLE_FONT_SIZE = 14;
 const TITLE_COLOR = '#222';
 
 /**
+ * One entry of the chart legend.
+ *
+ * @typedef {Object} LegendItem
+ * @property {string} label - Text shown next to the swatch
+ * @property {string} color - Swatch colour
+ * @property {boolean} [dashed] - Draw the swatch as a dashed line
+ * @property {boolean} [marker] - Draw the swatch as a marker instead of a line
+ * @property {boolean} [small] - Render the swatch at the smaller size
+ */
+
+/**
  * Composes the title line used by the distribution charts.
  *
  * @param {Object} params
@@ -96,7 +107,7 @@ export function drawChartTitle(svg, {text, centerX, y}) {
  *
  * @param {Object} svg - D3 selection of the SVG element
  * @param {Object} params
- * @param {Array<{label: string, color: string, dashed?: boolean, marker?: boolean, small?: boolean}>} params.items - Legend entries
+ * @param {Array<LegendItem>} params.items - Legend entries
  * @param {number} params.x - Left edge of the legend
  * @param {number} params.y - Vertical centre of the legend row
  * @returns {void}

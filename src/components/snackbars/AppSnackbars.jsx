@@ -11,12 +11,11 @@ import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
 import {SnackbarItem} from './SnackbarItem.jsx';
 
+/**
+ * AppSnackbars component.
+ * @returns {React.ReactElement}
+ */
 export default function AppSnackbars() {
-  /**
-   * AppSnackbars component.
-   * @returns {React.ReactElement}
-   */
-
   const {t} = useTranslation();
   const config = useConfig();
   const {invalidWorkspaceKey} = useWorkspace();

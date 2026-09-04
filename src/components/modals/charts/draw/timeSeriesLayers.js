@@ -330,7 +330,7 @@ export function drawYGrid(g, {yScale, innerW, innerH}) {
  * @param {number} params.innerH - Plot height
  * @param {Object} params.margin - Plot margins
  * @param {Array<Date>} params.dates - Target dates, which always get a tick
- * @param {[Date, Date]} params.domain - Time domain
+ * @param {Array<Date>} params.domain - Time domain as `[start, end]`
  * @param {Function} params.t - Translation function
  * @returns {void}
  */

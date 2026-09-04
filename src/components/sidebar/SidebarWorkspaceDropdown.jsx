@@ -10,14 +10,13 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import {useTranslation} from 'react-i18next';
 
+/**
+ * SidebarWorkspaceDropdown component.
+ * @param {Object} props
+ * @param {Array<{key:string,name:string}>} props.options - Workspace options
+ * @returns {React.ReactElement}
+ */
 export function SidebarWorkspaceDropdown({options = []}) {
-  /**
-   * SidebarWorkspaceDropdown component.
-   * @param {Object} props
-   * @param {Array<{key:string,name:string}>} props.options - Workspace options
-   * @returns {React.ReactElement}
-   */
-
   const {t} = useTranslation();
   const {workspace, setWorkspace} = useWorkspace();
 

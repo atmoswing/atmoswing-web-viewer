@@ -23,15 +23,14 @@ import {formatCriteria, formatDateLabel, formatPrecipitation} from '@/utils/form
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
 import {useAnalogDetails} from './hooks/useAnalogDetails.js';
 
+/**
+ * DetailsAnalogsModal component.
+ * @param {Object} props
+ * @param {boolean} props.open - Whether modal is visible
+ * @param {Function} props.onClose - Close callback
+ * @returns {React.ReactElement}
+ */
 export default function DetailsAnalogsModal({open, onClose}) {
-  /**
-   * DetailsAnalogsModal component.
-   * @param {Object} props
-   * @param {boolean} props.open - Whether modal is visible
-   * @param {Function} props.onClose - Close callback
-   * @returns {React.ReactElement}
-   */
-
   const {t} = useTranslation();
 
   // Local selections managed by shared selector component

@@ -26,11 +26,11 @@ import {
 } from './common/exportUtils.js';
 import {useTranslation} from 'react-i18next';
 
+/**
+ * TimeSeriesModal component (no props - visibility controlled via selectedEntityId presence).
+ * @returns {React.ReactElement|null}
+ */
 export default function TimeSeriesModal() {
-  /**
-   * TimeSeriesModal component (no props - visibility controlled via selectedEntityId presence).
-   * @returns {React.ReactElement|null}
-   */
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
   const {selectedMethodConfig} = useMethods();
   const {activeForecastDate} = useForecastSession();

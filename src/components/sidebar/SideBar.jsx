@@ -12,11 +12,11 @@ import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
 import {PanelAnalogDates, PanelDisplay, PanelForecasts, PanelStations, PanelSynthesis} from "../panels";
 
 
+/**
+ * SideBar component.
+ * @returns {React.ReactElement}
+ */
 export default function SideBar() {
-  /**
-   * SideBar component.
-   * @returns {React.ReactElement}
-   */
   const config = useConfig();
   const workspaceOptions = config?.workspaces?.map(ws => ({key: ws.key, name: ws.name})) || [];
 

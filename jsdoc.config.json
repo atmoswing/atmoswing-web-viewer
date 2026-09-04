@@ -2,13 +2,12 @@
   "source": {
     "include": ["src"],
     "includePattern": "\\.(js|jsx)$",
-    "excludePattern": "(node_modules|dist|build)"
+    "excludePattern": "(node_modules|dist|build|__tests__)"
   },
   "opts": {
-    "destination": "./docs",
+    "destination": "./docs-jsdoc",
     "recurse": true,
-    "readme": "./README.md",
-    "template": "node_modules/docdash"
+    "readme": "./README.md"
   },
   "plugins": [
     "plugins/markdown"

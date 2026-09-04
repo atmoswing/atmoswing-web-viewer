@@ -75,7 +75,7 @@ export function computeMedianStepMs(dates, fallbackMs = 12 * 3600 * 1000) {
  * @param {Date|null} activeDateObj - Parsed forecast run date, when valid
  * @param {Object} [opts]
  * @param {number} [opts.daysBefore=2] - How far before the run date the domain starts
- * @returns {[Date, Date]|[null, null]} Domain start and end
+ * @returns {Array<Date|null>} Domain as `[start, end]`; both null when there are no dates
  * @example
  * const [start, end] = computeTimeDomain(dates, runDate);
  */

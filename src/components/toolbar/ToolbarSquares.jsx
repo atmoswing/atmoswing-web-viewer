@@ -11,12 +11,11 @@ import {valueToColorCSS} from '@/utils/colorUtils.js';
 import {isSameDay, makeDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
 
+/**
+ * ToolbarSquares component.
+ * @returns {React.ReactElement}
+ */
 export default function ToolbarSquares() {
-  /**
-   * ToolbarSquares component.
-   * @returns {React.ReactElement}
-   */
-
   const {dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate} = useSynthesis();
   const {t} = useTranslation();
   const maxVal = 1;

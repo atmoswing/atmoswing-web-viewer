@@ -12,14 +12,13 @@ import {useTranslation} from 'react-i18next';
 import {formatCriteria, formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
 import {useAnalogDates} from './hooks/useAnalogDates.js';
 
+/**
+ * PanelAnalogDates component showing a table of analog dates and criteria.
+ * @param {Object} props
+ * @param {boolean} [props.defaultOpen] - Initial panel open state
+ * @returns {React.ReactElement|null} Null if no config selected
+ */
 export default function PanelAnalogDates(props) {
-  /**
-   * PanelAnalogDates component showing a table of analog dates and criteria.
-   * @param {Object} props
-   * @param {boolean} [props.defaultOpen] - Initial panel open state
-   * @returns {React.ReactElement|null} Null if no config selected
-   */
-
   const {t} = useTranslation();
   const {rows, loading, configId} = useAnalogDates();
 

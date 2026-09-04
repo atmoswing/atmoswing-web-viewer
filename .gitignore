@@ -33,3 +33,4 @@ public/gis-layers/
 # Documentation (generated)
 coverage/
 docs/
+docs-jsdoc/

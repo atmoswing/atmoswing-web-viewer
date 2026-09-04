@@ -8,17 +8,16 @@ import {Button, Menu, MenuItem} from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PropTypes from 'prop-types';
 
+/**
+ * ExportMenu component.
+ * @param {Object} props
+ * @param {Function} props.t - Translation function
+ * @param {Function} props.onExportPNG - Handler to export PNG
+ * @param {Function} props.onExportSVG - Handler to export SVG
+ * @param {Function} props.onExportPDF - Handler to export PDF
+ * @param {Object} [props.sx] - MUI style overrides
+ */
 export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx}) {
-  /**
-   * ExportMenu component.
-   * @param {Object} props
-   * @param {Function} props.t - Translation function
-   * @param {Function} props.onExportPNG - Handler to export PNG
-   * @param {Function} props.onExportSVG - Handler to export SVG
-   * @param {Function} props.onExportPDF - Handler to export PDF
-   * @param {Object} [props.sx] - MUI style overrides
-   */
-
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const openMenu = (e) => setAnchorEl(e.currentTarget);

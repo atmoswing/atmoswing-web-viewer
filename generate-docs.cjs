@@ -154,8 +154,7 @@ async function generateSectionDocs(section) {
     const files = glob.sync(section.pattern, { absolute: true });
 
     if (files.length === 0) {
-      console.log(`  No files found for pattern: ${section.pattern}`);
-      return;
+      throw new Error(`No files matched pattern: ${section.pattern}`);
     }
 
     console.log(`  Found ${files.length} files`);
@@ -180,8 +179,10 @@ async function generateSectionDocs(section) {
     const htmlPath = path.join(DOCS_DIR, section.output.replace('.md', '.html'));
     fs.writeFileSync(htmlPath, htmlContent, 'utf8');
     console.log(`  ✓ Generated: ${section.output.replace('.md', '.html')}`);
+    return true;
   } catch (error) {
     console.error(`  ✗ Error generating ${section.name}:`, error.message);
+    return false;
   }
 }
 
@@ -471,13 +472,23 @@ async function main() {
 
   ensureDocsDir();
 
+  const failed = [];
   for (const section of sections) {
-    await generateSectionDocs(section);
+    const ok = await generateSectionDocs(section);
+    if (!ok) failed.push(section.name);
   }
 
   generateIndex();
   generateIndexHtml();
   generateJekyllConfig();
+
+  if (failed.length) {
+    // The index links every section, so a section that failed to build leaves a dead
+    // link on the published site. Fail the run rather than deploying it green.
+    console.error(`\n❌ Documentation generation failed for: ${failed.join(', ')}`);
+    process.exitCode = 1;
+    return;
+  }
 
   console.log('\n✅ Documentation generation complete!');
   console.log(`📁 Output directory: ${DOCS_DIR}`);

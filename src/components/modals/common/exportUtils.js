@@ -2,6 +2,10 @@
  * @module components/modals/common/exportUtils
  * @description Chart export helpers: safe filename generation, SVG style inlining, dimension
  * extraction, temporary DOM mounting, and the SVG/PNG/PDF exporters shared by the chart modals.
+ *
+ * The exporters reject rather than logging and returning: a failed export has to reach the
+ * user, and only the calling component can show a snackbar. They still unmount any temporary
+ * container and revoke any object URL on the way out.
  */
 
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
@@ -157,6 +161,7 @@ export function formatExportDatePart(forecastDate) {
  * @param {SVGElement|null} svg - Chart SVG to export; no-op when null
  * @param {string} baseName - Filename without extension
  * @returns {void}
+ * @throws {Error} When serialization or the download fails
  */
 export function exportChartSVG(svg, baseName) {
   if (!svg) return;
@@ -178,6 +183,7 @@ export function exportChartSVG(svg, baseName) {
  * @param {number} [options.scale=3] - Pixel scale factor applied to the SVG dimensions
  * @param {string} [options.background='#ffffff'] - Canvas background colour
  * @returns {Promise<void>}
+ * @throws {Error} When the SVG cannot be rasterized
  */
 export async function exportChartPNG(svg, baseName, options = {}) {
   if (!svg) return;
@@ -221,6 +227,7 @@ export async function exportChartPNG(svg, baseName, options = {}) {
  * @param {SVGElement|null} svg - Chart SVG to export; no-op when null
  * @param {string} baseName - Filename without extension
  * @returns {Promise<void>}
+ * @throws {Error} When the PDF libraries cannot be loaded or rendering fails
  */
 export async function exportChartPDF(svg, baseName) {
   if (!svg) return;

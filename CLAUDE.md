@@ -18,7 +18,8 @@ npm run test:watch   # Vitest watch mode
 npx vitest run path/to/file.test.js          # Run a single test file
 npx vitest run -t "name of test"             # Run tests matching a name
 npm test -- --coverage                       # Coverage report
-npm run docs         # Generate JSDoc markdown into docs/
+npm run docs         # Generate JSDoc markdown into docs/ (fails if any section errors)
+npm run docs:jsdoc   # Generate the raw jsdoc HTML site into docs-jsdoc/
 ```
 
 Use the `@` import alias for `src/` (configured in `vite.config.js` and `vitest.config.js`), e.g. `import config from '@/config.js'`.
@@ -61,7 +62,7 @@ API responses are inconsistent in shape, so **always normalize** through `utils/
 Components do not call `services/api.js` directly — nothing under `components/**/*.jsx` imports it, and that invariant is worth keeping. Fetching, cache-key construction and normalization live in custom hooks next to their consumer: `components/modals/hooks/`, `components/panels/hooks/`, `components/map/hooks/`. The component keeps UI state and JSX. Pure drawing/geometry helpers sit beside them in `components/modals/charts/draw/` and `components/map/utils/`, which makes them testable without rendering.
 
 ### UI structure
-`App.jsx` = sidebar + toolbar + map + snackbars, all under an `ErrorBoundary`. All three modals are lazy-loaded (`TimeSeriesModal` from `App.jsx`, the other two from `ToolBar.jsx`) so their D3/chart code stays out of the initial bundle — import them by path, never through a barrel, or the code splitting silently breaks. Sidebar panels live in `components/panels/`, modals in `components/modals/`; export-to-PDF via jsPDF/svg2pdf, loaded on demand inside `common/exportUtils.js`. MUI v7 + Emotion for UI; i18n via i18next (`src/i18n.js`, **default language French**, fallback English); translation strings live in `src/locales/en.json` and `fr.json`, one file per language, and a test asserts the two files define identical key sets.
+`App.jsx` = sidebar + toolbar + map + snackbars, all under an `ErrorBoundary`. All three modals are lazy-loaded (`TimeSeriesModal` from `App.jsx`, the other two from `ToolBar.jsx`) so their D3/chart code stays out of the initial bundle — import them by path, never through a barrel, or the code splitting silently breaks. Sidebar panels live in `components/panels/`, modals in `components/modals/`; export-to-PDF via jsPDF/svg2pdf, loaded on demand inside `common/exportUtils.js`. The exporters **reject rather than log**: `ExportMenu` awaits them and raises an error snackbar, so a failed export is visible instead of a menu that just closes. MUI v7 + Emotion for UI; i18n via i18next (`src/i18n.js`, **default language French**, fallback English); translation strings live in `src/locales/en.json` and `fr.json`, one file per language, and a test asserts the two files define identical key sets.
 
 ## Testing
 
@@ -69,7 +70,7 @@ Vitest + Testing Library + jsdom. Tests live in `src/__tests__/` mirroring the `
 
 ## Conventions
 
-- All public functions, components, and hooks get JSDoc comments (the docs site is generated from them — see `DOCUMENTATION.md`). Start each file with a `@module` block.
+- All public functions, components, and hooks get JSDoc comments (the docs site is generated from them — see `DOCUMENTATION.md`). Start each file with a `@module` block. The comment must sit **above** the declaration: one placed inside the function body documents nothing and the component silently vanishes from the docs. Types go through catharsis, which rejects tuples (`{[Date, Date]}`) and inline optional properties (`{{a?: boolean}}`) — use `Array<T>` and a `@typedef` instead. `npm run docs` exits non-zero when a section fails, so CI catches both.
 - Prettier: 2-space indent, no tabs. ESLint allows unused vars matching `^[A-Z_]` (used to silence intentionally-unused capitalized refs).
 - Styling is MUI `sx` props for component-level work; the global stylesheets in `src/styles/` cover layout and
   a few MUI overrides. Each stylesheet is imported by the component that owns it (`toolbar.css` from `ToolBar.jsx`,
