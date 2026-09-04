@@ -11,21 +11,28 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, Typography} from '@mui/material';
+import {Box, CircularProgress, Typography} from '@mui/material';
 import Popper from '@mui/material/Popper';
 import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTimeSeriesData} from './hooks/useTimeSeriesData.js';
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
-import {
-  exportChartPDF,
-  exportChartPNG,
-  exportChartSVG,
-  formatExportDatePart,
-  safeForFilename
-} from './common/exportUtils.js';
+import ChartOptionsGroup from './common/ChartOptionsGroup.jsx';
+import {useChartOptions} from './hooks/useChartOptions.js';
+import {useChartExport} from './hooks/useChartExport.js';
+import {formatExportDatePart, safeForFilename} from './common/exportUtils.js';
 import {useTranslation} from 'react-i18next';
 import {entityDisplayName} from '@/utils/formattingUtils.js';
+
+/** Display options offered by this modal, in the order they are listed. */
+const SERIES_OPTION_KEYS = [
+  'mainQuantiles',
+  'allQuantiles',
+  'bestAnalogs',
+  'tenYearReturn',
+  'allReturnPeriods',
+  'previousForecasts'
+];
 
 /**
  * TimeSeriesModal component (no props - visibility controlled via selectedEntityId presence).
@@ -39,29 +46,14 @@ export default function TimeSeriesModal() {
   const {t} = useTranslation();
 
   // Sidebar state
-  const [options, setOptions] = useState({
+  const {options, handleOptionChange} = useChartOptions({
     mainQuantiles: true,
     allQuantiles: false,
     bestAnalogs: false,
     tenYearReturn: true,
     allReturnPeriods: false,
-    previousForecasts: false,
+    previousForecasts: false
   });
-
-  const handleOptionChange = (key) => (e) => {
-    const checked = e.target.checked;
-    setOptions(o => {
-      if (key === 'tenYearReturn') {
-        // if enabling tenYearReturn, disable allReturnPeriods
-        return {...o, tenYearReturn: checked, allReturnPeriods: checked ? false : o.allReturnPeriods};
-      }
-      if (key === 'allReturnPeriods') {
-        // if enabling allReturnPeriods, disable tenYearReturn
-        return {...o, allReturnPeriods: checked, tenYearReturn: checked ? false : o.tenYearReturn};
-      }
-      return {...o, [key]: checked};
-    });
-  };
 
   const {
     series,
@@ -102,9 +94,10 @@ export default function TimeSeriesModal() {
     return [datePart, entityPart, safeMethod].filter(p => p).join('_') || 'series';
   };
 
-  const exportSVG = () => exportChartSVG(findChartSVG(), buildExportFilenamePrefix());
-  const exportPNG = () => exportChartPNG(findChartSVG(), buildExportFilenamePrefix());
-  const exportPDF = () => exportChartPDF(findChartSVG(), buildExportFilenamePrefix());
+  const {exportSVG, exportPNG, exportPDF} = useChartExport({
+    getSVG: findChartSVG,
+    getBaseName: buildExportFilenamePrefix
+  });
 
   // When the modal closes the request keys all go null and the hooks reset themselves.
   // The cached entries are deliberately kept: a forecast for a given station is immutable,
@@ -143,26 +136,12 @@ export default function TimeSeriesModal() {
                      sx={{display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'stretch', flex: 1, minHeight: 0}}>
         {selectedEntityId && (
           <Box sx={{width: 220, flexShrink: 0, borderRight: '1px solid #e0e0e0', pr: 1, overflowY: 'auto'}}>
-            <FormGroup>
-              <FormControlLabel control={<Checkbox size="small" checked={options.mainQuantiles}
-                                                   onChange={handleOptionChange('mainQuantiles')}/>}
-                                label={<Typography variant="body2">{t('seriesModal.mainQuantiles')}</Typography>}/>
-              <FormControlLabel control={<Checkbox size="small" checked={options.allQuantiles}
-                                                   onChange={handleOptionChange('allQuantiles')}/>}
-                                label={<Typography variant="body2">{t('seriesModal.allQuantiles')}</Typography>}/>
-              <FormControlLabel control={<Checkbox size="small" checked={options.bestAnalogs}
-                                                   onChange={handleOptionChange('bestAnalogs')}/>}
-                                label={<Typography variant="body2">{t('seriesModal.bestAnalogs')}</Typography>}/>
-              <FormControlLabel control={<Checkbox size="small" checked={options.tenYearReturn}
-                                                   onChange={handleOptionChange('tenYearReturn')}/>}
-                                label={<Typography variant="body2">{t('seriesModal.tenYearReturn')}</Typography>}/>
-              <FormControlLabel control={<Checkbox size="small" checked={options.allReturnPeriods}
-                                                   onChange={handleOptionChange('allReturnPeriods')}/>}
-                                label={<Typography variant="body2">{t('seriesModal.allReturnPeriods')}</Typography>}/>
-              <FormControlLabel control={<Checkbox size="small" checked={options.previousForecasts}
-                                                   onChange={handleOptionChange('previousForecasts')}/>}
-                                label={<Typography variant="body2">{t('seriesModal.previousForecasts')}</Typography>}/>
-            </FormGroup>
+            <ChartOptionsGroup
+              optionKeys={SERIES_OPTION_KEYS}
+              options={options}
+              onOptionChange={handleOptionChange}
+              labelVariant="body2"
+            />
           </Box>
         )}
         <Box sx={{

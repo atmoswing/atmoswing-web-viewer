@@ -10,28 +10,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-  Box,
-  Checkbox,
-  CircularProgress,
-  FormControlLabel,
-  FormGroup,
-  Tab,
-  Tabs,
-  Typography
-} from '@mui/material';
+import {Box, CircularProgress, Tab, Tabs, Typography} from '@mui/material';
 import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 import {useDistributionData} from './hooks/useDistributionData.js';
 import ExportMenu from './common/ExportMenu.jsx';
-import {
-  exportChartPDF,
-  exportChartPNG,
-  exportChartSVG,
-  formatExportDatePart,
-  safeForFilename
-} from './common/exportUtils.js';
+import ChartOptionsGroup from './common/ChartOptionsGroup.jsx';
+import {useChartOptions} from './hooks/useChartOptions.js';
+import {useChartExport} from './hooks/useChartExport.js';
+import {formatExportDatePart, safeForFilename} from './common/exportUtils.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
@@ -45,6 +33,9 @@ function TabPanel({children, value, index, ...other}) {
     </div>
   );
 }
+
+/** Display options offered by this modal, in the order they are listed. */
+const DISTRIBUTION_OPTION_KEYS = ['bestAnalogs', 'tenYearReturn', 'allReturnPeriods'];
 
 /**
  * DistributionsModal component.
@@ -67,7 +58,11 @@ export default function DistributionsModal({open, onClose}) {
 
   const [tabIndex, setTabIndex] = useState(0);
   // options for precipitation plot (best analogs / return periods)
-  const [options, setOptions] = useState({bestAnalogs: false, tenYearReturn: true, allReturnPeriods: false});
+  const {options, handleOptionChange} = useChartOptions({
+    bestAnalogs: false,
+    tenYearReturn: true,
+    allReturnPeriods: false
+  });
   // trigger to force chart redraw on resize/tab change
   const [renderTick, setRenderTick] = useState(0);
 
@@ -128,20 +123,6 @@ export default function DistributionsModal({open, onClose}) {
   }, [open]);
 
 
-  // Option toggles (mutual exclusion for return period checkboxes)
-  const handleOptionChange = (key) => (e) => {
-    const checked = e.target.checked;
-    setOptions(prev => {
-      if (key === 'tenYearReturn') {
-        return {...prev, tenYearReturn: checked, allReturnPeriods: checked ? false : prev.allReturnPeriods};
-      }
-      if (key === 'allReturnPeriods') {
-        return {...prev, allReturnPeriods: checked, tenYearReturn: checked ? false : prev.tenYearReturn};
-      }
-      return {...prev, [key]: checked};
-    });
-  };
-
   const buildExportFilenamePrefix = () => {
     const datePart = formatExportDatePart(activeForecastDate);
     const entityPart = safeForFilename(stationName || 'entity');
@@ -156,9 +137,10 @@ export default function DistributionsModal({open, onClose}) {
     return el ? el.querySelector('svg') : null;
   };
 
-  const exportSVG = () => exportChartSVG(findCurrentChartSVG(), buildExportFilenamePrefix());
-  const exportPNG = () => exportChartPNG(findCurrentChartSVG(), buildExportFilenamePrefix());
-  const exportPDF = () => exportChartPDF(findCurrentChartSVG(), buildExportFilenamePrefix());
+  const {exportSVG, exportPNG, exportPDF} = useChartExport({
+    getSVG: findCurrentChartSVG,
+    getBaseName: buildExportFilenamePrefix
+  });
 
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
@@ -179,17 +161,11 @@ export default function DistributionsModal({open, onClose}) {
             onChange={setSelection}
           >
             {tabIndex === 0 && (
-              <FormGroup>
-                <FormControlLabel
-                  control={<Checkbox checked={options.bestAnalogs} onChange={handleOptionChange('bestAnalogs')}
-                                     size="small"/>} label={t('seriesModal.bestAnalogs')}/>
-                <FormControlLabel
-                  control={<Checkbox checked={options.tenYearReturn} onChange={handleOptionChange('tenYearReturn')}
-                                     size="small"/>} label={t('seriesModal.tenYearReturn')}/>
-                <FormControlLabel control={<Checkbox checked={options.allReturnPeriods}
-                                                     onChange={handleOptionChange('allReturnPeriods')} size="small"/>}
-                                  label={t('seriesModal.allReturnPeriods')}/>
-              </FormGroup>
+              <ChartOptionsGroup
+                optionKeys={DISTRIBUTION_OPTION_KEYS}
+                options={options}
+                onOptionChange={handleOptionChange}
+              />
             )}
           </MethodConfigSelector>
           <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>
