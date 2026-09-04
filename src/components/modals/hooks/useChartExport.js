@@ -7,7 +7,7 @@
  * previously repeated in each.
  */
 
-import {exportChartPDF, exportChartPNG, exportChartSVG} from '../common/exportUtils.js';
+import {exportChartPDF, exportChartPNG, exportChartSVG} from '../common/chartExport.js';
 
 /**
  * Builds the PNG/SVG/PDF handlers for a chart.

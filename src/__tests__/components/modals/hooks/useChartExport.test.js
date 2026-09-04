@@ -11,7 +11,7 @@ const {exportChartSVG, exportChartPNG, exportChartPDF} = vi.hoisted(() => ({
   exportChartPDF: vi.fn()
 }));
 
-vi.mock('@/components/modals/common/exportUtils.js', () => ({
+vi.mock('@/components/modals/common/chartExport.js', () => ({
   exportChartSVG,
   exportChartPNG,
   exportChartPDF

@@ -19,7 +19,7 @@ import ExportMenu from './common/ExportMenu.jsx';
 import ChartOptionsGroup from './common/ChartOptionsGroup.jsx';
 import {useChartOptions} from './hooks/useChartOptions.js';
 import {useChartExport} from './hooks/useChartExport.js';
-import {formatExportDatePart, safeForFilename} from './common/exportUtils.js';
+import {formatExportDatePart, safeForFilename} from './common/chartExport.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
