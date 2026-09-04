@@ -29,7 +29,7 @@ function SelectionMarker({size = 6, color = '#2a2a2a'}) {
 }
 
 function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate, isMethodSelected}) {
-  const hours = React.useMemo(() => SUB_HOURS, []);
+  const hours = useMemo(() => SUB_HOURS, []);
   return (
     <div style={{display: 'flex', width: '100%', height: '100%'}} onClick={e => e.stopPropagation()}>
       {hours.map((hr, idx) => {

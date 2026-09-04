@@ -3,7 +3,7 @@
  * @description Main application toolbar providing access to distribution and analog details modals and central navigation controls.
  */
 
-import React, {lazy, Suspense} from 'react';
+import React, {Suspense, lazy, useState} from 'react';
 
 import '@/styles/toolbar.css';
 
@@ -24,13 +24,13 @@ const DistributionsModal = lazy(() => import('@/components/modals/DistributionsM
  * @returns {React.ReactElement}
  */
 export default function ToolBar() {
-  const [detailsAnalogsModalOpen, setDetailsAnalogsModalOpen] = React.useState(false);
-  const [distributionsModalOpen, setDistributionsModalOpen] = React.useState(false);
+  const [detailsAnalogsModalOpen, setDetailsAnalogsModalOpen] = useState(false);
+  const [distributionsModalOpen, setDistributionsModalOpen] = useState(false);
 
   // Each modal's chunk is only requested once it is first opened; from then on it stays
   // mounted so that MUI's closing transition still runs.
-  const [detailsAnalogsLoaded, setDetailsAnalogsLoaded] = React.useState(false);
-  const [distributionsLoaded, setDistributionsLoaded] = React.useState(false);
+  const [detailsAnalogsLoaded, setDetailsAnalogsLoaded] = useState(false);
+  const [distributionsLoaded, setDistributionsLoaded] = useState(false);
 
   const openDetailsAnalogsModal = () => {
     setDetailsAnalogsLoaded(true);

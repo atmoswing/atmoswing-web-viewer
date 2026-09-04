@@ -3,7 +3,7 @@
  * @description Small dropdown menu component offering export options (PNG, SVG, PDF).
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import {Button, Menu, MenuItem} from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
@@ -18,7 +18,7 @@ import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
  * @param {Object} [props.sx] - MUI style overrides
  */
 export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx}) {
-  const [anchorEl, setAnchorEl] = React.useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
   const {enqueueSnackbar} = useSnackbar();
   const open = Boolean(anchorEl);
   const openMenu = (e) => setAnchorEl(e.currentTarget);

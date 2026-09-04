@@ -3,7 +3,7 @@
  * @description Visual summary of daily and sub-daily synthesis values allowing target date selection.
  */
 
-import React from 'react';
+import React, {useMemo} from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import {useTranslation} from 'react-i18next';
 import {useSynthesis} from '@/contexts/forecast/ForecastsContext.jsx';
@@ -20,9 +20,9 @@ export default function ToolbarSquares() {
   const {t} = useTranslation();
   const maxVal = 1;
 
-  const subHours = React.useMemo(() => SUB_HOURS, []);
+  const subHours = useMemo(() => SUB_HOURS, []);
 
-  const subByDay = React.useMemo(() => {
+  const subByDay = useMemo(() => {
     const m = new Map();
     subDailyLeads.forEach(s => {
       const k = makeDayKey(s.date);

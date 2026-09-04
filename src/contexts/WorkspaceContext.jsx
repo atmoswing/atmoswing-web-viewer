@@ -4,7 +4,7 @@
  * Handles workspace selection, URL synchronization, and workspace-specific data loading.
  */
 
-import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {getLastForecastDate} from '@/services/api.js';
 import {useConfig} from './ConfigContext.jsx';
 import {onWorkspacePopState, readWorkspaceFromUrl, writeWorkspaceToUrl} from '@/utils/urlWorkspaceUtils.js';
@@ -122,7 +122,7 @@ export function WorkspaceProvider({children}) {
     setWorkspaceData({date: lastDateResp, __workspace: workspace, methodsAndConfigs: prefetchMethods || undefined});
   }, [workspace, lastDateResp, prefetchMethods]);
 
-  const setWorkspace = React.useCallback((next) => {
+  const setWorkspace = useCallback((next) => {
     if (next === workspace) return;
     const isValid = workspaces.some(w => w.key === next);
     if (!isValid) return;

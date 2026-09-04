@@ -3,7 +3,7 @@
  * @description Global snackbar manager component rendering queued snackbars and workspace validity alerts.
  */
 
-import * as React from 'react';
+import React, {useEffect, useState} from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import {useTranslation} from 'react-i18next';
 import {useConfig} from '@/contexts/ConfigContext.jsx';
@@ -24,9 +24,9 @@ export default function AppSnackbars() {
   const workspacesLoaded = config?.__workspacesLoaded;
   const hasNoWorkspaces = workspacesLoaded && (!config?.workspaces || config.workspaces.length === 0);
 
-  const [invalidOpen, setInvalidOpen] = React.useState(false);
+  const [invalidOpen, setInvalidOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setInvalidOpen(!!invalidWorkspaceKey);
   }, [invalidWorkspaceKey]);
 

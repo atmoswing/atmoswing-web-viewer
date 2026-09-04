@@ -4,7 +4,7 @@
  */
 
 import Panel from './Panel.jsx';
-import * as React from 'react';
+import React, {useEffect, useMemo} from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
@@ -25,7 +25,7 @@ export default function PanelStations(props) {
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
 
   // Ensure selection is valid for current entities list, but don't clear during loading or when list is empty
-  React.useEffect(() => {
+  useEffect(() => {
     // If still loading or there was an error, don't modify the selection here
     if (entitiesLoading) return;
     if (!entities || entities.length === 0) return; // avoid clearing just because list is empty (could be transient)
@@ -35,13 +35,13 @@ export default function PanelStations(props) {
     }
   }, [entities, entitiesLoading, selectedEntityId, setSelectedEntityId]);
 
-  const validStation = React.useMemo(() => {
+  const validStation = useMemo(() => {
     if (!entities || entities.length === 0) return '';
     return selectedEntityId != null && entities.some(e => e.id === selectedEntityId) ? selectedEntityId : '';
   }, [entities, selectedEntityId]);
 
   // Memoize sorted entities by name (case-insensitive), fall back to id
-  const sortedEntities = React.useMemo(() => {
+  const sortedEntities = useMemo(() => {
     if (!entities || entities.length === 0) return [];
     return [...entities].sort(compareEntitiesByName);
   }, [entities]);

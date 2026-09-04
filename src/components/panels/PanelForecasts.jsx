@@ -3,7 +3,7 @@
  * @description Panel for selecting forecast method and configuration using a tree view.
  */
 
-import * as React from 'react';
+import React, {useCallback, useMemo} from 'react';
 import Panel from './Panel.jsx';
 import {useMethods} from '@/contexts/forecast/ForecastsContext.jsx';
 import {SimpleTreeView} from '@mui/x-tree-view/SimpleTreeView';
@@ -14,7 +14,7 @@ import PanelStatus from './PanelStatus.jsx';
 // Presentational component for method/config selection tree.
 // Props: methodConfigTree, selectedMethodConfig, onSelect
 function MethodConfigTree({methodConfigTree, selectedMethodConfig, onSelect}) {
-  const handleSelectedItemsChange = React.useCallback((_, itemIds) => {
+  const handleSelectedItemsChange = useCallback((_, itemIds) => {
     if (!itemIds || itemIds.length === 0) return;
     const itemId = Array.isArray(itemIds) ? itemIds[0] : itemIds;
     if (!itemId) return;
@@ -27,7 +27,7 @@ function MethodConfigTree({methodConfigTree, selectedMethodConfig, onSelect}) {
     onSelect({method, config});
   }, [methodConfigTree, onSelect]);
 
-  const selectedItems = React.useMemo(() => {
+  const selectedItems = useMemo(() => {
     if (!selectedMethodConfig?.method) return [];
     if (selectedMethodConfig.config) return [`${selectedMethodConfig.method.id}:${selectedMethodConfig.config.id}`];
     return [selectedMethodConfig.method.id];
