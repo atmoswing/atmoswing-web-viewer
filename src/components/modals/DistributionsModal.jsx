@@ -24,16 +24,6 @@ import PrecipitationDistributionChart from './charts/PrecipitationDistributionCh
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
 
-function TabPanel({children, value, index, ...other}) {
-  return (
-    <div role="tabpanel" hidden={value !== index} {...other}>
-      {value === index && (
-        <Box sx={{pt: 1}}>{children}</Box>
-      )}
-    </div>
-  );
-}
-
 /** Display options offered by this modal, in the order they are listed. */
 const DISTRIBUTION_OPTION_KEYS = ['bestAnalogs', 'tenYearReturn', 'allReturnPeriods'];
 
@@ -230,5 +220,24 @@ export default function DistributionsModal({open, onClose}) {
         </Box>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Shows its children only while its tab is the active one.
+ *
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Tab contents
+ * @param {number} props.value - Index of the active tab
+ * @param {number} props.index - Index of this tab
+ * @returns {React.ReactElement}
+ */
+function TabPanel({children, value, index, ...other}) {
+  return (
+    <div role="tabpanel" hidden={value !== index} {...other}>
+      {value === index && (
+        <Box sx={{pt: 1}}>{children}</Box>
+      )}
+    </div>
   );
 }

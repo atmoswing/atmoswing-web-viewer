@@ -12,62 +12,8 @@ import {isSameDay, makeDayKey, parseDayKey, SUB_HOURS} from '@/utils/targetDateU
 import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
 import {useTranslation} from 'react-i18next';
 import PanelStatus from './PanelStatus.jsx';
-
-// Local small helpers (kept in this file as they are only used here)
-function SelectionMarker({size = 6, color = '#2a2a2a'}) {
-  const s = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: size,
-    height: size,
-    background: color,
-    borderRadius: '50%',
-    transform: 'translate(-50%, -50%)'
-  };
-  return <div style={s}/>;
-}
-
-function SubDailyStrip({segmentsByHour, methodLabel, onSelect, selectedDate, isMethodSelected}) {
-  const hours = useMemo(() => SUB_HOURS, []);
-  return (
-    <div style={{display: 'flex', width: '100%', height: '100%'}} onClick={e => e.stopPropagation()}>
-      {hours.map((hr, idx) => {
-        const seg = segmentsByHour.get(hr);
-        if (!seg) {
-          return <div key={idx} className="alarm-sub-seg placeholder" style={{
-            flex: 1,
-            borderRight: idx < hours.length - 1 ? '1px solid #2a2a2a' : 'none',
-            position: 'relative',
-            cursor: 'default'
-          }}/>;
-        }
-        const color = valueToColorCSS(typeof seg.valueNorm === 'number' ? seg.valueNorm : 0, 1);
-        const selected = isMethodSelected && selectedDate && seg.date.getTime() === selectedDate.getTime();
-        return (
-          <div
-            key={idx}
-            className="alarm-sub-seg"
-            title={`${methodLabel} | ${seg.date.toLocaleString()}`}
-            style={{
-              flex: 1,
-              background: color,
-              borderRight: idx < hours.length - 1 ? '1px solid #2a2a2a' : 'none',
-              cursor: 'pointer',
-              position: 'relative'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect && onSelect(seg.date);
-            }}
-          >
-            {selected && <SelectionMarker/>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+import SelectionMarker from './SelectionMarker.jsx';
+import SubDailyStrip from './SubDailyStrip.jsx';
 
 /**
  * PanelSynthesis component.
