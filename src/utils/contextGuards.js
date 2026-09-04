@@ -1,10 +1,12 @@
 /**
  * @module utils/contextGuards
- * @description Common guard and helper functions shared across context providers.
- * Reduces duplication and provides validation logic for method/workspace selections.
+ * @description Selection predicates shared across the forecast context providers: is this
+ * method/config selection still valid, does it exist in the current tree, and which
+ * configuration does it resolve to.
+ *
+ * Cache keys deliberately do not live here. A key belongs with the hook that fetches the
+ * resource, or in `hooks/forecastQueries.js` when several consumers must share one entry.
  */
-
-import {composeKey} from '@/services/apiHelpers.js';
 
 /**
  * Validates that a selected method/config belongs to the current workspace.
@@ -44,33 +46,4 @@ export function deriveConfigId(selectedMethodConfig, methodConfigTree) {
   const methodId = selectedMethodConfig.method.id;
   const m = methodConfigTree.find(mm => mm.id === methodId);
   return m?.children?.[0]?.id || null;
-}
-
-/**
- * Composes a cache key for relevant entities data.
- *
- * @param {string} workspace - Workspace key
- * @param {string} forecastDate - Forecast date string
- * @param {string|number} methodId - Method ID
- * @param {string|number} configId - Configuration ID
- * @returns {string} Composed cache key
- */
-export function keyForRelevantEntities(workspace, forecastDate, methodId, configId) {
-  return composeKey('rel', workspace, forecastDate, methodId, configId);
-}
-
-/**
- * Composes a cache key for forecast values data.
- *
- * @param {string} workspace - Workspace key
- * @param {string} forecastDate - Forecast date string
- * @param {string|number} methodId - Method ID
- * @param {string|number} configId - Configuration ID (defaults to 'agg')
- * @param {number} leadHours - Lead time in hours
- * @param {number} percentile - Percentile value
- * @param {string} normalizationRef - Normalization reference (defaults to 'raw')
- * @returns {string} Composed cache key
- */
-export function keyForForecastValues(workspace, forecastDate, methodId, configId, leadHours, percentile, normalizationRef) {
-  return composeKey(workspace, forecastDate, methodId, configId || 'agg', leadHours, percentile, normalizationRef || 'raw');
 }

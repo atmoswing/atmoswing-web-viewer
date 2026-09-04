@@ -4,7 +4,11 @@
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import {ForecastValuesProvider, useForecastValues} from '@/contexts/forecast/ForecastValuesContext.jsx';
+import {
+  ForecastValuesProvider,
+  forecastValuesKey,
+  useForecastValues
+} from '@/contexts/forecast/ForecastValuesContext.jsx';
 import {ForecastSessionProvider} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {MethodsProvider} from '@/contexts/forecast/MethodsContext.jsx';
 import {SynthesisProvider} from '@/contexts/forecast/SynthesisContext.jsx';
@@ -91,5 +95,51 @@ describe('ForecastValuesContext', () => {
   it('exposes error state', () => {
     const {result} = renderHook(() => useForecastValues(), {wrapper: createWrapper()});
     expect(result.current.forecastError === null || result.current.forecastError instanceof Error).toBe(true);
+  });
+});
+
+describe('forecastValuesKey', () => {
+  const ARGS = ['ws', '2023-01-15', 1, 101, 24, 90, 'norm'];
+
+  it('composes the full selection into one key', () => {
+    expect(forecastValuesKey(...ARGS)).toBe('forecast_values|ws|2023-01-15|1|101|24|90|norm');
+  });
+
+  it('substitutes "agg" for a missing configuration', () => {
+    // Without a config the provider calls the aggregated endpoint instead, so this must not
+    // collide with a real configuration's entry.
+    expect(forecastValuesKey('ws', '2023-01-15', 1, null, 24, 90, 'norm'))
+      .toBe('forecast_values|ws|2023-01-15|1|agg|24|90|norm');
+  });
+
+  it('substitutes "raw" for a missing normalization reference', () => {
+    expect(forecastValuesKey('ws', '2023-01-15', 1, 101, 24, 90, null))
+      .toBe('forecast_values|ws|2023-01-15|1|101|24|90|raw');
+  });
+
+  it('substitutes both defaults at once', () => {
+    expect(forecastValuesKey('ws', '2023-01-15', 1, null, 24, 90, null))
+      .toBe('forecast_values|ws|2023-01-15|1|agg|24|90|raw');
+  });
+
+  it('keeps the aggregated and per-configuration requests on separate entries', () => {
+    const aggregated = forecastValuesKey('ws', '2023-01-15', 1, null, 24, 90, null);
+    const perConfig = forecastValuesKey('ws', '2023-01-15', 1, 101, 24, 90, null);
+    expect(aggregated).not.toBe(perConfig);
+  });
+
+  it('varies with every parameter that changes the response', () => {
+    const base = forecastValuesKey(...ARGS);
+    const changed = [
+      ['ws2', '2023-01-15', 1, 101, 24, 90, 'norm'],
+      ['ws', '2023-01-16', 1, 101, 24, 90, 'norm'],
+      ['ws', '2023-01-15', 2, 101, 24, 90, 'norm'],
+      ['ws', '2023-01-15', 1, 102, 24, 90, 'norm'],
+      ['ws', '2023-01-15', 1, 101, 48, 90, 'norm'],
+      ['ws', '2023-01-15', 1, 101, 24, 20, 'norm'],
+      ['ws', '2023-01-15', 1, 101, 24, 90, 'other']
+    ].map(args => forecastValuesKey(...args));
+    changed.forEach(key => expect(key).not.toBe(base));
+    expect(new Set(changed).size).toBe(changed.length);
   });
 });

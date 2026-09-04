@@ -1,7 +1,6 @@
 /**
  * @module services/apiHelpers
  * @description Utility helpers for building API query strings and composing endpoint paths.
- * Provides functions to construct URL query parameters and cache keys.
  */
 
 /**
@@ -66,18 +65,3 @@ export function appendQuery(path, query) {
   const q = query.startsWith('?') ? query.slice(1) : query;
   return path.includes('?') ? `${path}&${q}` : `${path}?${q}`;
 }
-
-/**
- * Composes a cache key from multiple parts by joining with '|' separator.
- * Handles null/undefined values by converting to empty strings.
- *
- * @param {...*} parts - Variable number of key parts to combine
- * @returns {string} Composed cache key
- * @example
- * composeKey('region', 'date', 123) // Returns: "region|date|123"
- * composeKey('user', null, 'action') // Returns: "user||action"
- */
-export function composeKey(...parts) {
-  return parts.map(p => (p == null ? '' : String(p))).join('|');
-}
-

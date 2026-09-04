@@ -2,8 +2,6 @@ import {describe, expect, it} from 'vitest';
 import {
   deriveConfigId,
   isMethodSelectionValid,
-  keyForForecastValues,
-  keyForRelevantEntities,
   methodExists
 } from '@/utils/contextGuards.js';
 
@@ -145,50 +143,4 @@ describe('contextGuards', () => {
       expect(deriveConfigId(selection, treeWithEmptyChildren)).toBeNull();
     });
   });
-
-  describe('keyForRelevantEntities', () => {
-    it('should compose key with "rel" prefix', () => {
-      const key = keyForRelevantEntities('workspace', '2023-01-15', 1, 101);
-      expect(key).toBe('rel|workspace|2023-01-15|1|101');
-    });
-
-    it('should handle different parameters', () => {
-      const key = keyForRelevantEntities('test', '2023-01-16', 2, 202);
-      expect(key).toBe('rel|test|2023-01-16|2|202');
-    });
-
-    it('should handle null values', () => {
-      const key = keyForRelevantEntities('workspace', null, null, null);
-      expect(key).toContain('rel');
-      expect(key).toContain('workspace');
-    });
-  });
-
-  describe('keyForForecastValues', () => {
-    it('should compose comprehensive key', () => {
-      const key = keyForForecastValues('workspace', '2023-01-15', 1, 101, 24, 50, 'norm');
-      expect(key).toBe('workspace|2023-01-15|1|101|24|50|norm');
-    });
-
-    it('should use "agg" for null configId', () => {
-      const key = keyForForecastValues('workspace', '2023-01-15', 1, null, 24, 50, 'norm');
-      expect(key).toBe('workspace|2023-01-15|1|agg|24|50|norm');
-    });
-
-    it('should use "raw" for null normalizationRef', () => {
-      const key = keyForForecastValues('workspace', '2023-01-15', 1, 101, 24, 50, null);
-      expect(key).toBe('workspace|2023-01-15|1|101|24|50|raw');
-    });
-
-    it('should use defaults for both config and normalization', () => {
-      const key = keyForForecastValues('workspace', '2023-01-15', 1, null, 24, 50, null);
-      expect(key).toBe('workspace|2023-01-15|1|agg|24|50|raw');
-    });
-
-    it('should handle all numeric parameters', () => {
-      const key = keyForForecastValues('workspace', '2023-01-15', 1, 101, 48, 90, 'norm');
-      expect(key).toBe('workspace|2023-01-15|1|101|48|90|norm');
-    });
-  });
 });
-

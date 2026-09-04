@@ -10,12 +10,35 @@ import {useMethods} from './MethodsContext.jsx';
 import {useSynthesis} from './SynthesisContext.jsx';
 import {getAggregatedEntitiesValues, getEntitiesValuesPercentile} from '@/services/api.js';
 import {computeLeadHours, hasTargetDate} from '@/utils/targetDateUtils.js';
-import {isMethodSelectionValid, keyForForecastValues, methodExists} from '@/utils/contextGuards.js';
+import {isMethodSelectionValid, methodExists} from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {normalizeForecastValuesResponse} from '@/utils/apiNormalization.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 
 const ForecastValuesContext = createContext({});
+
+/**
+ * Composes the cache key for a forecast values request.
+ *
+ * `'agg'` and `'raw'` stand in for an absent configuration and normalization reference: the
+ * provider calls a different endpoint when there is no configuration, so the aggregated and
+ * per-configuration responses must never collapse onto one cache entry.
+ *
+ * @param {string} workspace - Workspace key
+ * @param {string} forecastDate - Active forecast date
+ * @param {string|number} methodId - Method identifier
+ * @param {string|number|null} configId - Configuration identifier, or null for the aggregate
+ * @param {number} leadHours - Lead time in hours
+ * @param {number} percentile - Requested percentile
+ * @param {string|null} normalizationRef - Normalization reference, or null for raw values
+ * @returns {string} Cache key
+ * @example
+ * forecastValuesKey('rhone', '2025-01-01T06:00', 'm1', null, 24, 90, null);
+ * // "forecast_values|rhone|2025-01-01T06:00|m1|agg|24|90|raw"
+ */
+export function forecastValuesKey(workspace, forecastDate, methodId, configId, leadHours, percentile, normalizationRef) {
+  return `forecast_values|${workspace}|${forecastDate}|${methodId}|${configId || 'agg'}|${leadHours}|${percentile}|${normalizationRef || 'raw'}`;
+}
 
 // Stable identities for the empty case, so consumers memoising on these don't churn.
 const EMPTY_VALUES = {};
@@ -42,7 +65,9 @@ export function ForecastValuesProvider({children}) {
   const canQuery = !!workspace && !!activeForecastDate && isMethodSelectionValid(selectedMethodConfig, workspace) && methodExists(methodConfigTree, selectedMethodConfig?.method?.id);
   const methodId = selectedMethodConfig?.method?.id;
   const configId = selectedMethodConfig?.config?.id;
-  const key = canQuery ? keyForForecastValues(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef) : null;
+  const key = canQuery
+    ? forecastValuesKey(workspace, activeForecastDate, methodId, configId, leadHours, percentile, normalizationRef)
+    : null;
 
   const {data: valuesData, loading: forecastLoading, error: forecastError} = useCachedRequest(
     key,

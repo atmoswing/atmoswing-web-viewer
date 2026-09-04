@@ -9,12 +9,7 @@ import React, {createContext, useContext, useMemo} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
 import {getRelevantEntities} from '@/services/api.js';
-import {
-  deriveConfigId,
-  isMethodSelectionValid,
-  keyForRelevantEntities,
-  methodExists
-} from '@/utils/contextGuards.js';
+import {deriveConfigId, isMethodSelectionValid, methodExists} from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
 import {useEntitiesList} from '@/hooks/forecastQueries.js';
 import {normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
@@ -46,7 +41,9 @@ export function EntitiesProvider({children}) {
   );
 
   const canQueryRelevant = canQueryEntities && !!selectedMethodConfig?.config?.id;
-  const relevantKey = canQueryRelevant ? keyForRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, selectedMethodConfig.config.id) : null;
+  const relevantKey = canQueryRelevant
+    ? `relevant_entities|${workspace}|${activeForecastDate}|${selectedMethodConfig.method.id}|${selectedMethodConfig.config.id}`
+    : null;
 
   const {data: relevantEntities} = useCachedRequest(
     relevantKey,

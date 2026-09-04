@@ -3,8 +3,7 @@ import {
   appendQuery,
   buildNormalizeQuery,
   buildPercentilesQuery,
-  buildRepeatedParamQuery,
-  composeKey
+  buildRepeatedParamQuery
 } from '@/services/apiHelpers.js';
 
 describe('apiHelpers', () => {
@@ -126,45 +125,4 @@ describe('apiHelpers', () => {
       expect(result).toBe('/api/data#section?sort=asc');
     });
   });
-
-  describe('composeKey', () => {
-    it('should compose key from multiple parts', () => {
-      const result = composeKey('region', 'date', 123);
-      expect(result).toBe('region|date|123');
-    });
-
-    it('should handle single part', () => {
-      expect(composeKey('single')).toBe('single');
-    });
-
-    it('should handle empty parts', () => {
-      expect(composeKey()).toBe('');
-    });
-
-    it('should convert null to empty string', () => {
-      const result = composeKey('user', null, 'action');
-      expect(result).toBe('user||action');
-    });
-
-    it('should convert undefined to empty string', () => {
-      const result = composeKey('user', undefined, 'action');
-      expect(result).toBe('user||action');
-    });
-
-    it('should convert numbers to strings', () => {
-      const result = composeKey(1, 2, 3);
-      expect(result).toBe('1|2|3');
-    });
-
-    it('should handle mixed types', () => {
-      const result = composeKey('str', 123, true, null);
-      expect(result).toBe('str|123|true|');
-    });
-
-    it('should handle boolean values', () => {
-      const result = composeKey(true, false);
-      expect(result).toBe('true|false');
-    });
-  });
 });
-
