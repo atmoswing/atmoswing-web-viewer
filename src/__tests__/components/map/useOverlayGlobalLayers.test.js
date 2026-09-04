@@ -190,7 +190,7 @@ describe('useOverlayGlobalLayers', () => {
     });
   });
 
-  it.skip('sets up refresh timer for GeoJSON layers (skipped: complex async OpenLayers mocking)', async () => {
+  it('sets up refresh timer for GeoJSON layers', async () => {
     const mockGeoJSON = {type: 'FeatureCollection', features: []};
     global.fetch.mockResolvedValue({
       ok: true,
@@ -224,7 +224,7 @@ describe('useOverlayGlobalLayers', () => {
     }, {timeout: 3000});
   });
 
-  it.skip('handles fetch errors for GeoJSON gracefully (skipped: complex async OpenLayers mocking)', async () => {
+  it('handles fetch errors for GeoJSON gracefully', async () => {
     global.fetch.mockRejectedValue(new Error('Network error'));
 
     const runtimeConfig = {
@@ -253,8 +253,7 @@ describe('useOverlayGlobalLayers', () => {
     }, {timeout: 3000});
   });
 
-  it.skip('updates layer switcher after adding layers (skipped: unreliable async timing)', async () => {
-    // Skipped: Layer switcher render timing is difficult to test reliably
+  it('updates layer switcher after adding layers', async () => {
     const runtimeConfig = {
       overlayLayers: [
         {

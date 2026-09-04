@@ -33,6 +33,15 @@ vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useSynthesis: vi.fn()
 }));
 
+// Stubbed so this file tests the panel's wiring only. The strip's own rendering and click
+// handling are covered directly in SubDailyStrip.test.jsx, and going through its real DOM
+// here is what made the sub-daily case awkward to assert.
+vi.mock('@/components/panels/SubDailyStrip.jsx', () => ({
+  default: ({segmentsByHour}) => (
+    <div data-testid="sub-daily-strip" data-hours={[...segmentsByHour.keys()].sort((a, b) => a - b).join(',')}/>
+  )
+}));
+
 // helpers
 function makeDateISO(y, m, d, h = 0) {
   // months are 1-based here for readability
@@ -104,8 +113,7 @@ describe('PanelSynthesis (more tests)', () => {
     expect(selectTargetDate.mock.calls[0][0]).toBeInstanceOf(Date);
   });
 
-  // Skipped: sub-daily rendering is flaky in jsdom due to timezone handling of dates; keep test for future rework
-  it.skip('renders sub-daily strip when multiple segments exist and clicking sub-segment selects', async () => {
+  it('renders a sub-daily strip for a day with sub-daily leads, and selects on cell click', async () => {
     const ctx = await import('@/contexts/forecast/ForecastsContext.jsx');
 
     const setSelectedMethodConfig = vi.fn();
@@ -129,15 +137,17 @@ describe('PanelSynthesis (more tests)', () => {
       dailyLeads: []
     });
 
-    const {container} = render(<PanelSynthesis/>);
+    render(<PanelSynthesis/>);
 
-    // Find a table cell (td) that contains any sub-segment element (placeholders allowed)
-    const tds = Array.from(container.querySelectorAll('td'));
-    const tdWithSeg = tds.find(td => td.querySelector('.alarm-sub-seg'));
-    expect(tdWithSeg).toBeTruthy();
+    // The day carries a 00h and an 06h lead, so the panel must hand both to the strip.
+    const strip = screen.getByTestId('sub-daily-strip');
+    expect(strip.getAttribute('data-hours')).toBe('0,6');
 
-    // clicking the parent cell should still trigger selection
-    fireEvent.click(tdWithSeg);
+    const cell = strip.closest('td');
+    expect(cell).toBeTruthy();
+
+    // Clicking the cell itself (not a segment) still selects the method and the day.
+    fireEvent.click(cell);
 
     expect(setSelectedMethodConfig).toHaveBeenCalled();
     expect(selectTargetDate).toHaveBeenCalled();
