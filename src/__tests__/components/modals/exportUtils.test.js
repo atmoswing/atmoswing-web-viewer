@@ -326,18 +326,16 @@ describe('exportUtils', () => {
       expect(document.body.childElementCount).toBe(before);
     });
 
-    it('exportChartPDF unmounts its container when rendering throws', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-      });
+    it('exportChartPDF rejects and unmounts its container when rendering throws', async () => {
       svg2pdfSpy.mockRejectedValueOnce(new Error('render failed'));
       const svg = makeSVG();
       const before = document.body.childElementCount;
 
-      await exportChartPDF(svg, 'my-chart');
+      // The caller needs the rejection to show a snackbar; swallowing it here would make
+      // a failed export indistinguishable from a successful one.
+      await expect(exportChartPDF(svg, 'my-chart')).rejects.toThrow('render failed');
 
       expect(document.body.childElementCount).toBe(before);
-      expect(errorSpy).toHaveBeenCalled();
-      errorSpy.mockRestore();
     });
   });
 });

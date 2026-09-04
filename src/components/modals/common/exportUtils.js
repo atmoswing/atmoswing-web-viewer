@@ -213,8 +213,6 @@ export async function exportChartPNG(svg, baseName, options = {}) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     downloadBlob(blob, `${baseName}.png`);
-  } catch (e) {
-    console.error('Export PNG failed', e);
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -236,14 +234,12 @@ export async function exportChartPDF(svg, baseName) {
     jsPDFLib = await import('jspdf');
     svg2pdfModule = await import('svg2pdf.js');
   } catch (e) {
-    console.error('Failed to load PDF libraries', e);
-    return;
+    throw new Error(`Failed to load the PDF libraries: ${e?.message || e}`, {cause: e});
   }
   const jsPDF = jsPDFLib.jsPDF || jsPDFLib.default || jsPDFLib;
   const svg2pdf = svg2pdfModule.svg2pdf || svg2pdfModule.default || svg2pdfModule;
   if (!jsPDF || !svg2pdf) {
-    console.error('PDF libraries did not provide expected exports', {jsPDF, svg2pdf});
-    return;
+    throw new Error('PDF libraries did not provide the expected exports');
   }
 
   const clone = cloneForExport(svg);
@@ -285,8 +281,6 @@ export async function exportChartPDF(svg, baseName) {
     });
     await svg2pdf(clone, pdf, {x: 0, y: 0, width: pdfWidth, height: pdfHeight});
     pdf.save(`${baseName}.pdf`);
-  } catch (e) {
-    console.error('Export PDF (vector) failed', e);
   } finally {
     document.body.removeChild(container);
   }

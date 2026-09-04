@@ -4,7 +4,6 @@
  */
 
 import {useEffect, useMemo} from 'react';
-import PropTypes from 'prop-types';
 import * as d3 from 'd3';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
 import {
@@ -26,6 +25,22 @@ import {
   drawYGrid
 } from './draw/timeSeriesLayers.js';
 
+/**
+ * TimeSeriesChart component.
+ * @param {Object} props
+ * @param {React.RefObject} props.containerRef - Container div ref for mounting SVG
+ * @param {Function} props.t - Translation function
+ * @param {Object|null} props.series - Normalized time series data ({dates:Date[], percentiles: {pct: values[]}})
+ * @param {Object|null} props.bestAnalogs - Best analogs data ({items:[], dates:[]})
+ * @param {Object|null} props.referenceValues - Return period reference ({axis:number[], values:number[]})
+ * @param {Array|null} props.pastForecasts - Previous forecast runs history array
+ * @param {Object} props.options - Display toggles
+ * @param {string} props.activeForecastDate - Raw active forecast date string
+ * @param {Object|null} props.selectedMethodConfig - Current method/config selection
+ * @param {string} props.stationName - Display station name
+ * @param {Function} props.onHoverShow - Show hover popper handler (anchor, title)
+ * @param {Function} props.onHoverHide - Hide hover popper handler
+ */
 export default function TimeSeriesChart(
   {
     containerRef,
@@ -42,23 +57,6 @@ export default function TimeSeriesChart(
     onHoverHide,
   }
 ) {
-  /**
-   * TimeSeriesChart component.
-   * @param {Object} props
-   * @param {React.RefObject} props.containerRef - Container div ref for mounting SVG
-   * @param {Function} props.t - Translation function
-   * @param {Object|null} props.series - Normalized time series data ({dates:Date[], percentiles: {pct: values[]}})
-   * @param {Object|null} props.bestAnalogs - Best analogs data ({items:[], dates:[]})
-   * @param {Object|null} props.referenceValues - Return period reference ({axis:number[], values:number[]})
-   * @param {Array|null} props.pastForecasts - Previous forecast runs history array
-   * @param {Object} props.options - Display toggles
-   * @param {string} props.activeForecastDate - Raw active forecast date string
-   * @param {Object|null} props.selectedMethodConfig - Current method/config selection
-   * @param {string} props.stationName - Display station name
-   * @param {Function} props.onHoverShow - Show hover popper handler (anchor, title)
-   * @param {Function} props.onHoverHide - Hide hover popper handler
-   */
-
   const pctList = useMemo(() => (series?.pctList ?? []), [series]);
   const dates = useMemo(() => (series?.dates ?? []), [series]);
   const percentilesMap = series?.percentiles || {};
@@ -146,25 +144,3 @@ export default function TimeSeriesChart(
 
   return null;
 }
-
-TimeSeriesChart.propTypes = {
-  containerRef: PropTypes.shape({current: PropTypes.any}),
-  t: PropTypes.func.isRequired,
-  series: PropTypes.object,
-  bestAnalogs: PropTypes.object,
-  referenceValues: PropTypes.object,
-  pastForecasts: PropTypes.array,
-  options: PropTypes.shape({
-    mainQuantiles: PropTypes.bool,
-    allQuantiles: PropTypes.bool,
-    bestAnalogs: PropTypes.bool,
-    tenYearReturn: PropTypes.bool,
-    allReturnPeriods: PropTypes.bool,
-    previousForecasts: PropTypes.bool,
-  }).isRequired,
-  activeForecastDate: PropTypes.any,
-  selectedMethodConfig: PropTypes.object,
-  stationName: PropTypes.string,
-  onHoverShow: PropTypes.func,
-  onHoverHide: PropTypes.func,
-};

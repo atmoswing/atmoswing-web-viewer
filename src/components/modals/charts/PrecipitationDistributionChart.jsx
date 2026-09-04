@@ -9,6 +9,23 @@ import {buildDistributionTitle, drawChartTitle} from './draw/chartChrome.js';
 import {SELECTED_RPS, TEN_YEAR_COLOR} from '@/components/modals/common/plotConstants.js';
 
 // Precipitation (predictand) cumulative distribution chart
+/**
+ * PrecipitationDistributionChart component.
+ * @param {Object} props
+ * @param {Array|null} props.analogValues - Array of analog objects (value, criteria, rank...)
+ * @param {Array|null} props.bestAnalogsData - Array of top analogs for overlay
+ * @param {Object|null} props.percentileMarkers - Map percentile->value for markers (e.g. {20: num})
+ * @param {Object|null} props.referenceValues - Return period reference {axis:number[], values:number[]}
+ * @param {Object} props.options - Display toggles (tenYearReturn, allReturnPeriods, bestAnalogs)
+ * @param {string|number} props.selectedMethodId - Method ID
+ * @param {string|number} props.selectedConfigId - Config ID
+ * @param {number|null} props.selectedLead - Selected lead time in hours
+ * @param {Array} props.leads - Leads metadata array
+ * @param {string} props.activeForecastDate - Active forecast date string
+ * @param {string} props.stationName - Station name for title
+ * @param {Function} props.t - Translation function
+ * @param {number} props.renderTick - Increment to force redraw
+ */
 const PrecipitationDistributionChart = forwardRef(function PrecipitationDistributionChart(
   {
     analogValues,
@@ -26,23 +43,6 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
     renderTick
   },
   ref) {
-  /**
-   * PrecipitationDistributionChart component.
-   * @param {Object} props
-   * @param {Array|null} props.analogValues - Array of analog objects (value, criteria, rank...)
-   * @param {Array|null} props.bestAnalogsData - Array of top analogs for overlay
-   * @param {Object|null} props.percentileMarkers - Map percentile->value for markers (e.g. {20: num})
-   * @param {Object|null} props.referenceValues - Return period reference {axis:number[], values:number[]}
-   * @param {Object} props.options - Display toggles (tenYearReturn, allReturnPeriods, bestAnalogs)
-   * @param {string|number} props.selectedMethodId - Method ID
-   * @param {string|number} props.selectedConfigId - Config ID
-   * @param {number|null} props.selectedLead - Selected lead time in hours
-   * @param {Array} props.leads - Leads metadata array
-   * @param {string} props.activeForecastDate - Active forecast date string
-   * @param {string} props.stationName - Station name for title
-   * @param {Function} props.t - Translation function
-   * @param {number} props.renderTick - Increment to force redraw
-   */
   useEffect(() => {
     const container = ref?.current;
     if (!container) return;

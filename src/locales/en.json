@@ -104,7 +104,8 @@
     "loadingReference": "Loading reference values…",
     "noReferenceValues": "No reference values",
     "noPreviousForecastsAvailable": "No previous forecasts available",
-    "export": "Export"
+    "export": "Export",
+    "exportFailed": "Export to {{format}} failed: {{error}}"
   },
   "distributionPlots": {
     "title": "Distribution plots",

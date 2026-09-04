@@ -104,7 +104,8 @@
     "loadingReference": "Chargement des valeurs de référence…",
     "noReferenceValues": "Aucune valeur de référence",
     "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
-    "export": "Exporter"
+    "export": "Exporter",
+    "exportFailed": "L'export en {{format}} a échoué : {{error}}"
   },
   "distributionPlots": {
     "title": "Graphiques de distribution",

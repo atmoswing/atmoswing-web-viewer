@@ -6,7 +6,7 @@
 import React from 'react';
 import {Button, Menu, MenuItem} from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import PropTypes from 'prop-types';
+import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
 
 /**
  * ExportMenu component.
@@ -19,22 +19,27 @@ import PropTypes from 'prop-types';
  */
 export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx}) {
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const {enqueueSnackbar} = useSnackbar();
   const open = Boolean(anchorEl);
   const openMenu = (e) => setAnchorEl(e.currentTarget);
   const closeMenu = () => setAnchorEl(null);
 
-  const doPNG = () => {
+  // The exporters reject on failure. Without this the menu would just close and nothing
+  // would happen, leaving the user with no idea the export did not produce a file.
+  const runExport = async (format, handler) => {
     closeMenu();
-    onExportPNG?.();
+    try {
+      await handler?.();
+    } catch (e) {
+      enqueueSnackbar(t('seriesModal.exportFailed', {format, error: e?.message || String(e)}), {
+        variant: 'error'
+      });
+    }
   };
-  const doSVG = () => {
-    closeMenu();
-    onExportSVG?.();
-  };
-  const doPDF = () => {
-    closeMenu();
-    onExportPDF?.();
-  };
+
+  const doPNG = () => runExport('PNG', onExportPNG);
+  const doSVG = () => runExport('SVG', onExportSVG);
+  const doPDF = () => runExport('PDF', onExportPDF);
 
   return (
     <>
@@ -63,11 +68,3 @@ export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx
     </>
   );
 }
-
-ExportMenu.propTypes = {
-  t: PropTypes.func.isRequired,
-  onExportPNG: PropTypes.func.isRequired,
-  onExportSVG: PropTypes.func.isRequired,
-  onExportPDF: PropTypes.func.isRequired,
-  sx: PropTypes.object,
-};
