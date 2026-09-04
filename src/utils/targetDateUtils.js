@@ -11,6 +11,29 @@
 export const SUB_HOURS = [0, 6, 12, 18];
 
 /**
+ * Snaps an hour to the closest allowed sub-daily hour.
+ *
+ * Ties resolve to the earlier hour, since the loop only replaces the current best on a
+ * strictly smaller distance.
+ *
+ * @param {number} hour - Hour of day to snap
+ * @param {Array<number>} [hours] - Allowed hours, defaulting to the sub-daily intervals
+ * @returns {number} Closest allowed hour
+ * @example
+ * nearestSubDailyHour(14) // Returns: 12
+ * nearestSubDailyHour(15) // Returns: 12 (tie resolves to the earlier hour)
+ * nearestSubDailyHour(16) // Returns: 18
+ */
+export function nearestSubDailyHour(hour, hours = SUB_HOURS) {
+  if (!Array.isArray(hours) || !hours.length) return 0;
+  let nearest = hours[0];
+  for (const candidate of hours) {
+    if (Math.abs(candidate - hour) < Math.abs(nearest - hour)) nearest = candidate;
+  }
+  return nearest;
+}
+
+/**
  * Creates a stable YYYY-M-D key string for a date.
  * Note: Month is 0-based as per JavaScript Date API.
  *

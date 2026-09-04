@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {
   computeLeadHours,
   hasTargetDate,
+  nearestSubDailyHour,
   isSameDay,
   isSameInstant,
   makeDayKey,
@@ -212,3 +213,32 @@ describe('targetDateUtils', () => {
   });
 });
 
+describe('nearestSubDailyHour', () => {
+  it('returns an allowed hour unchanged', () => {
+    [0, 6, 12, 18].forEach(h => expect(nearestSubDailyHour(h)).toBe(h));
+  });
+
+  it('snaps to the closest allowed hour', () => {
+    expect(nearestSubDailyHour(1)).toBe(0);
+    expect(nearestSubDailyHour(5)).toBe(6);
+    expect(nearestSubDailyHour(14)).toBe(12);
+    expect(nearestSubDailyHour(16)).toBe(18);
+    expect(nearestSubDailyHour(23)).toBe(18);
+  });
+
+  it('resolves an exact tie to the earlier hour', () => {
+    // 3 is equidistant from 0 and 6; the scan only replaces on a strictly smaller distance.
+    expect(nearestSubDailyHour(3)).toBe(0);
+    expect(nearestSubDailyHour(15)).toBe(12);
+  });
+
+  it('accepts a custom set of hours', () => {
+    expect(nearestSubDailyHour(7, [0, 12])).toBe(12);
+    expect(nearestSubDailyHour(5, [0, 12])).toBe(0);
+  });
+
+  it('falls back to 0 when there are no allowed hours', () => {
+    expect(nearestSubDailyHour(7, [])).toBe(0);
+    expect(nearestSubDailyHour(7, null)).toBe(0);
+  });
+});

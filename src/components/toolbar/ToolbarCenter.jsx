@@ -3,7 +3,7 @@
  * @description Central toolbar controls for forecast date navigation, manual date selection and restoration.
  */
 
-import React from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
@@ -11,22 +11,12 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import UpdateIcon from '@mui/icons-material/Update';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import {useForecastSession, useMethods} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
 import {useTranslation} from 'react-i18next';
-import {SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatForecastDateForApi} from '@/utils/forecastDateUtils.js';
-import {formatDateHour, formatDateISO} from '@/utils/formattingUtils.js';
+import {formatDateHour} from '@/utils/formattingUtils.js';
+import ForecastDatePickerDialog from './ForecastDatePickerDialog.jsx';
 
 /**
  * ToolbarCenter component.
@@ -47,57 +37,23 @@ export default function ToolbarCenter() {
   } = useForecastSession();
   const {workspaceData} = useWorkspace();
   const isShowingLastForecast = !!(activeForecastDate && workspaceData?.date?.last_forecast_date && activeForecastDate === workspaceData.date.last_forecast_date);
-  const forecastDateStr = React.useMemo(() => formatDateHour(forecastBaseDate), [forecastBaseDate]);
+  const forecastDateStr = useMemo(() => formatDateHour(forecastBaseDate), [forecastBaseDate]);
   const buttonsDisabled = !activeForecastDate || baseDateSearching;
   const statusLabel = baseDateSearching ? t('toolbar.searching') : (forecastDateStr ? t('toolbar.forecastOf', {date: forecastDateStr}) : t('toolbar.loading'));
 
-  const [dateDialogOpen, setDateDialogOpen] = React.useState(false);
-  const [dialogDate, setDialogDate] = React.useState('');
-  const [selectedHour, setSelectedHour] = React.useState('00');
+  const [dateDialogOpen, setDateDialogOpen] = useState(false);
 
-  const allowedHours = React.useMemo(() => SUB_HOURS, []);
+  const closeDateDialog = useCallback(() => setDateDialogOpen(false), []);
+  const handleCalendarClick = useCallback(() => setDateDialogOpen(true), []);
 
-  React.useEffect(() => {
-    if (forecastBaseDate && !isNaN(forecastBaseDate.getTime())) {
-      const d = forecastBaseDate;
-      const pad = n => String(n).padStart(2, '0');
-      setDialogDate(formatDateISO(d));
-      const h = d.getHours();
-      let nearest = allowedHours[0];
-      for (const ah of allowedHours) {
-        if (Math.abs(ah - h) < Math.abs(nearest - h)) nearest = ah;
-      }
-      setSelectedHour(pad(nearest));
-    } else {
-      setDialogDate('');
-      setSelectedHour('00');
-    }
-  }, [forecastBaseDate, allowedHours]);
-
-  const closeDateDialog = React.useCallback(() => setDateDialogOpen(false), []);
-  const saveDateDialog = React.useCallback(() => {
-    if (!dialogDate) {
-      setDateDialogOpen(false);
-      return;
-    }
-    const hour = selectedHour || '00';
-    const iso = `${dialogDate}T${hour}:00`;
-    const dt = new Date(iso);
-    if (isNaN(dt.getTime())) {
-      setDateDialogOpen(false);
-      return;
-    }
-    const raw = formatForecastDateForApi(dt, activeForecastDatePattern || activeForecastDate);
+  const applyPickedDate = useCallback(picked => {
+    const raw = formatForecastDateForApi(picked, activeForecastDatePattern || activeForecastDate);
     if (raw) {
       setActiveForecastDate(raw);
-      fullReset(dt);
+      fullReset(picked);
     }
     setDateDialogOpen(false);
-  }, [dialogDate, selectedHour, activeForecastDatePattern, activeForecastDate, setActiveForecastDate, fullReset]);
-
-  const handleCalendarClick = React.useCallback(() => {
-    setDateDialogOpen(true);
-  }, []);
+  }, [activeForecastDatePattern, activeForecastDate, setActiveForecastDate, fullReset]);
 
   return (
     <div className="toolbar-center">
@@ -142,40 +98,12 @@ export default function ToolbarCenter() {
       </div>
       <div>{selectedMethodConfig?.method ? `${selectedMethodConfig.method.name} (${selectedMethodConfig.method.id})` : ''}</div>
 
-      <Dialog open={dateDialogOpen} onClose={closeDateDialog} fullWidth maxWidth="xs">
-        <DialogTitle>{t('toolbar.pickDateTime')}</DialogTitle>
-        <DialogContent>
-          <div style={{display: 'flex', gap: 8, alignItems: 'center', minWidth: 240, marginTop: 10}}>
-            <TextField
-              label={t('toolbar.date') || 'Date'}
-              type="date"
-              value={dialogDate}
-              onChange={e => setDialogDate(e.target.value)}
-            />
-            <FormControl variant="outlined" style={{minWidth: 120}}>
-              <InputLabel id="toolbar-hour-label">{t('toolbar.hour') || 'Hour'}</InputLabel>
-              <Select
-                labelId="toolbar-hour-label"
-                id="toolbar-hour-select"
-                value={selectedHour}
-                label={t('toolbar.hour') || 'Hour'}
-                onChange={e => setSelectedHour(e.target.value)}
-                variant="outlined"
-              >
-                {allowedHours.map(h => {
-                  const hh = String(h).padStart(2, '0');
-                  return <MenuItem key={hh} value={hh}>{hh}:00</MenuItem>;
-                })}
-              </Select>
-            </FormControl>
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDateDialog}>{t('cancel') || 'Cancel'}</Button>
-          <Button onClick={saveDateDialog} variant="contained">{t('ok') || 'OK'}</Button>
-        </DialogActions>
-      </Dialog>
-
+      <ForecastDatePickerDialog
+        open={dateDialogOpen}
+        baseDate={forecastBaseDate}
+        onClose={closeDateDialog}
+        onConfirm={applyPickedDate}
+      />
     </div>
   );
 }
