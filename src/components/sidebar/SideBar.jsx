@@ -9,7 +9,11 @@ import '@/styles/sidebar.css';
 
 import {useConfig} from '@/contexts/ConfigContext.jsx';
 import {SidebarWorkspaceDropdown} from './SidebarWorkspaceDropdown.jsx';
-import {PanelAnalogDates, PanelDisplay, PanelForecasts, PanelStations, PanelSynthesis} from "../panels";
+import PanelAnalogDates from '@/components/panels/PanelAnalogDates.jsx';
+import PanelDisplay from '@/components/panels/PanelDisplay.jsx';
+import PanelForecasts from '@/components/panels/PanelForecasts.jsx';
+import PanelStations from '@/components/panels/PanelStations.jsx';
+import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
 
 
 /**

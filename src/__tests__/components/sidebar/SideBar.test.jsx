@@ -25,12 +25,22 @@ vi.mock('@/components/sidebar/SidebarWorkspaceDropdown.jsx', () => ({
   )
 }));
 
-vi.mock('@/components/panels', () => ({
-  PanelAnalogDates: () => <div data-testid="panel-analog-dates">Analog Dates</div>,
-  PanelDisplay: () => <div data-testid="panel-display">Display</div>,
-  PanelForecasts: () => <div data-testid="panel-forecasts">Forecasts</div>,
-  PanelStations: () => <div data-testid="panel-stations">Stations</div>,
-  PanelSynthesis: () => <div data-testid="panel-synthesis">Synthesis</div>
+// SideBar imports each panel directly, so each module is stubbed on its own. Without this
+// the real PanelAnalogDates pulls in @mui/x-data-grid and its stylesheet.
+vi.mock('@/components/panels/PanelAnalogDates.jsx', () => ({
+  default: () => <div data-testid="panel-analog-dates">Analog Dates</div>
+}));
+vi.mock('@/components/panels/PanelDisplay.jsx', () => ({
+  default: () => <div data-testid="panel-display">Display</div>
+}));
+vi.mock('@/components/panels/PanelForecasts.jsx', () => ({
+  default: () => <div data-testid="panel-forecasts">Forecasts</div>
+}));
+vi.mock('@/components/panels/PanelStations.jsx', () => ({
+  default: () => <div data-testid="panel-stations">Stations</div>
+}));
+vi.mock('@/components/panels/PanelSynthesis.jsx', () => ({
+  default: () => <div data-testid="panel-synthesis">Synthesis</div>
 }));
 
 describe('SideBar', () => {

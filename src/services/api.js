@@ -1,5 +1,5 @@
-import config from "../config";
-import {appendQuery, buildNormalizeQuery, buildPercentilesQuery} from "./apiHelpers";
+import config from '@/config.js';
+import {appendQuery, buildNormalizeQuery, buildPercentilesQuery} from './apiHelpers.js';
 
 // In-flight request de-duplication: endpoint -> Promise
 const inflight = new Map();
