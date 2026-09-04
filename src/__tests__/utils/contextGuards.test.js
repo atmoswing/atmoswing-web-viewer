@@ -2,7 +2,6 @@ import {describe, expect, it} from 'vitest';
 import {
   deriveConfigId,
   isMethodSelectionValid,
-  keyForEntities,
   keyForForecastValues,
   keyForRelevantEntities,
   methodExists
@@ -144,23 +143,6 @@ describe('contextGuards', () => {
       const treeWithEmptyChildren = [{id: 1, children: []}];
       const selection = {method: {id: 1}};
       expect(deriveConfigId(selection, treeWithEmptyChildren)).toBeNull();
-    });
-  });
-
-  describe('keyForEntities', () => {
-    it('should compose key from workspace, date, method, and config', () => {
-      const key = keyForEntities('workspace', '2023-01-15', 1, 101);
-      expect(key).toBe('workspace|2023-01-15|1|101');
-    });
-
-    it('should handle string IDs', () => {
-      const key = keyForEntities('workspace', '2023-01-15', 'method1', 'config1');
-      expect(key).toBe('workspace|2023-01-15|method1|config1');
-    });
-
-    it('should handle null values', () => {
-      const key = keyForEntities('workspace', null, 1, 101);
-      expect(key).toBe('workspace||1|101');
     });
   });
 

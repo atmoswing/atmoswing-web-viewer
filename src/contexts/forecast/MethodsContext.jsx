@@ -6,11 +6,8 @@
 
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
-import {useWorkspace} from '@/contexts/WorkspaceContext.jsx';
-import {getMethodsAndConfigs} from '@/services/api.js';
-import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
 import {normalizeMethodsAndConfigs} from '@/utils/apiNormalization.js';
-import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const MethodsContext = createContext({});
 
@@ -24,35 +21,19 @@ const MethodsContext = createContext({});
  */
 export function MethodsProvider({children}) {
   const {workspace, activeForecastDate} = useForecastSession();
-  const {workspaceData} = useWorkspace();
 
   const [selectedMethodConfig, setSelectedMethodConfig] = useState(null);
-  const keyRef = useRef(null);
   const prevWorkspaceRef = useRef(workspace);
 
-  // Preload adoption
-  const preloaded = (workspaceData && workspaceData.__workspace === workspace && workspaceData.date?.last_forecast_date === activeForecastDate) ? workspaceData.methodsAndConfigs : null;
-
-  const cacheKey = workspace && activeForecastDate ? `methods|${workspace}|${activeForecastDate}` : null;
-  const {data: methodsAndConfigs, loading: methodsLoading, error: methodsError} = useCachedRequest(
-    cacheKey,
-    async () => {
-      if (preloaded && keyRef.current !== cacheKey) {
-        keyRef.current = cacheKey; // mark adopted
-        return preloaded;
-      }
-      const fetched = await getMethodsAndConfigs(workspace, activeForecastDate);
-      keyRef.current = cacheKey;
-      return fetched;
-    },
-    {enabled: !!workspace && !!activeForecastDate, initialData: null, ttlMs: DEFAULT_TTL}
-  );
+  // The workspace prefetch warms the very same cache entry, so an already-prefetched date
+  // resolves from cache here instead of being re-requested.
+  const {data: methodsAndConfigs, loading: methodsLoading, error: methodsError} =
+    useMethodsAndConfigs(workspace, activeForecastDate);
 
   // Clear selection on workspace change
   useEffect(() => {
     if (prevWorkspaceRef.current !== workspace) {
       setSelectedMethodConfig(null);
-      keyRef.current = null;
       prevWorkspaceRef.current = workspace;
     }
   }, [workspace]);

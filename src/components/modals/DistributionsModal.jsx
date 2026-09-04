@@ -174,7 +174,6 @@ export default function DistributionsModal({open, onClose}) {
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <MethodConfigSelector
-            cachePrefix="dist_"
             open={open}
             value={selection}
             onChange={setSelection}

@@ -8,15 +8,14 @@ import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {
-  getReferenceValues,
   getSeriesBestAnalogs,
   getSeriesValuesPercentiles,
   getSeriesValuesPercentilesHistory
 } from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {useReferenceValues} from '@/hooks/forecastQueries.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {
-  normalizeReferenceValues,
   normalizeSeriesBestAnalogs,
   normalizeSeriesValuesPercentiles,
   normalizeSeriesValuesPercentilesHistory
@@ -77,14 +76,10 @@ export function useTimeSeriesData(options) {
     {enabled: !!seriesKey, initialData: null, ttlMs: SHORT_TTL}
   );
 
-  const referenceKey = (base && (options.tenYearReturn || options.allReturnPeriods)) ? `series_ref|${base}` : null;
-  const {data: referenceValues} = useCachedRequest(
-    referenceKey,
-    async () => {
-      const resp = await getReferenceValues(workspace, activeForecastDate, methodId, resolvedConfigId, selectedEntityId);
-      return normalizeReferenceValues(resp);
-    },
-    {enabled: !!referenceKey, initialData: null, ttlMs: DEFAULT_TTL}
+  // Same resource the distributions modal loads, so the two share one cache entry.
+  const {data: referenceValues} = useReferenceValues(
+    workspace, activeForecastDate, methodId, resolvedConfigId, selectedEntityId,
+    {enabled: !!base && (options.tenYearReturn || options.allReturnPeriods)}
   );
 
   const bestAnalogsKey = (base && options.bestAnalogs) ? `series_bestanalogs|${base}` : null;

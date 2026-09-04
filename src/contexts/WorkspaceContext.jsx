@@ -5,10 +5,11 @@
  */
 
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
-import {getLastForecastDate, getMethodsAndConfigs} from '@/services/api.js';
+import {getLastForecastDate} from '@/services/api.js';
 import {useConfig} from './ConfigContext.jsx';
 import {onWorkspacePopState, readWorkspaceFromUrl, writeWorkspaceToUrl} from '@/utils/urlWorkspaceUtils.js';
 import {clearCachedRequests, useCachedRequest} from '@/hooks/useCachedRequest.js';
+import {useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const WorkspaceContext = createContext();
@@ -104,18 +105,9 @@ export function WorkspaceProvider({children}) {
     {enabled: !!workspace, initialData: null, ttlMs: DEFAULT_TTL}
   );
 
-  // Phase 2: methods/configs prefetch via cached request (optional optimization)
-  const methodsPrefetchKey = workspace && lastDateResp?.last_forecast_date ? `workspace_methods|${workspace}|${lastDateResp.last_forecast_date}` : null;
-  const {data: prefetchMethods} = useCachedRequest(
-    methodsPrefetchKey,
-    async () => {
-      if (!workspace || !lastDateResp?.last_forecast_date) return null;
-      const resp = await getMethodsAndConfigs(workspace, lastDateResp.last_forecast_date);
-      // keep raw shape; normalization happens later in MethodsContext for tree
-      return resp ?? null;
-    },
-    {enabled: !!methodsPrefetchKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
+  // Phase 2: prefetch the methods/configs of the last forecast date. This shares its cache
+  // entry with MethodsContext, so the prefetch is what MethodsContext later reads.
+  const {data: prefetchMethods} = useMethodsAndConfigs(workspace, lastDateResp?.last_forecast_date);
 
   // Consolidate workspaceData whenever phase1 or prefetch changes
   useEffect(() => {

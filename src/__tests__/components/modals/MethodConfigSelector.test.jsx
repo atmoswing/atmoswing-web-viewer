@@ -66,7 +66,7 @@ describe('MethodConfigSelector (smoke)', () => {
     }));
 
     function HookConsumer({selection}) {
-      const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('pref_', true, selection);
+      const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData(true, selection);
       return (
         <div>
           <span data-testid="rid">{resolvedMethodId}</span>

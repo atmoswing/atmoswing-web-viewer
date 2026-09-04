@@ -30,12 +30,12 @@ const EMPTY_ANALOGS = [];
  */
 export function useAnalogDetails({open, selection}) {
   const {workspace, activeForecastDate} = useForecastSession();
-  const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData('modal_', open, selection);
+  const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData(open, selection);
 
   const canQuery = open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId
     && resolvedEntityId != null && selection.lead != null;
   const analogsCacheKey = canQuery
-    ? `modal_analogs|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}`
+    ? `analogs|${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}|${resolvedEntityId}|${selection.lead}`
     : null;
 
   const {data: analogsData, loading: analogsLoading, error: analogsError} = useCachedRequest(

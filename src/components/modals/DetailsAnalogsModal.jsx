@@ -117,7 +117,6 @@ export default function DetailsAnalogsModal({open, onClose}) {
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <MethodConfigSelector
-            cachePrefix="modal_"
             open={open}
             value={selection}
             onChange={setSelection}

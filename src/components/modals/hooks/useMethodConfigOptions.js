@@ -7,17 +7,9 @@
 import {useMemo} from 'react';
 import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {
-  getEntities,
-  getMethodsAndConfigs,
-  getRelevantEntities,
-  getSeriesValuesPercentiles
-} from '@/services/api.js';
-import {
-  extractTargetDatesArray,
-  normalizeEntitiesResponse,
-  normalizeRelevantEntityIds
-} from '@/utils/apiNormalization.js';
+import {useEntitiesList, useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
+import {getRelevantEntities, getSeriesValuesPercentiles} from '@/services/api.js';
+import {extractTargetDatesArray, normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
 
@@ -60,7 +52,6 @@ function toLeadOptions(resp, forecastBaseDate) {
  * Each list depends on the one before it, so a list stays empty until its inputs are chosen.
  *
  * @param {Object} params
- * @param {string} params.cachePrefix - Cache key namespace, so two modals do not share entries
  * @param {boolean} params.open - Whether the owning modal is open; nothing is fetched while closed
  * @param {Object} params.value - Current selection `{ methodId, configId, entityId }`
  * @returns {Object} Option lists and their status
@@ -77,9 +68,9 @@ function toLeadOptions(resp, forecastBaseDate) {
  * @returns {Error|null} returns.leadsError - Error from the leads request
  * @returns {Map} returns.relevantConfigIds - configId -> whether the entity is relevant to it
  * @example
- * const { methodOptions, stations, leads } = useMethodConfigOptions({cachePrefix: 'dist_', open, value});
+ * const { methodOptions, stations, leads } = useMethodConfigOptions({open, value});
  */
-export function useMethodConfigOptions({cachePrefix, open, value}) {
+export function useMethodConfigOptions({open, value}) {
   const {workspace, activeForecastDate, forecastBaseDate} = useForecastSession();
   const {methodId: selectedMethodId, configId: selectedConfigId, entityId: selectedStationId} = value;
 
@@ -88,12 +79,8 @@ export function useMethodConfigOptions({cachePrefix, open, value}) {
     : null;
 
   // METHODS
-  const methodsCacheKey = sessionPart ? `${cachePrefix}methods|${sessionPart}` : null;
-  const {data: methodsData, loading: methodsLoading, error: methodsError} = useCachedRequest(
-    methodsCacheKey,
-    async () => getMethodsAndConfigs(workspace, activeForecastDate),
-    {enabled: !!methodsCacheKey, initialData: null, ttlMs: DEFAULT_TTL}
-  );
+  const {data: methodsData, loading: methodsLoading, error: methodsError} =
+    useMethodsAndConfigs(workspace, activeForecastDate, {enabled: !!sessionPart});
 
   const methodOptions = useMemo(() => methodsData?.methods || EMPTY_LIST, [methodsData]);
 
@@ -111,13 +98,12 @@ export function useMethodConfigOptions({cachePrefix, open, value}) {
   }, [methodsData, selectedMethodId, selectedConfigId]);
 
   // ENTITIES
-  const entitiesCacheKey = (sessionPart && selectedMethodId && resolvedConfig)
-    ? `${cachePrefix}entities|${sessionPart}|${selectedMethodId}|${resolvedConfig}`
-    : null;
-  const {data: entitiesDataRaw, loading: stationsLoading, error: stationsError} = useCachedRequest(
-    entitiesCacheKey,
-    async () => normalizeEntitiesResponse(await getEntities(workspace, activeForecastDate, selectedMethodId, resolvedConfig)),
-    {enabled: !!entitiesCacheKey, initialData: [], ttlMs: DEFAULT_TTL}
+  const {data: entitiesDataRaw, loading: stationsLoading, error: stationsError} = useEntitiesList(
+    workspace,
+    activeForecastDate,
+    selectedMethodId,
+    resolvedConfig,
+    {enabled: !!sessionPart}
   );
 
   const stations = useMemo(() => {
@@ -133,7 +119,7 @@ export function useMethodConfigOptions({cachePrefix, open, value}) {
     ? forecastBaseDate.getTime()
     : 'resp';
   const leadsCacheKey = (sessionPart && selectedMethodId && resolvedConfig && selectedStationId != null)
-    ? `${cachePrefix}leads|${sessionPart}|${selectedMethodId}|${resolvedConfig}|${selectedStationId}|${leadsBasePart}`
+    ? `leads|${sessionPart}|${selectedMethodId}|${resolvedConfig}|${selectedStationId}|${leadsBasePart}`
     : null;
   const {data: leadsRaw, loading: leadsLoading, error: leadsError} = useCachedRequest(
     leadsCacheKey,
@@ -148,7 +134,7 @@ export function useMethodConfigOptions({cachePrefix, open, value}) {
 
   // RELEVANCE: which configurations list the selected entity as relevant.
   const relevanceKey = (sessionPart && selectedMethodId && selectedStationId != null)
-    ? `${cachePrefix}relevance|${sessionPart}|${selectedMethodId}|${selectedStationId}`
+    ? `relevance|${sessionPart}|${selectedMethodId}|${selectedStationId}`
     : null;
   const {data: relevanceMap} = useCachedRequest(
     relevanceKey,

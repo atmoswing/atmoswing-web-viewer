@@ -22,7 +22,6 @@ import {useSelectionDefaults} from '../hooks/useSelectionDefaults.js';
 /**
  * MethodConfigSelector component.
  * @param {Object} props
- * @param {string} [props.cachePrefix='modal_'] - Prefix for cache keys to avoid collisions across modals
  * @param {boolean} props.open - Whether the parent modal is open (controls fetching enablement)
  * @param {Object} props.value - Current selection state { methodId, configId, entityId, lead }
  * @param {Function} props.onChange - Callback receiving updated selection object
@@ -31,7 +30,6 @@ import {useSelectionDefaults} from '../hooks/useSelectionDefaults.js';
  */
 export default function MethodConfigSelector(
   {
-    cachePrefix = 'modal_',
     open,
     value = {},
     onChange,
@@ -59,7 +57,7 @@ export default function MethodConfigSelector(
     leadsLoading,
     leadsError,
     relevantConfigIds
-  } = useMethodConfigOptions({cachePrefix, open, value});
+  } = useMethodConfigOptions({open, value});
 
   useSelectionDefaults({open, value, onChange, methodOptions, stations, leads});
 

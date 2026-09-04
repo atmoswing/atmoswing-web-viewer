@@ -47,19 +47,6 @@ export function deriveConfigId(selectedMethodConfig, methodConfigTree) {
 }
 
 /**
- * Composes a cache key for entities data.
- *
- * @param {string} workspace - Workspace key
- * @param {string} forecastDate - Forecast date string
- * @param {string|number} methodId - Method ID
- * @param {string|number} configId - Configuration ID
- * @returns {string} Composed cache key
- */
-export function keyForEntities(workspace, forecastDate, methodId, configId) {
-  return composeKey(workspace, forecastDate, methodId, configId);
-}
-
-/**
  * Composes a cache key for relevant entities data.
  *
  * @param {string} workspace - Workspace key

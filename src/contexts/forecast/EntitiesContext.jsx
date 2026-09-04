@@ -8,16 +8,16 @@
 import React, {createContext, useContext, useMemo} from 'react';
 import {useForecastSession} from './ForecastSessionContext.jsx';
 import {useMethods} from './MethodsContext.jsx';
-import {getEntities, getRelevantEntities} from '@/services/api.js';
+import {getRelevantEntities} from '@/services/api.js';
 import {
   deriveConfigId,
   isMethodSelectionValid,
-  keyForEntities,
   keyForRelevantEntities,
   methodExists
 } from '@/utils/contextGuards.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeEntitiesResponse, normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
+import {useEntitiesList} from '@/hooks/forecastQueries.js';
+import {normalizeRelevantEntityIds} from '@/utils/apiNormalization.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
 const EntitiesContext = createContext({});
@@ -36,15 +36,13 @@ export function EntitiesProvider({children}) {
   const effectiveConfigId = deriveConfigId(selectedMethodConfig, methodConfigTree);
   const canQueryEntities = !!workspace && !!activeForecastDate && !methodsLoading && isMethodSelectionValid(selectedMethodConfig, workspace) && !!effectiveConfigId && methodExists(methodConfigTree, selectedMethodConfig?.method?.id);
 
-  const entitiesKey = canQueryEntities ? keyForEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId) : null;
-
-  const {data: entities, loading: entitiesLoading, error: entitiesError} = useCachedRequest(
-    entitiesKey,
-    async () => {
-      const resp = await getEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, effectiveConfigId);
-      return normalizeEntitiesResponse(resp);
-    },
-    {enabled: !!entitiesKey, initialData: [], ttlMs: DEFAULT_TTL}
+  // Shared with the modals' entity lists, so opening a modal on the same selection is a cache hit.
+  const {data: entities, loading: entitiesLoading, error: entitiesError, key: entitiesKey} = useEntitiesList(
+    workspace,
+    activeForecastDate,
+    selectedMethodConfig?.method?.id,
+    effectiveConfigId,
+    {enabled: canQueryEntities}
   );
 
   const canQueryRelevant = canQueryEntities && !!selectedMethodConfig?.config?.id;
