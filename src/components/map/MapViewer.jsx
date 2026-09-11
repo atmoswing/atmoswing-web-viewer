@@ -26,7 +26,7 @@ import MapLegend from './MapLegend.jsx';
 import MapTooltip from './MapTooltip.jsx';
 import useDarkMode from './hooks/useDarkMode.js';
 import useMapInit from './hooks/useMapInit.js';
-import useOverlayConfigLayers from './hooks/useOverlayConfigLayers.js';
+import useWorkspaceLayers from './hooks/useWorkspaceLayers.js';
 import useOverlayGlobalLayers from './hooks/useOverlayGlobalLayers.js';
 import useForecastPoints from './hooks/useForecastPoints.js';
 import useMapInteractions from './hooks/useMapInteractions.js';
@@ -62,7 +62,7 @@ export default function MapViewer() {
   }, [ENTITIES_SOURCE_EPSG, mapReady, forecastLayerRef, lastRegisteredProjRef]);
 
   // Overlay layers from workspace config
-  useOverlayConfigLayers({mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef});
+  useWorkspaceLayers({mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef});
   // Global overlay layers (non-workspace specific)
   useOverlayGlobalLayers({mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar});
 

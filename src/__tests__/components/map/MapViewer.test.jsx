@@ -67,7 +67,7 @@ vi.mock('@/components/map/hooks/useMapInit.js', () => ({
     mapReady: true
   })
 }));
-vi.mock('@/components/map/hooks/useOverlayConfigLayers.js', () => ({
+vi.mock('@/components/map/hooks/useWorkspaceLayers.js', () => ({
   default: () => {
   }
 }));

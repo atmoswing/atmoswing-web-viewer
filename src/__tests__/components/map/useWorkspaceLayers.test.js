@@ -1,8 +1,6 @@
-// filepath: d:\Development\atmoswing-web-viewer\src\__tests__\hooks\useOverlayConfigLayers.test.js
-
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
-import useOverlayConfigLayers from '@/components/map/hooks/useOverlayConfigLayers.js';
+import useWorkspaceLayers from '@/components/map/hooks/useWorkspaceLayers.js';
 
 // Mock OpenLayers Vector layer constructor to store/get keys and allow setStyle
 vi.mock('ol/layer/Vector', () => ({
@@ -60,7 +58,7 @@ vi.mock('@/components/map/utils/olStyleUtils.js', () => ({
 
 vi.mock('@/config.js', () => ({default: {API_DEBUG: false}}));
 
-describe('useOverlayConfigLayers (smoke)', () => {
+describe('useWorkspaceLayers (smoke)', () => {
   let mockLayersCollection, mockOverlayGroup, mockLayerSwitcher;
   let originalFetch;
   let originalAbortController;
@@ -102,7 +100,7 @@ describe('useOverlayConfigLayers (smoke)', () => {
 
   it('does nothing when map is not ready', () => {
     renderHook(() =>
-      useOverlayConfigLayers({
+      useWorkspaceLayers({
         mapReady: false,
         runtimeConfig: {},
         workspace: 'demo',
@@ -121,7 +119,7 @@ describe('useOverlayConfigLayers (smoke)', () => {
     mockLayersCollection.getArray.mockReturnValue([oldLayer]);
 
     renderHook(() =>
-      useOverlayConfigLayers({
+      useWorkspaceLayers({
         mapReady: true,
         runtimeConfig: {workspaces: [{key: 'demo', shapefiles: []}]},
         workspace: 'demo',
@@ -141,7 +139,7 @@ describe('useOverlayConfigLayers (smoke)', () => {
     const runtimeConfig = {workspaces: [{key: 'demo', shapefiles: [{name: 'Test', url, display: true}]}]};
 
     renderHook(() =>
-      useOverlayConfigLayers({
+      useWorkspaceLayers({
         mapReady: true,
         runtimeConfig,
         workspace: 'demo',
@@ -167,7 +165,7 @@ describe('useOverlayConfigLayers (smoke)', () => {
     const shp = await import('shpjs');
 
     renderHook(() =>
-      useOverlayConfigLayers({
+      useWorkspaceLayers({
         mapReady: true,
         runtimeConfig,
         workspace: 'demo',
@@ -190,7 +188,7 @@ describe('useOverlayConfigLayers (smoke)', () => {
     const runtimeConfig = {workspaces: [{key: 'demo', shapefiles: [{name: 'AbortTest', url, display: true}]}]};
 
     const {unmount} = renderHook(() =>
-      useOverlayConfigLayers({
+      useWorkspaceLayers({
         mapReady: true,
         runtimeConfig,
         workspace: 'demo',

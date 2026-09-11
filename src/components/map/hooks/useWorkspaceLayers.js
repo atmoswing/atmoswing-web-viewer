@@ -1,7 +1,8 @@
 /**
- * @module components/map/hooks/useOverlayConfigLayers
- * @description Hook for loading and managing workspace-specific overlay layers (shapefiles).
- * Dynamically adds/removes overlay layers based on workspace configuration.
+ * @module components/map/hooks/useWorkspaceLayers
+ * @description Loads the active workspace's own GIS layers (`workspaces[].shapefiles` in
+ * config.json, documented as "Workspace Layers") and swaps them when the workspace changes.
+ * App-wide overlays (`overlayLayers`) are handled by `useOverlayGlobalLayers` instead.
  */
 
 import {useEffect} from 'react';
@@ -34,7 +35,7 @@ import config from '@/config.js';
  * @param {React.RefObject} params.overlayGroupRef - Ref to overlay layer group
  * @param {React.RefObject} params.layerSwitcherRef - Ref to layer switcher control
  * @example
- * useOverlayConfigLayers({
+ * useWorkspaceLayers({
  *   mapReady: true,
  *   runtimeConfig: config,
  *   workspace: 'demo',
@@ -42,7 +43,7 @@ import config from '@/config.js';
  *   layerSwitcherRef
  * });
  */
-export default function useOverlayConfigLayers(
+export default function useWorkspaceLayers(
   {
     mapReady,
     runtimeConfig,
