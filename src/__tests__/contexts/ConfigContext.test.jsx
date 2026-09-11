@@ -31,6 +31,7 @@ describe('ConfigProvider', () => {
 
   it('renders children without crashing', () => {
     fetchSpy.mockResolvedValue({
+      ok: true,
       json: async () => ({workspaces: []})
     });
 
@@ -50,6 +51,7 @@ describe('ConfigProvider', () => {
     };
 
     fetchSpy.mockResolvedValue({
+      ok: true,
       json: async () => mockConfig
     });
 
@@ -68,6 +70,7 @@ describe('ConfigProvider', () => {
     const mockConfig = {workspaces: []};
 
     fetchSpy.mockResolvedValue({
+      ok: true,
       json: async () => mockConfig
     });
 
@@ -86,6 +89,7 @@ describe('ConfigProvider', () => {
     const mockConfig = {workspaces: []};
 
     fetchSpy.mockResolvedValue({
+      ok: true,
       json: async () => mockConfig
     });
 
@@ -101,6 +105,8 @@ describe('ConfigProvider', () => {
   });
 
   it('handles fetch errors gracefully', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+    });
     fetchSpy.mockRejectedValue(new Error('Network error'));
 
     // Should not throw
@@ -111,10 +117,14 @@ describe('ConfigProvider', () => {
     );
 
     expect(screen.getByText('Content')).toBeInTheDocument();
+    errorSpy.mockRestore();
   });
 
   it('handles JSON parse errors gracefully', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+    });
     fetchSpy.mockResolvedValue({
+      ok: true,
       json: async () => {
         throw new Error('Invalid JSON');
       }
@@ -128,6 +138,7 @@ describe('ConfigProvider', () => {
     );
 
     expect(screen.getByText('Content')).toBeInTheDocument();
+    errorSpy.mockRestore();
   });
 
   it('cancels fetch on unmount', async () => {
@@ -149,6 +160,7 @@ describe('ConfigProvider', () => {
 
   it('renders multiple children', () => {
     fetchSpy.mockResolvedValue({
+      ok: true,
       json: async () => ({})
     });
 
@@ -162,5 +174,31 @@ describe('ConfigProvider', () => {
     expect(screen.getByText('Child 1')).toBeInTheDocument();
     expect(screen.getByText('Child 2')).toBeInTheDocument();
   });
-});
 
+  it('treats a non-ok response as a failure rather than parsing it', async () => {
+    // A 404 typically serves an HTML error page; parsing that as config would be worse
+    // than reporting the failure.
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+    });
+    const json = vi.fn();
+    fetchSpy.mockResolvedValue({ok: false, status: 404, json});
+
+    render(<ConfigProvider><div>Child</div></ConfigProvider>);
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(json).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('points at the sample file when the config cannot be loaded', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+    });
+    fetchSpy.mockRejectedValue(new Error('Network error'));
+
+    render(<ConfigProvider><div>Child</div></ConfigProvider>);
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(errorSpy.mock.calls[0][0]).toContain('public/config.sample.json');
+    errorSpy.mockRestore();
+  });
+});

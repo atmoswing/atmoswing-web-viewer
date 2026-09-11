@@ -1,0 +1,88 @@
+{
+  "API_BASE_URL": "https://atmoswing-api-fr.terranum.ch",
+  "ENTITIES_SOURCE_EPSG": "EPSG:2154",
+  "API_DEBUG": false,
+  "providers": [
+    {
+      "name": "IGN",
+      "wmtsUrl": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetCapabilities"
+    }
+  ],
+  "baseLayers": [
+    {
+      "title": "Plan IGN",
+      "provider": "IGN",
+      "type": "base",
+      "visible": true,
+      "source": "wmts",
+      "wmtsLayer": "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2",
+      "format": "image/png"
+    }
+  ],
+  "overlayLayers": [
+    {
+      "title": "Hydrographie (IGN)",
+      "provider": "IGN",
+      "visible": false,
+      "source": "wmts",
+      "wmtsLayer": "HYDROGRAPHY.HYDROGRAPHY",
+      "format": "image/png",
+      "style": "nolegend"
+    },
+    {
+      "title": "Vigilance Vigicrues",
+      "source": "geojson",
+      "url": "https://www.vigicrues.gouv.fr/services/InfoVigiCru.geojson",
+      "visible": true,
+      "valueAttr": "NivInfViCr",
+      "lineWidth": 3,
+      "refreshMinutes": 60,
+      "colors": {
+        "0": "#0077cc",
+        "1": "#2ecc40",
+        "2": "#fcf619",
+        "3": "#ff851b",
+        "4": "#ff4136"
+      }
+    }
+  ],
+  "workspaces": [
+    {
+      "key": "demo",
+      "name": "Demo Workspace",
+      "shapefiles": [
+        {
+          "name": "Bassins",
+          "url": "https://example.com/gis-layers/basins.zip",
+          "epsg": "EPSG:2154",
+          "display": true,
+          "style": {
+            "polygon": {
+              "stroke": {
+                "color": "rgba(255, 0, 255, 0.4)",
+                "width": 1.5
+              },
+              "fill": {
+                "color": "rgba(255, 0, 255, 0.1)"
+              }
+            }
+          }
+        },
+        {
+          "name": "Cours d'eau",
+          "url": "https://example.com/gis-layers/rivers.zip",
+          "epsg": "EPSG:2154",
+          "display": false,
+          "style": {
+            "line": {
+              "stroke": {
+                "color": "#0077cc",
+                "width": 2
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,14 @@
 
 All runtime settings live in a single JSON file served at `/config.json` (located at `public/config.json` in the source tree). This file is fetched at startup and can be changed without rebuilding the application. It contains API settings, map providers, base layers, overlay layers, and workspace definitions.
 
+`public/config.json` is deliberately not tracked in git, since it is specific to each deployment. A working template is provided; copy it once after cloning, then edit it.
+
+```bash
+cp public/config.sample.json public/config.json
+```
+
+Without this file the app starts but has no API URL and no workspaces, and logs an explanatory error to the browser console.
+
 For detailed documentation on all available configuration options and fields, see **[CONFIGURATION.md](CONFIGURATION.md)**.
 
 ### Quick Example
@@ -63,9 +71,9 @@ Browser navigation (back/forward) stays in sync with the selected workspace, and
 
 ## Development
 
-Run the local server for development:
-
 ```bash
+npm install
+cp public/config.sample.json public/config.json   # first time only
 npm run dev
 ```
 

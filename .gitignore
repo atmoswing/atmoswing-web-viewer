@@ -25,6 +25,7 @@ dist-ssr
 
 # Custom
 .env
+# Runtime config is environment-specific; public/config.sample.json is the tracked template.
 public/config.json
 lint.json
 lint.txt
