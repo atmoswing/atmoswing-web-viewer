@@ -5,10 +5,7 @@
 
 import React, {useEffect, useState, useMemo} from 'react';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import {Box, CircularProgress, Typography} from '@mui/material';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -21,6 +18,7 @@ import Paper from '@mui/material/Paper';
 import {useTranslation} from 'react-i18next';
 import {formatCriteria, formatDateLabel, formatPrecipitation} from '@/utils/formattingUtils.js';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
+import ModalTitleBar from './common/ModalTitleBar.jsx';
 import {useAnalogDetails} from './hooks/useAnalogDetails.js';
 
 /**
@@ -107,13 +105,11 @@ export default function DetailsAnalogsModal({open, onClose}) {
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="md"
             sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '920px'}}}>
-      <DialogTitle sx={{pr: 5}}>
-        {t('detailsAnalogsModal.title')}
-        <IconButton aria-label={t('detailsAnalogsModal.close')} onClick={onClose} size="small"
-                    sx={{position: 'absolute', right: 8, top: 8}}>
-          <CloseIcon fontSize="small"/>
-        </IconButton>
-      </DialogTitle>
+      <ModalTitleBar
+        title={t('detailsAnalogsModal.title')}
+        onClose={onClose}
+        closeLabel={t('detailsAnalogsModal.close')}
+      />
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <MethodConfigSelector

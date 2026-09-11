@@ -7,16 +7,14 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import {Box, CircularProgress, Typography} from '@mui/material';
 import Popper from '@mui/material/Popper';
 import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTimeSeriesData} from './hooks/useTimeSeriesData.js';
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
+import ModalTitleBar from './common/ModalTitleBar.jsx';
 import ChartOptionsGroup from './common/ChartOptionsGroup.jsx';
 import {useChartOptions} from './hooks/useChartOptions.js';
 import {useChartExport} from './hooks/useChartExport.js';
@@ -124,14 +122,9 @@ export default function TimeSeriesModal() {
                 flexDirection: 'column'
               }
             }}>
-      <DialogTitle sx={{pr: 5}}>
-        {stationName ? `${stationName}` : ''}
+      <ModalTitleBar title={stationName || ''} onClose={handleClose} closeLabel={t('seriesModal.close')}>
         <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} sx={{marginLeft: 5}}/>
-        <IconButton aria-label={t('seriesModal.close')} onClick={handleClose} size="small"
-                    sx={{position: 'absolute', right: 8, top: 8}}>
-          <CloseIcon fontSize="small"/>
-        </IconButton>
-      </DialogTitle>
+      </ModalTitleBar>
       <DialogContent dividers
                      sx={{display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'stretch', flex: 1, minHeight: 0}}>
         {selectedEntityId && (

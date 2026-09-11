@@ -6,16 +6,14 @@
 
 import React, {useEffect, useRef, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import {Box, CircularProgress, Tab, Tabs, Typography} from '@mui/material';
 import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 import {useDistributionData} from './hooks/useDistributionData.js';
 import ExportMenu from './common/ExportMenu.jsx';
+import ModalTitleBar from './common/ModalTitleBar.jsx';
 import ChartOptionsGroup from './common/ChartOptionsGroup.jsx';
 import {useChartOptions} from './hooks/useChartOptions.js';
 import {useChartExport} from './hooks/useChartExport.js';
@@ -135,14 +133,13 @@ export default function DistributionsModal({open, onClose}) {
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
             sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '1100px'}}}>
-      <DialogTitle sx={{pr: 5}}>
-        {t('distributionPlots.title') || 'Distribution plots'}
+      <ModalTitleBar
+        title={t('distributionPlots.title')}
+        onClose={onClose}
+        closeLabel={t('detailsAnalogsModal.close')}
+      >
         <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} sx={{marginLeft: 5}}/>
-        <IconButton aria-label={t('detailsAnalogsModal.close') || 'Close'} onClick={onClose} size="small"
-                    sx={{position: 'absolute', right: 8, top: 8}}>
-          <CloseIcon fontSize="small"/>
-        </IconButton>
-      </DialogTitle>
+      </ModalTitleBar>
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <MethodConfigSelector
