@@ -54,13 +54,7 @@
     "overlays": "Overlays",
     "layers": {
       "esri": "Esri World Imagery",
-      "osm": "OpenStreetMap",
-      "shadow": "Shaded relief (IGN)",
-      "ortho": "Orthophotos (IGN)",
-      "planIgn": "Map IGN",
-      "adminIgn": "Admin (IGN)",
-      "bcae": "Waterways BCAE (IGN)",
-      "hydro": "Hydrography (IGN)"
+      "osm": "OpenStreetMap"
     },
     "tooltip": {
       "value": "Value"
@@ -77,8 +71,6 @@
   "seriesModal": {
     "selectStation": "Select a station to view the forecast series.",
     "seriesAriaLabel": "Forecast percentiles time series",
-    "loadingPreviousForecasts": "Loading previous forecasts…",
-    "errorLoadingPreviousForecasts": "Error loading previous forecasts",
     "loadingSeries": "Loading series…",
     "resolvingConfig": "Resolving configuration…",
     "errorLoadingSeries": "Error loading series.",
@@ -96,14 +88,7 @@
     "median": "Median",
     "analog": "Analog",
     "analogWithIndex": "Analog {{index}}",
-    "p10": "P10",
-    "unexpectedHistoryResponse": "Unexpected history response",
     "close": "Close",
-    "loadingBestAnalogs": "Loading best analogs…",
-    "noBestAnalogs": "No best analogs",
-    "loadingReference": "Loading reference values…",
-    "noReferenceValues": "No reference values",
-    "noPreviousForecastsAvailable": "No previous forecasts available",
     "export": "Export",
     "exportFailed": "Export to {{format}} failed: {{error}}"
   },
@@ -111,10 +96,8 @@
     "title": "Distribution plots",
     "predist": "Predictands distribution",
     "critdist": "Criteria distribution",
-    "analogsPrecipTitle": "Analogs precipitation distribution",
     "cumulativeFrequency": "Cumulative frequency",
     "noAnalogs": "No analog values for the selected method/config/entity/lead.",
-    "criteriaTitle": "Criteria distribution",
     "noCriteria": "No criteria values available for the selected selection."
   },
   "detailsAnalogsModal": {
@@ -123,15 +106,12 @@
     "entity": "Entity",
     "method": "Method",
     "config": "Configuration",
-    "station": "Station",
     "lead": "Lead time",
     "analogsList": "Analogs",
     "loading": "Loading...",
     "noMethods": "No methods",
     "noConfigs": "No configurations",
     "loadingMethods": "Loading methods...",
-    "loadingStations": "Loading stations...",
-    "noStations": "No stations",
     "loadingEntities": "Loading entities...",
     "noEntities": "No entities",
     "noLeads": "No lead times",
@@ -139,7 +119,6 @@
     "errorLoadingMethods": "Error loading methods",
     "errorLoadingAnalogs": "Error loading analogs",
     "colDate": "Date",
-    "colValue": "Value",
     "colPrecipitation": "Precipitation",
     "precipitation": "Precipitation",
     "colCriteria": "Criteria",

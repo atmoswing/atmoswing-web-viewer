@@ -54,13 +54,7 @@
     "overlays": "Couches",
     "layers": {
       "esri": "Esri World Imagery",
-      "osm": "OpenStreetMap",
-      "shadow": "Ombrage (IGN)",
-      "ortho": "Orthophotos (IGN)",
-      "planIgn": "Plan IGN",
-      "adminIgn": "Admin (IGN)",
-      "bcae": "Cours d'eau BCAE (IGN)",
-      "hydro": "Hydrographie (IGN)"
+      "osm": "OpenStreetMap"
     },
     "tooltip": {
       "value": "Valeur"
@@ -77,8 +71,6 @@
   "seriesModal": {
     "selectStation": "Sélectionnez une station pour afficher les séries de prévision.",
     "seriesAriaLabel": "Séries de pourcentiles de prévision",
-    "loadingPreviousForecasts": "Chargement des prévisions précédentes…",
-    "errorLoadingPreviousForecasts": "Erreur lors du chargement des prévisions précédentes",
     "loadingSeries": "Chargement des séries…",
     "resolvingConfig": "Résolution de la configuration…",
     "errorLoadingSeries": "Erreur lors du chargement des séries.",
@@ -96,14 +88,7 @@
     "median": "Médiane",
     "analog": "Analogique",
     "analogWithIndex": "Analogue {{index}}",
-    "p10": "P10",
-    "unexpectedHistoryResponse": "Réponse d'historique inattendue",
     "close": "Fermer",
-    "loadingBestAnalogs": "Chargement des meilleurs analogues…",
-    "noBestAnalogs": "Aucun meilleur analogue",
-    "loadingReference": "Chargement des valeurs de référence…",
-    "noReferenceValues": "Aucune valeur de référence",
-    "noPreviousForecastsAvailable": "Aucune prévision précédente disponible",
     "export": "Exporter",
     "exportFailed": "L'export en {{format}} a échoué : {{error}}"
   },
@@ -111,10 +96,8 @@
     "title": "Graphiques de distribution",
     "predist": "Distribution des prédictands",
     "critdist": "Distribution des critères",
-    "analogsPrecipTitle": "Distribution des précipitations des analogues",
     "cumulativeFrequency": "Fréquence cumulative",
     "noAnalogs": "Aucune valeur analogue pour la méthode/configuration/entité/échéance sélectionnée.",
-    "criteriaTitle": "Distribution des critères",
     "noCriteria": "Aucune valeur de critère disponible pour la sélection."
   },
   "detailsAnalogsModal": {
@@ -123,15 +106,12 @@
     "entity": "Entité",
     "method": "Méthode",
     "config": "Configuration",
-    "station": "Station",
     "lead": "Échéance",
     "analogsList": "Analogues",
     "loading": "Chargement...",
     "noMethods": "Aucune méthode",
     "noConfigs": "Aucune configuration",
     "loadingMethods": "Chargement des méthodes...",
-    "loadingStations": "Chargement des stations...",
-    "noStations": "Aucune station",
     "loadingEntities": "Chargement des entités...",
     "noEntities": "Aucune entité",
     "noLeads": "Aucune échéance",
@@ -139,7 +119,6 @@
     "errorLoadingMethods": "Erreur lors du chargement des méthodes",
     "errorLoadingAnalogs": "Erreur lors du chargement des analogues",
     "colDate": "Date",
-    "colValue": "Valeur",
     "colPrecipitation": "Précipitation",
     "precipitation": "Précipitation",
     "colCriteria": "Critère",
