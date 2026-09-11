@@ -42,20 +42,57 @@ export function normalizeForecastValuesResponse(resp) {
   return {norm: normMap, raw: rawMap, unavailable: false};
 }
 
-// Normalize reference values ({reference_axis, reference_values}) -> { axis:number[], values:number[] }
+/**
+ * Converts an API number to a finite number, treating a missing entry as absent rather than 0.
+ *
+ * @private
+ * @param {*} value - Raw value
+ * @returns {number|null} The number, or null for null, undefined, blank strings and non-numbers
+ */
+function toFiniteNumber(value) {
+  if (value == null || (typeof value === 'string' && value.trim() === '')) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Normalizes reference (return period) values into aligned `axis`/`values` arrays.
+ *
+ * Accepts `{reference_axis, reference_values}`, `{axis, values}` or `{items: [{rp, value}]}`.
+ * Only complete pairs are kept: a missing entry must not survive as 0, since `Number(null)` and
+ * `Number('')` are both 0 and every chart would draw that as a real 0 mm return period.
+ *
+ * @param {Object|null} resp - Raw API response
+ * @returns {{axis: Array<number>, values: Array<number>}|null} Aligned pairs, or null when none
+ *   are usable or the arrays disagree in length
+ * @example
+ * normalizeReferenceValues({reference_axis: [2, 10], reference_values: [null, 26]})
+ * // Returns: {axis: [10], values: [26]}
+ */
 export function normalizeReferenceValues(resp) {
   if (!resp) return null;
-  let axis = [], values = [];
+  let rawAxis = [], rawValues = [];
   if (Array.isArray(resp.reference_axis) && Array.isArray(resp.reference_values)) {
-    axis = resp.reference_axis.map(Number);
-    values = resp.reference_values.map(Number);
+    rawAxis = resp.reference_axis;
+    rawValues = resp.reference_values;
   } else if (Array.isArray(resp.axis) && Array.isArray(resp.values)) {
-    axis = resp.axis.map(Number);
-    values = resp.values.map(Number);
+    rawAxis = resp.axis;
+    rawValues = resp.values;
   } else if (Array.isArray(resp.items)) {
-    axis = resp.items.map(it => Number(it?.rp ?? it?.return_period ?? it?.x));
-    values = resp.items.map(it => Number(it?.value ?? it?.y));
+    rawAxis = resp.items.map(it => it?.rp ?? it?.return_period ?? it?.x);
+    rawValues = resp.items.map(it => it?.value ?? it?.y);
   }
-  if (!axis.length || axis.length !== values.length) return null;
-  return {axis, values};
+  if (!rawAxis.length || rawAxis.length !== rawValues.length) return null;
+
+  const axis = [];
+  const values = [];
+  rawAxis.forEach((rp, i) => {
+    const period = toFiniteNumber(rp);
+    const value = toFiniteNumber(rawValues[i]);
+    if (period != null && value != null) {
+      axis.push(period);
+      values.push(value);
+    }
+  });
+  return axis.length ? {axis, values} : null;
 }

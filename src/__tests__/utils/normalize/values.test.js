@@ -4,6 +4,7 @@
 
 import {describe, expect, it} from 'vitest';
 import {normalizeForecastValuesResponse, normalizeReferenceValues} from '@/utils/normalize/values.js';
+import {returnPeriodMarkers} from '@/components/modals/charts/draw/distributionLayers.js';
 
 describe('normalize/values', () => {
   describe('normalizeForecastValuesResponse', () => {
@@ -147,5 +148,46 @@ describe('normalize/values', () => {
     const resp = {items: [{rp: 5, value: 100}, {return_period: 10, value: 200}]};
     const out = normalizeReferenceValues(resp);
     expect(out.axis).toEqual([5, 10]);
+  });
+});
+
+describe('normalizeReferenceValues with missing entries', () => {
+  it('drops a return period whose value is null instead of reading it as 0 mm', () => {
+    const result = normalizeReferenceValues({reference_axis: [2, 5, 10], reference_values: [null, 21, 26]});
+    expect(result).toEqual({axis: [5, 10], values: [21, 26]});
+  });
+
+  it('treats undefined and blank strings as missing too', () => {
+    // Number('') and Number('  ') are both 0, the same trap as null.
+    const result = normalizeReferenceValues({axis: [2, 5, 10, 20], values: [undefined, '', '  ', 31]});
+    expect(result).toEqual({axis: [20], values: [31]});
+  });
+
+  it('drops an entry whose return period is missing', () => {
+    const result = normalizeReferenceValues({reference_axis: [null, 10], reference_values: [14, 26]});
+    expect(result).toEqual({axis: [10], values: [26]});
+  });
+
+  it('drops items with a blank value', () => {
+    const result = normalizeReferenceValues({items: [{rp: 2, value: ''}, {rp: 10, value: 26}]});
+    expect(result).toEqual({axis: [10], values: [26]});
+  });
+
+  it('keeps a genuine zero', () => {
+    // Only missing entries go: a real 0 is data.
+    const result = normalizeReferenceValues({reference_axis: [2, 10], reference_values: [0, 26]});
+    expect(result).toEqual({axis: [2, 10], values: [0, 26]});
+  });
+
+  it('returns null when no entry survives', () => {
+    expect(normalizeReferenceValues({reference_axis: [2, 10], reference_values: [null, null]})).toBeNull();
+  });
+
+  it('stops the distribution chart drawing a 0 mm line for a missing period', () => {
+    const normalized = normalizeReferenceValues({
+      reference_axis: [2, 5, 10], reference_values: [null, 21, 26]
+    });
+    const labels = returnPeriodMarkers(normalized, {allReturnPeriods: true}).map(m => m.label);
+    expect(labels).toEqual(['P5', 'P10']);
   });
 });
