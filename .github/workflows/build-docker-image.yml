@@ -5,12 +5,14 @@ on:
     branches:
       - main
       - dev
+      - test
     tags:
       - v*
   pull_request:
     branches:
       - main
       - dev
+      - test
   release:
     types: [published]
 
