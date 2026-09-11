@@ -9,7 +9,11 @@ function mockFetchSequence(responses) {
       status: r.status,
       statusText: r.statusText || (r.status === 200 ? 'OK' : 'ERR'),
       json: async () => r.jsonData,
+      // A real Response always has text() and headers.get(); the provider now reads the body
+      // as text so it can report what arrived when it is not JSON.
+      text: async () => (r.textData !== undefined ? r.textData : JSON.stringify(r.jsonData ?? null)),
       headers: {
+        get: name => (name.toLowerCase() === 'content-type' ? (r.contentType ?? 'application/json') : null),
         forEach: () => {
         }
       },
@@ -185,5 +189,56 @@ describe('api service endpoint URLs', () => {
       `/aggregations/r/${ENC}/m/24/entities-values-percentile/90?normalize=10`,
       {cache: 'no-store'}
     );
+  });
+});
+
+describe('api service response parsing', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('explains an HTML page returned with 200 instead of JSON', async () => {
+    // What the SPA fallback serves when a request lands on the viewer's own origin.
+    mockFetchSequence([{
+      status: 200,
+      textData: '<!doctype html><html lang="fr"><head>',
+      contentType: 'text/html'
+    }]);
+
+    const err = await api.getLastForecastDate('rhone').catch(e => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toContain('/meta/rhone/last-forecast-date');
+    expect(err.message).toContain('text/html');
+    expect(err.message).toContain('API_BASE_URL');
+    expect(err.cause).toBeInstanceOf(SyntaxError);
+  });
+
+  it('reports other invalid JSON without the HTML hint', async () => {
+    mockFetchSequence([{status: 200, textData: 'not json', contentType: 'text/plain'}]);
+
+    const err = await api.getLastForecastDate('rhone').catch(e => e);
+
+    expect(err.message).toContain('invalid JSON');
+    expect(err.message).not.toContain('API_BASE_URL');
+  });
+
+  it('does not retry an unparseable body', async () => {
+    mockFetchSequence([
+      {status: 200, textData: '<html>', contentType: 'text/html'},
+      {status: 200, jsonData: {ok: true}}
+    ]);
+
+    await api.getLastForecastDate('rhone').catch(() => {
+    });
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('still parses a normal JSON body', async () => {
+    mockFetchOnce(200, {last_forecast_date: '2025-01-01T06:00'});
+
+    await expect(api.getLastForecastDate('rhone'))
+      .resolves.toEqual({last_forecast_date: '2025-01-01T06:00'});
   });
 });

@@ -4,6 +4,34 @@ import {appendQuery, buildNormalizeQuery, buildPercentilesQuery} from './apiHelp
 // In-flight request de-duplication: endpoint -> Promise
 const inflight = new Map();
 
+/**
+ * Parses a successful response body as JSON, failing with an error that says what arrived.
+ *
+ * The viewer is served with an SPA fallback (`try_files $uri /index.html` in nginx, and the
+ * same in the Vite dev server), so a request that reaches the viewer's own origin — an empty or
+ * wrong `API_BASE_URL` — comes back `200 OK` carrying index.html. `res.json()` would then throw
+ * an opaque "Unexpected token '<'" that points nowhere near the cause.
+ *
+ * @private
+ * @param {Response} res - Successful response
+ * @param {string} fullUrl - Requested URL, for the error message
+ * @returns {Promise<*>} Parsed body
+ * @throws {Error} When the body is not valid JSON; `cause` holds the parse error
+ */
+async function parseJsonBody(res, fullUrl) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const type = res.headers?.get?.('content-type') || 'no content type';
+    const hint = /^\s*</.test(text)
+      ? ' The body is an HTML page, which usually means the request reached this web app ' +
+        'instead of the API: check API_BASE_URL in config.json.'
+      : '';
+    throw new Error(`API returned invalid JSON from ${fullUrl} (${type}).${hint}`, {cause: e});
+  }
+}
+
 async function doFetch(fullUrl, endpoint) {
   const maxRetries = 3;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -47,7 +75,8 @@ async function doFetch(fullUrl, endpoint) {
       res.headers.forEach((v, k) => console.log('Header:', k, v));
       console.groupEnd();
     }
-    return await res.json();
+    // Not retried: an unparseable body is deterministic, so a second attempt returns the same.
+    return await parseJsonBody(res, fullUrl);
   }
 }
 
