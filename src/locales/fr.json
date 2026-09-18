@@ -36,8 +36,7 @@
     "restoreLastForecast": "Restaurer la dernière prévision",
     "selectLeadTime": "Sélectionner l'échéance",
     "colorSynthesis": "Couleur : synthèse de toutes les méthodes",
-    "openDistributions": "Ouvrir les graphiques des distributions",
-    "openAnalogs": "Ouvrir les détails des analogues"
+    "openForecastDetails": "Ouvrir les détails de la prévision"
   },
   "forecasts": {
     "loading": "Chargement..."
@@ -92,16 +91,20 @@
     "export": "Exporter",
     "exportFailed": "L'export en {{format}} a échoué : {{error}}"
   },
+  "forecastDetails": {
+    "title": "Détails de la prévision",
+    "tab": {
+      "distribution": "Distribution",
+      "criteria": "Critères",
+      "analogs": "Analogues"
+    }
+  },
   "distributionPlots": {
-    "title": "Graphiques de distribution",
-    "predist": "Distribution des prédictands",
-    "critdist": "Distribution des critères",
     "cumulativeFrequency": "Fréquence cumulative",
     "noAnalogs": "Aucune valeur analogue pour la méthode/configuration/entité/échéance sélectionnée.",
     "noCriteria": "Aucune valeur de critère disponible pour la sélection."
   },
   "detailsAnalogsModal": {
-    "title": "Détails des analogues",
     "close": "Fermer",
     "entity": "Entité",
     "method": "Méthode",
@@ -120,7 +123,6 @@
     "errorLoadingAnalogs": "Erreur lors du chargement des analogues",
     "colDate": "Date",
     "colPrecipitation": "Précipitation",
-    "precipitation": "Précipitation",
     "colCriteria": "Critère",
     "relevant": "Pertinent"
   },

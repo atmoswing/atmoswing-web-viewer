@@ -34,8 +34,7 @@ ignore:
   - "node_modules/**"
   - "docs/**"
   # Exclude specific heavy modal components from codecov
-  - "src/components/modals/DetailsAnalogsModal.jsx"
-  - "src/components/modals/DistributionsModal.jsx"
+  - "src/components/modals/ForecastDetailsModal.jsx"
   - "src/components/modals/TimeSeriesModal.jsx"
 
 flags:

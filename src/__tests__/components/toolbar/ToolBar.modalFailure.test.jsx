@@ -2,7 +2,7 @@
  * @fileoverview A modal that cannot load must not take the app down with it.
  *
  * Kept apart from ToolBar.test.jsx because the failing module mock below applies to the whole
- * file. Before each modal had its own boundary, this exact scenario replaced the entire app,
+ * file. Before the modal had its own boundary, this exact scenario replaced the entire app,
  * map included, with the root "Something went wrong" screen.
  */
 
@@ -24,13 +24,9 @@ vi.mock('@/contexts/SnackbarContext.jsx', () => ({
 vi.mock('@/components/toolbar/ToolbarSquares.jsx', () => ({default: () => <div>squares</div>}));
 vi.mock('@/components/toolbar/ToolbarCenter.jsx', () => ({default: () => <div>center</div>}));
 vi.mock('@/assets/toolbar/frame_distributions.svg?react', () => ({default: () => <svg/>}));
-vi.mock('@/assets/toolbar/frame_analogs.svg?react', () => ({default: () => <svg/>}));
-vi.mock('@/components/modals/DetailsAnalogsModal.jsx', () => ({
-  default: ({open}) => (open ? <div>analogs modal</div> : null)
-}));
-// The distributions modal's chunk cannot be loaded.
-vi.mock('@/components/modals/DistributionsModal.jsx', () => {
-  throw new TypeError('Failed to fetch dynamically imported module: http://localhost/assets/DistributionsModal-OLD.js');
+// The details modal's chunk cannot be loaded.
+vi.mock('@/components/modals/ForecastDetailsModal.jsx', () => {
+  throw new TypeError('Failed to fetch dynamically imported module: http://localhost/assets/ForecastDetailsModal-OLD.js');
 });
 
 function renderApp() {
@@ -56,7 +52,7 @@ describe('ToolBar with a modal that cannot load', () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByLabelText('toolbar.openDistributions'));
+    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
 
     await vi.waitFor(() => expect(enqueueSnackbar).toHaveBeenCalled());
     expect(screen.queryByText('Something went wrong.')).not.toBeInTheDocument();
@@ -68,7 +64,7 @@ describe('ToolBar with a modal that cannot load', () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByLabelText('toolbar.openDistributions'));
+    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
 
     await vi.waitFor(() => expect(enqueueSnackbar).toHaveBeenCalledTimes(1));
     // Vitest rewrites a failing mock's message, so this surfaces as a general failure here;
@@ -76,24 +72,13 @@ describe('ToolBar with a modal that cannot load', () => {
     expect(enqueueSnackbar).toHaveBeenCalledWith('errors.modalFailed', {variant: 'error'});
   });
 
-  it('leaves the other modal working', async () => {
-    const user = userEvent.setup();
-    renderApp();
-
-    await user.click(screen.getByLabelText('toolbar.openDistributions'));
-    await vi.waitFor(() => expect(enqueueSnackbar).toHaveBeenCalled());
-    await user.click(screen.getByLabelText('toolbar.openAnalogs'));
-
-    expect(await screen.findByText('analogs modal')).toBeInTheDocument();
-  });
-
   it('tries again on the next click', async () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByLabelText('toolbar.openDistributions'));
+    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
     await vi.waitFor(() => expect(enqueueSnackbar).toHaveBeenCalledTimes(1));
-    await user.click(screen.getByLabelText('toolbar.openDistributions'));
+    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
 
     await vi.waitFor(() => expect(enqueueSnackbar).toHaveBeenCalledTimes(2));
   });

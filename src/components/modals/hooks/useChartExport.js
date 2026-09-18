@@ -22,14 +22,23 @@ import {exportChartPDF, exportChartPNG, exportChartSVG} from '../common/chartExp
  * @returns {Function} returns.exportSVG - Exports the chart as .svg
  * @returns {Function} returns.exportPNG - Exports the chart as .png
  * @returns {Function} returns.exportPDF - Exports the chart as .pdf
+ * @returns {Array<Object>} returns.formats - The three as `{label, onExport}`, for ExportMenu
  * @example
- * const {exportPNG, exportSVG, exportPDF} = useChartExport({getSVG, getBaseName});
- * <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF}/>
+ * const {formats} = useChartExport({getSVG, getBaseName});
+ * <ExportMenu t={t} formats={formats}/>
  */
 export function useChartExport({getSVG, getBaseName}) {
+  const exportSVG = () => exportChartSVG(getSVG(), getBaseName());
+  const exportPNG = () => exportChartPNG(getSVG(), getBaseName());
+  const exportPDF = () => exportChartPDF(getSVG(), getBaseName());
   return {
-    exportSVG: () => exportChartSVG(getSVG(), getBaseName()),
-    exportPNG: () => exportChartPNG(getSVG(), getBaseName()),
-    exportPDF: () => exportChartPDF(getSVG(), getBaseName())
+    exportSVG,
+    exportPNG,
+    exportPDF,
+    formats: [
+      {label: 'PNG', onExport: exportPNG},
+      {label: 'SVG', onExport: exportSVG},
+      {label: 'PDF', onExport: exportPDF}
+    ]
   };
 }
