@@ -33,7 +33,7 @@ vi.mock('ol/style', () => ({
   Circle: vi.fn(),
   Fill: vi.fn(),
   Stroke: vi.fn(),
-  Style: vi.fn(() => ({})),
+  Style: vi.fn(function () { return {}; }), // constructed with `new`, so not an arrow
 }));
 vi.mock('ol/format/GeoJSON', () => ({
   default: vi.fn(function () {
@@ -155,7 +155,7 @@ describe('useWorkspaceLayers (smoke)', () => {
     await waitFor(() => {
       expect(mockLayersCollection.push).toHaveBeenCalled();
     });
-  }, {timeout: 3000});
+  }, 3000);
 
   it('loads Shapefile (.zip/.shp) overlay via shpjs', async () => {
     const url = 'http://example.com/data.zip';

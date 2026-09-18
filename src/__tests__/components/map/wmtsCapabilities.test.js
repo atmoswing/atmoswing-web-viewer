@@ -3,15 +3,20 @@ import {createWmtsTileLayer, loadWmtsCapabilities} from '@/components/map/utils/
 import WMTS from 'ol/source/WMTS';
 
 // Mock ol modules used internally
+// Constructed with `new` by the code under test, so a `function`: from Vitest 4 an arrow throws,
+// and loadWmtsCapabilities would swallow that and return an empty cache.
 vi.mock('ol/format/WMTSCapabilities', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    read: vi.fn().mockImplementation((txt) => ({contents: txt, Capability: {Layers: []}}))
-  }))
+  default: vi.fn().mockImplementation(function () {
+    return {
+      read: vi.fn().mockImplementation((txt) => ({contents: txt, Capability: {Layers: []}}))
+    };
+  })
 }));
 
 // mock optionsFromCapabilities to return deterministic option object
 vi.mock('ol/source/WMTS', () => ({
-  default: vi.fn().mockImplementation((opts) => ({__wmts: true, opts})),
+  // A `function`, not an arrow: the code constructs it with `new`.
+  default: vi.fn().mockImplementation(function (opts) { return {__wmts: true, opts}; }),
   optionsFromCapabilities: vi.fn().mockImplementation((caps, {layer, matrixSet, style}) => ({layer, matrixSet, style}))
 }));
 

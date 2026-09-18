@@ -6,12 +6,14 @@ import {
   tryLoadQmlStyle
 } from '@/components/map/utils/olStyleUtils.js';
 
-// Mock OpenLayers modules
+// Mock OpenLayers modules. The code calls these with `new`, and Vitest (from v4) only allows
+// that for `function`/`class` implementations; returning an object from a function still
+// makes `new` hand back that object.
 vi.mock('ol/style', () => ({
-  Style: vi.fn((config) => ({__style: true, ...config})),
-  Fill: vi.fn((config) => ({__fill: true, ...config})),
-  Stroke: vi.fn((config) => ({__stroke: true, ...config})),
-  Circle: vi.fn((config) => ({__circle: true, ...config}))
+  Style: vi.fn(function (config) { return {__style: true, ...config}; }),
+  Fill: vi.fn(function (config) { return {__fill: true, ...config}; }),
+  Stroke: vi.fn(function (config) { return {__stroke: true, ...config}; }),
+  Circle: vi.fn(function (config) { return {__circle: true, ...config}; })
 }));
 
 describe('olStyleUtils - styleFromConfigObj', () => {
