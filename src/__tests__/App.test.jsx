@@ -31,6 +31,18 @@ vi.mock('@/components/ErrorBoundary.jsx', () => ({
   default: ({children}) => <div data-testid="error-boundary">{children}</div>
 }));
 
+// The time series modal's wrapper reads the selection and reports failures itself, and App is
+// rendered here without its providers.
+vi.mock('@/contexts/SnackbarContext.jsx', () => ({
+  useSnackbar: () => ({enqueueSnackbar: vi.fn()})
+}));
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
+  useSelectedEntity: () => ({selectedEntityId: null, setSelectedEntityId: vi.fn()})
+}));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({t: k => k})
+}));
+
 describe('App', () => {
   it('renders without crashing', () => {
     render(<App/>);
@@ -72,6 +84,11 @@ describe('App', () => {
     const {container} = render(<App/>);
     const mainContent = container.querySelector('.main-content');
     expect(mainContent).toBeInTheDocument();
+  });
+
+  it('renders the time series modal', async () => {
+    render(<App/>);
+    expect(await screen.findByTestId('timeseries-modal')).toBeInTheDocument();
   });
 
   it('has map area', () => {
