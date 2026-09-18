@@ -5,12 +5,11 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {setupI18nMock} from '../../testUtils.js';
 import PanelDisplay from '@/components/panels/PanelDisplay.jsx';
 import PanelAnalogDates from '@/components/panels/PanelAnalogDates.jsx';
 import PanelStatus from '@/components/panels/PanelStatus.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Stable spies, so the change handlers can be asserted on.
 const {setPercentile, setNormalizationRef} = vi.hoisted(() => ({

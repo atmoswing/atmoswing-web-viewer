@@ -3,7 +3,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {setupI18nMock} from '../../testUtils.js';
 import ExportMenu from '@/components/modals/common/ExportMenu.jsx';
 
 const {enqueueSnackbar} = vi.hoisted(() => ({enqueueSnackbar: vi.fn()}));
@@ -13,7 +12,7 @@ vi.mock('@/contexts/SnackbarContext.jsx', () => ({
   useSnackbar: () => ({enqueueSnackbar})
 }));
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 describe('ExportMenu', () => {
   const onPNG = vi.fn();

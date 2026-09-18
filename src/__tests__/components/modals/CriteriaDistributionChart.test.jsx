@@ -2,10 +2,9 @@ import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, render} from '@testing-library/react';
 
-import {setupI18nMock} from '../../testUtils.js';
 import CriteriaDistributionChart from '@/components/modals/charts/CriteriaDistributionChart.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 function makeSizedRef(width = 700, height = 360) {
   const div = document.createElement('div');

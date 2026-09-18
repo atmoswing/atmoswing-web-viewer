@@ -11,11 +11,10 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {setupI18nMock} from '../../testUtils.js';
 import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 import ToolBar from '@/components/toolbar/ToolBar.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 const {enqueueSnackbar} = vi.hoisted(() => ({enqueueSnackbar: vi.fn()}));
 

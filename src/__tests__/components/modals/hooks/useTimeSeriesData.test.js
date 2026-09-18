@@ -8,8 +8,8 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
 
-// Mocked inline rather than via setupI18nMock(): that helper wraps vi.mock in a function call,
-// which vitest cannot hoist, so react-i18next would stay real in this provider-less hook test.
+// Mocked at the top level so it is hoisted above the imports; otherwise react-i18next would
+// stay real in this provider-less hook test and useTranslation would suspend.
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: (k, opts) => (opts && opts.index ? `${k}${opts.index}` : k), i18n: {language: 'en'}})
 }));

@@ -4,11 +4,10 @@
 
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {setupI18nMock} from '../../testUtils.js';
 import ToolbarSquares from '@/components/toolbar/ToolbarSquares.jsx';
 import ToolbarCenter from '@/components/toolbar/ToolbarCenter.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Mock contexts
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
