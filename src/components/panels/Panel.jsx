@@ -3,7 +3,7 @@
  * @description Collapsible panel component for sidebar sections.
  */
 
-import {useState} from 'react';
+import {useId, useState} from 'react';
 
 import '@/styles/panel.css';
 
@@ -18,13 +18,22 @@ import '@/styles/panel.css';
  */
 export default function Panel({title, children, defaultOpen = false}) {
   const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
 
   return (
     <div className={`panel ${open ? 'open' : 'closed'}`}>
-      <div className="panel-header" onClick={() => setOpen(o => !o)}>
+      {/* A real button, so it can be focused and toggled with Enter or Space, and assistive
+          technology announces whether the panel is expanded. */}
+      <button
+        type="button"
+        className="panel-header"
+        aria-expanded={open}
+        aria-controls={open ? contentId : undefined}
+        onClick={() => setOpen(o => !o)}
+      >
         {title}
-      </div>
-      {open && <div className="panel-content"
+      </button>
+      {open && <div id={contentId} className="panel-content"
                     style={{display: 'flex', flexDirection: 'column', minHeight: 0}}>{children}</div>}
     </div>
   );

@@ -3,7 +3,15 @@
  * Imported by Panel.jsx.
  */
 
+/* The header is a <button> so it is keyboard-operable. The first block undoes the browser's
+   button styling so it still renders like the full-width block it used to be. */
 .panel-header {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 1em); /* a block <div> fills its container minus its horizontal margins */
+  border: none;
+  color: inherit;
+  font: inherit;
   font-size: 1em;
   background: #333;
   padding: 0.5em;
@@ -11,6 +19,11 @@
   margin: 0 0.5em;
   text-align: center;
   cursor: pointer;
+}
+
+.panel-header:focus-visible {
+  outline: 2px solid #8ab4f8;
+  outline-offset: 2px;
 }
 
 .panel-content {
