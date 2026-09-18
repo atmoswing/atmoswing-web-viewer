@@ -31,6 +31,11 @@ vi.mock('@/components/modals/DistributionsModal.jsx', () => ({
     open ? <div data-testid="distributions-modal" onClick={() => onClose()}>Distributions Modal</div> : null
 }));
 
+// ToolBar reports a failed modal through a snackbar.
+vi.mock('@/contexts/SnackbarContext.jsx', () => ({
+  useSnackbar: () => ({enqueueSnackbar: vi.fn()})
+}));
+
 // Mock SVG imports
 vi.mock('@/assets/toolbar/frame_distributions.svg?react', () => ({
   default: () => <svg data-testid="distributions-icon"/>

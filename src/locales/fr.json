@@ -124,6 +124,10 @@
     "colCriteria": "Critère",
     "relevant": "Pertinent"
   },
+  "errors": {
+    "modalFailed": "Cette fenêtre n'a pas pu être affichée.",
+    "pageOutdated": "Cette page n'est plus à jour. Veuillez la recharger."
+  },
   "cancel": "Annuler",
   "ok": "OK"
 }
