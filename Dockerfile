@@ -6,7 +6,9 @@ WORKDIR /app
 
 # Install deps
 COPY package*.json ./
-RUN rm -f package-lock.json && npm install
+# Installs exactly the versions in package-lock.json, the ones CI tested, so the image is
+# reproducible. The lockfile carries the Linux builds of the native packages.
+RUN npm ci --no-audit --no-fund
 
 # Build
 COPY . .

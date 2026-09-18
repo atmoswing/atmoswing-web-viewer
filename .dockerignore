@@ -1,0 +1,24 @@
+# Installed inside the image by `npm ci`. Copying the host's copy would overwrite it, and on a
+# Windows or macOS machine that brings native binaries (rollup, swc, esbuild) built for the
+# wrong platform into a Linux image.
+node_modules
+
+# Build output and generated artifacts, rebuilt inside the image or not needed there.
+dist
+coverage
+docs
+docs-jsdoc
+playwright-report
+lint.json
+lint.txt
+*.log
+
+# Deployment-specific runtime config: mounted at deploy time, and never present in a CI build
+# since it is gitignored. public/config.sample.json is still included.
+public/config.json
+
+# Version control and editor state.
+.git
+.github
+.idea
+.vscode
