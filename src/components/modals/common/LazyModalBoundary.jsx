@@ -25,7 +25,7 @@ import {isChunkLoadError, reloadForStaleChunk} from '@/utils/staleChunk.js';
  *   that could not be loaded
  * @example
  * <LazyModalBoundary resetKey={loaded} onFailure={notifyAndClose}>
- *   {loaded && <DistributionsModal open={open} onClose={close}/>}
+ *   {loaded && <ForecastDetailsModal open={open} onClose={close}/>}
  * </LazyModalBoundary>
  */
 export default class LazyModalBoundary extends React.Component {

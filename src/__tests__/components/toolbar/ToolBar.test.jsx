@@ -19,15 +19,10 @@ vi.mock('@/components/toolbar/ToolbarCenter.jsx', () => ({
   default: () => <div data-testid="toolbar-center">ToolbarCenter</div>
 }));
 
-// Both modals are lazy loaded by ToolBar, so they are mocked at their own module paths.
-vi.mock('@/components/modals/DetailsAnalogsModal.jsx', () => ({
+// The modal is lazy loaded by ToolBar, so it is mocked at its own module path.
+vi.mock('@/components/modals/ForecastDetailsModal.jsx', () => ({
   default: ({open, onClose}) =>
-    open ? <div data-testid="analogs-modal" onClick={() => onClose()}>Analogs Modal</div> : null
-}));
-
-vi.mock('@/components/modals/DistributionsModal.jsx', () => ({
-  default: ({open, onClose}) =>
-    open ? <div data-testid="distributions-modal" onClick={() => onClose()}>Distributions Modal</div> : null
+    open ? <div data-testid="details-modal" onClick={() => onClose()}>Details Modal</div> : null
 }));
 
 // ToolBar reports a failed modal through a snackbar.
@@ -38,10 +33,6 @@ vi.mock('@/contexts/SnackbarContext.jsx', () => ({
 // Mock SVG imports
 vi.mock('@/assets/toolbar/frame_distributions.svg?react', () => ({
   default: () => <svg data-testid="distributions-icon"/>
-}));
-
-vi.mock('@/assets/toolbar/frame_analogs.svg?react', () => ({
-  default: () => <svg data-testid="analogs-icon"/>
 }));
 
 describe('ToolBar', () => {
@@ -56,42 +47,30 @@ describe('ToolBar', () => {
     expect(screen.getByTestId('toolbar-center')).toBeInTheDocument();
   });
 
-  it('renders toolbar buttons', () => {
+  it('offers a single forecast details button', () => {
     render(<ToolBar/>);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByLabelText('toolbar.openForecastDetails')).toBeInTheDocument();
+    expect(screen.getByTestId('distributions-icon')).toBeInTheDocument();
   });
 
-  it('opens distributions modal when button is clicked', async () => {
+  it('opens the forecast details modal when the button is clicked', async () => {
     const user = userEvent.setup();
     render(<ToolBar/>);
 
-    const distributionsButton = screen.getByLabelText('toolbar.openDistributions');
-    await user.click(distributionsButton);
+    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
 
-    expect(await screen.findByTestId('distributions-modal', {}, {timeout: 5000})).toBeInTheDocument();
+    expect(await screen.findByTestId('details-modal', {}, {timeout: 5000})).toBeInTheDocument();
   });
 
-  it('opens analogs modal when button is clicked', async () => {
+  it('closes the modal when its close handler is called', async () => {
     const user = userEvent.setup();
     render(<ToolBar/>);
 
-    const analogsButton = screen.getByLabelText('toolbar.openAnalogs');
-    await user.click(analogsButton);
+    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
+    expect(await screen.findByTestId('details-modal', {}, {timeout: 5000})).toBeInTheDocument();
 
-    expect(await screen.findByTestId('analogs-modal', {}, {timeout: 5000})).toBeInTheDocument();
-  });
-
-  it('closes modals when close handler is called', async () => {
-    const user = userEvent.setup();
-    render(<ToolBar/>);
-
-    // Open and close distributions modal
-    const distributionsButton = screen.getByLabelText('toolbar.openDistributions');
-    await user.click(distributionsButton);
-    expect(await screen.findByTestId('distributions-modal', {}, {timeout: 5000})).toBeInTheDocument();
-
-    await user.click(screen.getByTestId('distributions-modal'));
-    expect(screen.queryByTestId('distributions-modal')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('details-modal'));
+    expect(screen.queryByTestId('details-modal')).not.toBeInTheDocument();
   });
 });

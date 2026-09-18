@@ -9,15 +9,28 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
 
 /**
- * ExportMenu component.
+ * One export format offered by the menu.
+ *
+ * @typedef {Object} ExportFormat
+ * @property {string} label - Menu entry and the format named in an error message (e.g. 'PNG')
+ * @property {Function} onExport - Performs the export; may return a promise that rejects
+ */
+
+/**
+ * Export button with a menu of formats.
+ *
+ * The formats are passed in, so each window offers what fits the view on screen: images for a
+ * chart, CSV for a table.
+ *
  * @param {Object} props
  * @param {Function} props.t - Translation function
- * @param {Function} props.onExportPNG - Handler to export PNG
- * @param {Function} props.onExportSVG - Handler to export SVG
- * @param {Function} props.onExportPDF - Handler to export PDF
+ * @param {Array<ExportFormat>} props.formats - Formats to offer, in menu order
  * @param {Object} [props.sx] - MUI style overrides
+ * @returns {React.ReactElement}
+ * @example
+ * <ExportMenu t={t} formats={[{label: 'CSV', onExport: exportCsv}]}/>
  */
-export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx}) {
+export default function ExportMenu({t, formats, sx}) {
   const [anchorEl, setAnchorEl] = useState(null);
   const {enqueueSnackbar} = useSnackbar();
   const open = Boolean(anchorEl);
@@ -36,10 +49,6 @@ export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx
       });
     }
   };
-
-  const doPNG = () => runExport('PNG', onExportPNG);
-  const doSVG = () => runExport('SVG', onExportSVG);
-  const doPDF = () => runExport('PDF', onExportPDF);
 
   return (
     <>
@@ -61,9 +70,9 @@ export default function ExportMenu({t, onExportPNG, onExportSVG, onExportPDF, sx
         onClose={closeMenu}
         anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
       >
-        <MenuItem onClick={doPNG}>PNG</MenuItem>
-        <MenuItem onClick={doSVG}>SVG</MenuItem>
-        <MenuItem onClick={doPDF}>PDF</MenuItem>
+        {(formats || []).map(({label, onExport}) => (
+          <MenuItem key={label} onClick={() => runExport(label, onExport)}>{label}</MenuItem>
+        ))}
       </Menu>
     </>
   );

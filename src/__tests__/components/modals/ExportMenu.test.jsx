@@ -18,13 +18,18 @@ describe('ExportMenu', () => {
   const onPNG = vi.fn();
   const onSVG = vi.fn();
   const onPDF = vi.fn();
+  const chartFormats = () => [
+    {label: 'PNG', onExport: onPNG},
+    {label: 'SVG', onExport: onSVG},
+    {label: 'PDF', onExport: onPDF}
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders button with translation key', async () => {
-    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF}/>);
+    render(<ExportMenu t={(k) => k} formats={chartFormats()}/>);
     expect(screen.getByText('seriesModal.export')).toBeInTheDocument();
   });
 
@@ -32,7 +37,7 @@ describe('ExportMenu', () => {
   // slow enough under coverage instrumentation to overrun the 5s default.
   it('opens menu and triggers export handlers', async () => {
     const user = userEvent.setup();
-    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF}/>);
+    render(<ExportMenu t={(k) => k} formats={chartFormats()}/>);
     const btn = screen.getByText('seriesModal.export');
     await user.click(btn);
 
@@ -60,10 +65,35 @@ describe('ExportMenu', () => {
     expect(onPDF).toHaveBeenCalled();
   }, 20000);
 
+  it('offers exactly the formats it is given, in order', async () => {
+    const user = userEvent.setup();
+    const onCsv = vi.fn();
+    render(<ExportMenu t={(k) => k} formats={[{label: 'CSV', onExport: onCsv}]}/>);
+
+    await user.click(screen.getByText('seriesModal.export'));
+
+    const items = await screen.findAllByRole('menuitem');
+    expect(items.map(i => i.textContent)).toEqual(['CSV']);
+    await user.click(items[0]);
+    expect(onCsv).toHaveBeenCalledTimes(1);
+  }, 20000);
+
+  it('names the failing format in the error', async () => {
+    const user = userEvent.setup();
+    const t = vi.fn((k) => k);
+    const failing = vi.fn().mockRejectedValue(new Error('no rows'));
+    render(<ExportMenu t={t} formats={[{label: 'CSV', onExport: failing}]}/>);
+
+    await user.click(screen.getByText('seriesModal.export'));
+    await user.click(await screen.findByText('CSV'));
+
+    expect(t).toHaveBeenCalledWith('seriesModal.exportFailed', {format: 'CSV', error: 'no rows'});
+  }, 20000);
+
   it('shows a snackbar when an export rejects', async () => {
     const user = userEvent.setup();
     const failing = vi.fn().mockRejectedValue(new Error('render failed'));
-    render(<ExportMenu t={(k) => k} onExportPNG={failing} onExportSVG={onSVG} onExportPDF={onPDF}/>);
+    render(<ExportMenu t={(k) => k} formats={[{label: 'PNG', onExport: failing}]}/>);
 
     await user.click(screen.getByText('seriesModal.export'));
     await user.click(await screen.findByText('PNG'));
@@ -77,7 +107,7 @@ describe('ExportMenu', () => {
 
   it('does not show a snackbar when an export succeeds', async () => {
     const user = userEvent.setup();
-    render(<ExportMenu t={(k) => k} onExportPNG={onPNG} onExportSVG={onSVG} onExportPDF={onPDF}/>);
+    render(<ExportMenu t={(k) => k} formats={chartFormats()}/>);
 
     await user.click(screen.getByText('seriesModal.export'));
     await user.click(await screen.findByText('PNG'));

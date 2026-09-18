@@ -92,7 +92,7 @@ export default function TimeSeriesModal() {
     return [datePart, entityPart, safeMethod].filter(p => p).join('_') || 'series';
   };
 
-  const {exportSVG, exportPNG, exportPDF} = useChartExport({
+  const {formats: exportFormats} = useChartExport({
     getSVG: findChartSVG,
     getBaseName: buildExportFilenamePrefix
   });
@@ -123,7 +123,7 @@ export default function TimeSeriesModal() {
               }
             }}>
       <ModalTitleBar title={stationName || ''} onClose={handleClose} closeLabel={t('seriesModal.close')}>
-        <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF} sx={{marginLeft: 5}}/>
+        <ExportMenu t={t} formats={exportFormats} sx={{marginLeft: 5}}/>
       </ModalTitleBar>
       <DialogContent dividers
                      sx={{display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'stretch', flex: 1, minHeight: 0}}>

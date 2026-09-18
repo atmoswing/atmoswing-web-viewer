@@ -1,0 +1,253 @@
+/**
+ * @module components/modals/ForecastDetailsModal
+ * @description Forecast details window for a selected method/config/entity/lead, with three tabs:
+ * the precipitation distribution of the analogs, the distribution of their analogy criteria, and
+ * the sortable list of the analogs. Each tab exports its own content.
+ */
+
+import React, {useEffect, useRef, useState} from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import {Box, CircularProgress, Tab, Tabs, Typography} from '@mui/material';
+import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
+import {useTranslation} from 'react-i18next';
+import * as d3 from 'd3';
+import {useForecastDetailsData} from './hooks/useForecastDetailsData.js';
+import ExportMenu from './common/ExportMenu.jsx';
+import ModalTitleBar from './common/ModalTitleBar.jsx';
+import ChartOptionsGroup from './common/ChartOptionsGroup.jsx';
+import AnalogsTable from './common/AnalogsTable.jsx';
+import {exportAnalogsCSV} from './common/analogRows.js';
+import {useChartOptions} from './hooks/useChartOptions.js';
+import {useChartExport} from './hooks/useChartExport.js';
+import {formatExportDatePart, safeForFilename} from './common/chartExport.js';
+import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
+import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
+import MethodConfigSelector from './common/MethodConfigSelector.jsx';
+
+/** Display options offered on the distribution tab, in the order they are listed. */
+const DISTRIBUTION_OPTION_KEYS = ['bestAnalogs', 'tenYearReturn', 'allReturnPeriods'];
+
+/** Tabs in display order; the name is used in the tab label key and the export filename. */
+const TABS = ['distribution', 'criteria', 'analogs'];
+const DISTRIBUTION_TAB = 0;
+const CRITERIA_TAB = 1;
+const ANALOGS_TAB = 2;
+
+const EMPTY_SELECTION = {methodId: null, configId: null, entityId: null, lead: null};
+
+/**
+ * ForecastDetailsModal component.
+ * @param {Object} props
+ * @param {boolean} props.open - Whether the modal is open
+ * @param {Function} props.onClose - Close callback
+ * @returns {React.ReactElement}
+ */
+export default function ForecastDetailsModal({open, onClose}) {
+  const {activeForecastDate} = useForecastSession();
+  const {t} = useTranslation();
+
+  // One selection shared by the three tabs.
+  const [selection, setSelection] = useState(EMPTY_SELECTION);
+  const [tabIndex, setTabIndex] = useState(DISTRIBUTION_TAB);
+  const {options, handleOptionChange} = useChartOptions({
+    bestAnalogs: false,
+    tenYearReturn: true,
+    allReturnPeriods: false
+  });
+  // Bumped to force a chart redraw on window resize.
+  const [renderTick, setRenderTick] = useState(0);
+
+  const precipRef = useRef(null);
+  const critRef = useRef(null);
+
+  const {
+    analogs,
+    analogValues,
+    analogsLoading,
+    analogsError,
+    criteriaValues,
+    bestAnalogsData,
+    percentileMarkers,
+    referenceValues,
+    stationName,
+    resolvedMethodId,
+    resolvedConfigId
+  } = useForecastDetailsData({open, selection, options});
+
+  // Redraw on window resize (debounced).
+  useEffect(() => {
+    let timer = null;
+
+    function handler() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setRenderTick(t => t + 1), 120);
+    }
+
+    window.addEventListener('resize', handler);
+    return () => {
+      window.removeEventListener('resize', handler);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
+  // Cleanup on close: the request keys go null with `open`, so only the chart DOM
+  // and the local selection need resetting.
+  useEffect(() => {
+    if (!open) {
+      [precipRef, critRef].forEach(ref => {
+        try {
+          if (ref.current) d3.select(ref.current).selectAll('*').remove();
+        } catch { /* container already detached; nothing to clean up */
+        }
+      });
+      setSelection(EMPTY_SELECTION);
+    }
+  }, [open]);
+
+  const buildExportFilenamePrefix = () => {
+    const datePart = formatExportDatePart(activeForecastDate);
+    const entityPart = safeForFilename(stationName || 'entity');
+    const safeMethod = safeForFilename(resolvedMethodId || 'method');
+    const leadPart = (selection.lead != null) ? `L${selection.lead}` : '';
+    const tabPart = TABS[tabIndex];
+    return [datePart, entityPart, safeMethod, leadPart, tabPart].filter(Boolean).join('_') || tabPart;
+  };
+
+  const findCurrentChartSVG = () => {
+    const el = tabIndex === DISTRIBUTION_TAB ? precipRef.current : critRef.current;
+    return el ? el.querySelector('svg') : null;
+  };
+
+  const {formats: chartFormats} = useChartExport({
+    getSVG: findCurrentChartSVG,
+    getBaseName: buildExportFilenamePrefix
+  });
+  const exportFormats = tabIndex === ANALOGS_TAB
+    ? [{label: 'CSV', onExport: () => exportAnalogsCSV(analogs, buildExportFilenamePrefix())}]
+    : chartFormats;
+
+  const status = {loading: analogsLoading, error: analogsError, t};
+
+  return (
+    <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
+            sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '1100px'}}}>
+      <ModalTitleBar
+        title={t('forecastDetails.title')}
+        onClose={onClose}
+        closeLabel={t('detailsAnalogsModal.close')}
+      >
+        <ExportMenu t={t} formats={exportFormats} sx={{marginLeft: 5}}/>
+      </ModalTitleBar>
+      <DialogContent dividers>
+        <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
+          <MethodConfigSelector
+            open={open}
+            value={selection}
+            onChange={setSelection}
+          >
+            {tabIndex === DISTRIBUTION_TAB && (
+              <ChartOptionsGroup
+                optionKeys={DISTRIBUTION_OPTION_KEYS}
+                options={options}
+                onOptionChange={handleOptionChange}
+              />
+            )}
+          </MethodConfigSelector>
+          <Box sx={{borderLeft: '1px dashed #e0e0e0', pl: 2, minHeight: 360}}>
+            <Tabs value={tabIndex} onChange={(e, v) => setTabIndex(v)}>
+              {TABS.map(name => <Tab key={name} label={t(`forecastDetails.tab.${name}`)}/>)}
+            </Tabs>
+            <TabPanel value={tabIndex} index={DISTRIBUTION_TAB}>
+              <DetailsStatus {...status} empty={!analogValues} emptyLabel={t('distributionPlots.noAnalogs')}/>
+              <PrecipitationDistributionChart
+                ref={precipRef}
+                analogValues={analogValues}
+                bestAnalogsData={bestAnalogsData}
+                percentileMarkers={percentileMarkers}
+                referenceValues={referenceValues}
+                options={options}
+                selectedMethodId={resolvedMethodId}
+                selectedConfigId={resolvedConfigId}
+                selectedLead={selection.lead}
+                leads={[]}
+                activeForecastDate={activeForecastDate}
+                stationName={stationName}
+                t={t}
+                renderTick={renderTick}
+              />
+            </TabPanel>
+            <TabPanel value={tabIndex} index={CRITERIA_TAB}>
+              <DetailsStatus {...status} empty={!criteriaValues} emptyLabel={t('distributionPlots.noCriteria')}/>
+              <CriteriaDistributionChart
+                ref={critRef}
+                criteriaValues={criteriaValues}
+                analogValues={analogValues}
+                selectedMethodId={resolvedMethodId}
+                selectedConfigId={resolvedConfigId}
+                selectedLead={selection.lead}
+                leads={[]}
+                activeForecastDate={activeForecastDate}
+                stationName={stationName}
+                t={t}
+                renderTick={renderTick}
+              />
+            </TabPanel>
+            <TabPanel value={tabIndex} index={ANALOGS_TAB}>
+              <DetailsStatus {...status} empty={!analogs.length} emptyLabel={t('distributionPlots.noAnalogs')}/>
+              {!analogsLoading && analogs.length > 0 && <AnalogsTable analogs={analogs} t={t}/>}
+            </TabPanel>
+          </Box>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Loading, error or empty message shown above a tab's content.
+ *
+ * @param {Object} props - Component props
+ * @param {boolean} props.loading - Whether the analogs are loading
+ * @param {Error|null} props.error - Error from the analogs request
+ * @param {boolean} props.empty - Whether the tab has nothing to show
+ * @param {string} props.emptyLabel - Message shown when the tab is empty
+ * @param {Function} props.t - Translation function
+ * @returns {React.ReactElement|null}
+ */
+function DetailsStatus({loading, error, empty, emptyLabel, t}) {
+  if (loading) {
+    return (
+      <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+        <CircularProgress size={20}/>
+        <Typography variant="caption">{t('detailsAnalogsModal.loadingAnalogs')}</Typography>
+      </Box>
+    );
+  }
+  if (error) {
+    return <Typography variant="caption" sx={{color: '#b00020'}}>{t('detailsAnalogsModal.errorLoadingAnalogs')}</Typography>;
+  }
+  if (empty) {
+    return <Typography variant="caption" sx={{color: '#666'}}>{emptyLabel}</Typography>;
+  }
+  return null;
+}
+
+/**
+ * Shows its children only while its tab is the active one.
+ *
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Tab contents
+ * @param {number} props.value - Index of the active tab
+ * @param {number} props.index - Index of this tab
+ * @returns {React.ReactElement}
+ */
+function TabPanel({children, value, index, ...other}) {
+  return (
+    <div role="tabpanel" hidden={value !== index} {...other}>
+      {value === index && (
+        <Box sx={{pt: 1, mt: 1}}>{children}</Box>
+      )}
+    </div>
+  );
+}

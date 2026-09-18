@@ -74,4 +74,15 @@ describe('useChartExport', () => {
 
     await expect(result.current.exportPDF()).rejects.toThrow('render failed');
   });
+
+  it('lists the three chart formats for ExportMenu, wired to the right exporters', () => {
+    const svg = {tagName: 'svg'};
+    const {result} = renderHook(() => useChartExport({getSVG: () => svg, getBaseName: () => 'n'}));
+
+    expect(result.current.formats.map(f => f.label)).toEqual(['PNG', 'SVG', 'PDF']);
+    result.current.formats.forEach(f => f.onExport());
+    expect(exportChartPNG).toHaveBeenCalledWith(svg, 'n');
+    expect(exportChartSVG).toHaveBeenCalledWith(svg, 'n');
+    expect(exportChartPDF).toHaveBeenCalledWith(svg, 'n');
+  });
 });

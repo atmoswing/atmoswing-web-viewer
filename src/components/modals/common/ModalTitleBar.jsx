@@ -23,7 +23,7 @@ import CloseIcon from '@mui/icons-material/Close';
  * @returns {React.ReactElement}
  * @example
  * <ModalTitleBar title={stationName} onClose={handleClose} closeLabel={t('seriesModal.close')}>
- *   <ExportMenu t={t} onExportPNG={exportPNG} onExportSVG={exportSVG} onExportPDF={exportPDF}/>
+ *   <ExportMenu t={t} formats={exportFormats}/>
  * </ModalTitleBar>
  */
 export default function ModalTitleBar({title, onClose, closeLabel, children}) {

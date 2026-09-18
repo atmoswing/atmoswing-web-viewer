@@ -36,8 +36,7 @@
     "restoreLastForecast": "Restore last forecast",
     "selectLeadTime": "Select lead time",
     "colorSynthesis": "Color: synthesis of all methods",
-    "openDistributions": "Open distribution plots",
-    "openAnalogs": "Open analogs details"
+    "openForecastDetails": "Open forecast details"
   },
   "forecasts": {
     "loading": "Loading..."
@@ -92,16 +91,20 @@
     "export": "Export",
     "exportFailed": "Export to {{format}} failed: {{error}}"
   },
+  "forecastDetails": {
+    "title": "Forecast details",
+    "tab": {
+      "distribution": "Distribution",
+      "criteria": "Criteria",
+      "analogs": "Analogs"
+    }
+  },
   "distributionPlots": {
-    "title": "Distribution plots",
-    "predist": "Predictands distribution",
-    "critdist": "Criteria distribution",
     "cumulativeFrequency": "Cumulative frequency",
     "noAnalogs": "No analog values for the selected method/config/entity/lead.",
     "noCriteria": "No criteria values available for the selected selection."
   },
   "detailsAnalogsModal": {
-    "title": "Analogs details",
     "close": "Close",
     "entity": "Entity",
     "method": "Method",
@@ -120,7 +123,6 @@
     "errorLoadingAnalogs": "Error loading analogs",
     "colDate": "Date",
     "colPrecipitation": "Precipitation",
-    "precipitation": "Precipitation",
     "colCriteria": "Criteria",
     "relevant": "Relevant"
   },
