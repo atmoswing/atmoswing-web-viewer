@@ -2,11 +2,10 @@
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {setupI18nMock} from '../../testUtils.js';
 import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
 
 // setup i18n before importing the component
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Mock Panel and PanelStatus the same way other panel tests do
 vi.mock('@/components/panels/Panel.jsx', () => ({

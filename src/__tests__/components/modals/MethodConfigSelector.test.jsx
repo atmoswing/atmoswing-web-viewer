@@ -2,18 +2,12 @@ import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, render, screen} from '@testing-library/react';
 
-import {
-  resetTestUtils,
-  setupI18nMock,
-  setupUseCachedRequestMock,
-  setUseCachedRequestDefault,
-  useCachedRequestMock
-} from '../../testUtils.js';
+import {resetTestUtils, setUseCachedRequestDefault, useCachedRequestMock} from '../../testUtils.js';
 import MethodConfigSelector from '@/components/modals/common/MethodConfigSelector.jsx';
 import {useModalSelectionData} from '@/components/modals/hooks/useModalSelectionData.js';
 
-setupI18nMock();
-setupUseCachedRequestMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
+vi.mock('@/hooks/useCachedRequest.js', async () => (await import('@/__tests__/testUtils.js')).cachedRequestMockModule());
 
 // Mock ForecastSession context
 vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({

@@ -2,12 +2,11 @@
  * @fileoverview Smoke tests for AppSnackbars component
  */
 
-import {setupI18nMock} from '../../testUtils.js';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import AppSnackbars from '@/components/snackbars/AppSnackbars.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Mock contexts
 const mockSnackbars = [];

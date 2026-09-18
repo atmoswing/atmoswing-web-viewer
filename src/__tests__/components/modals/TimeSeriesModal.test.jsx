@@ -6,12 +6,11 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 
 // Call i18n setup early
-import {setupI18nMock, setupUseCachedRequestMock} from '../../testUtils.js';
 // Import after mocks
 import TimeSeriesModal from '@/components/modals/TimeSeriesModal.jsx';
 
-setupI18nMock();
-setupUseCachedRequestMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
+vi.mock('@/hooks/useCachedRequest.js', async () => (await import('@/__tests__/testUtils.js')).cachedRequestMockModule());
 
 // Mocks must be before component import
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({

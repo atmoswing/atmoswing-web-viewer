@@ -4,7 +4,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import useMapInit from '@/components/map/hooks/useMapInit.js';
 
-// Inline i18n mock (mirrors setupI18nMock in testUtils.js)
+// Inline i18n mock (mirrors i18nMockModule in testUtils.js)
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k, opts) => (opts && opts.date ? String(opts.date) : k),

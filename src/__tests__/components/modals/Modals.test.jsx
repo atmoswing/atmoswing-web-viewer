@@ -5,10 +5,9 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {setupI18nMock, setupUseCachedRequestMock} from '../../testUtils.js';
 
-setupI18nMock();
-setupUseCachedRequestMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
+vi.mock('@/hooks/useCachedRequest.js', async () => (await import('@/__tests__/testUtils.js')).cachedRequestMockModule());
 
 // Mock contexts
 vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({

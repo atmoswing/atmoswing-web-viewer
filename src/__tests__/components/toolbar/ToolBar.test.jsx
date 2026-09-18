@@ -3,13 +3,12 @@
  */
 
 // Call i18n setup early
-import {setupI18nMock} from '../../testUtils.js';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ToolBar from '@/components/toolbar/ToolBar.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Mock child components
 vi.mock('@/components/toolbar/ToolbarSquares.jsx', () => ({

@@ -2,10 +2,9 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, render, screen} from '@testing-library/react';
 import React from 'react';
 
-import {setupI18nMock} from '../../testUtils.js';
 import MapViewer from '@/components/map/MapViewer.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Provide mutable state holders so tests can change hook return values per-case
 let ENTITIES = {

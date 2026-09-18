@@ -10,10 +10,9 @@ import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {setupI18nMock} from '../../testUtils.js';
 import ForecastDatePickerDialog from '@/components/toolbar/ForecastDatePickerDialog.jsx';
 
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 function renderDialog(props = {}) {
   const onClose = vi.fn();

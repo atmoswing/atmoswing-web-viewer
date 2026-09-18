@@ -5,13 +5,12 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {setupI18nMock} from '../../testUtils.js';
 import PanelForecasts from '@/components/panels/PanelForecasts.jsx';
 import PanelStations from '@/components/panels/PanelStations.jsx';
 import PanelSynthesis from '@/components/panels/PanelSynthesis.jsx';
 
 // Call i18n setup before importing components
-setupI18nMock();
+vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
 // Mock contexts
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({

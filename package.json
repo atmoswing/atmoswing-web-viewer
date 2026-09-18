@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
   },
   "scripts": {
     "dev": "vite",
@@ -27,7 +27,7 @@
     "@mui/x-tree-view": "^8.5.3",
     "d3": "^7.9.0",
     "i18next": "^25.4.2",
-    "jspdf": "^3.0.2",
+    "jspdf": "^4.2.1",
     "ol": "^10.6.1",
     "ol-layerswitcher": "^4.1.2",
     "proj4": "^2.11.0",
@@ -35,7 +35,7 @@
     "react-dom": "^19.1.0",
     "react-i18next": "^15.7.3",
     "shpjs": "^6.1.0",
-    "svg2pdf.js": "^2.4.0"
+    "svg2pdf.js": "^2.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -45,7 +45,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react-swc": "^3.9.0",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^5.0.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -58,7 +58,7 @@
     "prettier": "^3.3.3",
     "vite": "^7.1.11",
     "vite-plugin-svgr": "^4.3.0",
-    "vitest": "^2.1.4"
+    "vitest": "^5.0.1"
   },
   "prettier": {
     "tabWidth": 2,
