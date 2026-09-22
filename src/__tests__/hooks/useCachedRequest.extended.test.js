@@ -245,5 +245,50 @@ describe('useCachedRequest - additional coverage', () => {
 
     expect(impl).toHaveBeenCalledTimes(1);
   });
-});
 
+  it('never returns the data of the previous key after the key changes', async () => {
+    clearCachedRequests();
+    const seen = [];
+    const fetchFn = vi.fn(async () => 'list-a');
+    const {result, rerender} = renderHook(({k, fn}) => {
+      const r = useCachedRequest(k, fn, {initialData: []});
+      seen.push([k, r.data, r.loading]);
+      return r;
+    }, {initialProps: {k: 'stale-a', fn: fetchFn}});
+    await waitFor(() => expect(result.current.data).toBe('list-a'));
+
+    seen.length = 0;
+    rerender({k: 'stale-b', fn: async () => 'list-b'});
+
+    // The first render with the new key already answers for it, and says it is loading.
+    expect(seen[0]).toEqual(['stale-b', [], true]);
+    expect(seen.some(([k, data]) => k === 'stale-b' && data === 'list-a')).toBe(false);
+    await waitFor(() => expect(result.current.data).toBe('list-b'));
+  });
+
+  it('serves the cached entry of the new key on the render where the key changes', async () => {
+    clearCachedRequests();
+    const {result, rerender} = renderHook(({k}) => useCachedRequest(k, async () => `data-${k}`), {
+      initialProps: {k: 'swap-a'}
+    });
+    await waitFor(() => expect(result.current.data).toBe('data-swap-a'));
+    rerender({k: 'swap-b'});
+    await waitFor(() => expect(result.current.data).toBe('data-swap-b'));
+
+    rerender({k: 'swap-a'});
+    expect(result.current.data).toBe('data-swap-a');
+    expect(result.current.fromCache).toBe(true);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('returns initialData on the render where the key is cleared', async () => {
+    clearCachedRequests();
+    const {result, rerender} = renderHook(({k}) => useCachedRequest(k, async () => 'value', {initialData: 'none'}), {
+      initialProps: {k: 'clear-a'}
+    });
+    await waitFor(() => expect(result.current.data).toBe('value'));
+    rerender({k: null});
+    expect(result.current.data).toBe('none');
+    expect(result.current.loading).toBe(false);
+  });
+});
