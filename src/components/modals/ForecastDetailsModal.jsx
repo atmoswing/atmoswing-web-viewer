@@ -36,24 +36,33 @@ const ANALOGS_TAB = 2;
 
 const EMPTY_SELECTION = {methodId: null, configId: null, configPinned: false, entityId: null, lead: null};
 
+/** Stands for "no opening request" when the window is used without one. */
+const NO_REQUEST = {selection: null};
+
 /**
- * The selection the window opens on: the app's method, its configuration when one is chosen
- * explicitly (kept as is), and the selected entity. Whatever is missing is filled in by the
- * selector, which picks the configuration the entity is relevant to.
+ * The selection the window opens on. Each field comes from the requested selection when given,
+ * otherwise from the app: its method, its configuration when one is chosen explicitly, and its
+ * selected entity. A configuration from either source is pinned (kept as is); whatever is still
+ * missing is filled in by the selector, which picks the configuration the entity is relevant to.
  *
  * @private
+ * @param {Object|null} requested - Requested selection `{ methodId, configId, entityId, lead }`, all optional
  * @param {Object|null} selectedMethodConfig - The app's method/config selection
  * @param {string|number|null} selectedEntityId - The app's selected entity
  * @returns {Object} Initial selection
  */
-function initialSelection(selectedMethodConfig, selectedEntityId) {
-  const configId = selectedMethodConfig?.config?.id ?? null;
+function initialSelection(requested, selectedMethodConfig, selectedEntityId) {
+  const pick = (key, fallback) => requested?.[key] ?? fallback ?? null;
+  const methodId = pick('methodId', selectedMethodConfig?.method?.id);
+  // The app's configuration belongs to the app's method; it does not carry over to another one.
+  const appConfigId = methodId === selectedMethodConfig?.method?.id ? selectedMethodConfig?.config?.id : null;
+  const configId = pick('configId', appConfigId);
   return {
-    ...EMPTY_SELECTION,
-    methodId: selectedMethodConfig?.method?.id ?? null,
+    methodId,
     configId,
     configPinned: configId != null,
-    entityId: selectedEntityId ?? null
+    entityId: pick('entityId', selectedEntityId),
+    lead: pick('lead', null)
   };
 }
 
@@ -62,24 +71,27 @@ function initialSelection(selectedMethodConfig, selectedEntityId) {
  * @param {Object} props
  * @param {boolean} props.open - Whether the modal is open
  * @param {Function} props.onClose - Close callback
+ * @param {Object} [props.request] - The opening request `{ selection }`, a new object for each
+ *   opening; `selection` (all fields optional) overrides the app's current selection
  * @returns {React.ReactElement}
  */
-export default function ForecastDetailsModal({open, onClose}) {
+export default function ForecastDetailsModal({open, onClose, request}) {
   const {activeForecastDate} = useForecastSession();
   const {selectedMethodConfig} = useMethods();
   const {selectedEntityId} = useSelectedEntity();
   const {t} = useTranslation();
 
-  // One selection shared by the three tabs, seeded from the app each time the window opens.
-  // Seeding during render rather than in an effect means the selector never sees an empty
-  // selection first and races to fill it with its own defaults.
+  // One selection shared by the three tabs, seeded on each opening request (from the request,
+  // then the app). Seeding during render rather than in an effect means the selector never sees
+  // an empty selection first and races to fill it with its own defaults.
   const [selection, setSelection] = useState(EMPTY_SELECTION);
-  const [seeded, setSeeded] = useState(false);
-  if (open && !seeded) {
-    setSeeded(true);
-    setSelection(initialSelection(selectedMethodConfig, selectedEntityId));
-  } else if (!open && seeded) {
-    setSeeded(false);
+  const [seededFor, setSeededFor] = useState(null);
+  const currentRequest = request ?? NO_REQUEST;
+  if (open && seededFor !== currentRequest) {
+    setSeededFor(currentRequest);
+    setSelection(initialSelection(currentRequest.selection, selectedMethodConfig, selectedEntityId));
+  } else if (!open && seededFor !== null) {
+    setSeededFor(null);
   }
   const [tabIndex, setTabIndex] = useState(DISTRIBUTION_TAB);
   const {options, handleOptionChange} = useChartOptions({

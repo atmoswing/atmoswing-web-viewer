@@ -3,7 +3,7 @@
  */
 
 // Call i18n setup early
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ToolBar from '@/components/toolbar/ToolBar.jsx';
@@ -19,15 +19,9 @@ vi.mock('@/components/toolbar/ToolbarCenter.jsx', () => ({
   default: () => <div data-testid="toolbar-center">ToolbarCenter</div>
 }));
 
-// The modal is lazy loaded by ToolBar, so it is mocked at its own module path.
-vi.mock('@/components/modals/ForecastDetailsModal.jsx', () => ({
-  default: ({open, onClose}) =>
-    open ? <div data-testid="details-modal" onClick={() => onClose()}>Details Modal</div> : null
-}));
-
-// ToolBar reports a failed modal through a snackbar.
-vi.mock('@/contexts/SnackbarContext.jsx', () => ({
-  useSnackbar: () => ({enqueueSnackbar: vi.fn()})
+const {openForecastDetails} = vi.hoisted(() => ({openForecastDetails: vi.fn()}));
+vi.mock('@/contexts/ForecastDetailsContext.jsx', () => ({
+  useForecastDetails: () => ({openForecastDetails})
 }));
 
 // Mock SVG imports
@@ -36,6 +30,8 @@ vi.mock('@/assets/toolbar/frame_distributions.svg?react', () => ({
 }));
 
 describe('ToolBar', () => {
+  beforeEach(() => vi.clearAllMocks());
+
   it('renders without crashing', () => {
     render(<ToolBar/>);
     expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -54,23 +50,13 @@ describe('ToolBar', () => {
     expect(screen.getByTestId('distributions-icon')).toBeInTheDocument();
   });
 
-  it('opens the forecast details modal when the button is clicked', async () => {
+  it('opens the forecast details on the current selection', async () => {
     const user = userEvent.setup();
     render(<ToolBar/>);
 
     await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
 
-    expect(await screen.findByTestId('details-modal', {}, {timeout: 5000})).toBeInTheDocument();
-  });
-
-  it('closes the modal when its close handler is called', async () => {
-    const user = userEvent.setup();
-    render(<ToolBar/>);
-
-    await user.click(screen.getByLabelText('toolbar.openForecastDetails'));
-    expect(await screen.findByTestId('details-modal', {}, {timeout: 5000})).toBeInTheDocument();
-
-    await user.click(screen.getByTestId('details-modal'));
-    expect(screen.queryByTestId('details-modal')).not.toBeInTheDocument();
+    expect(openForecastDetails).toHaveBeenCalledTimes(1);
+    expect(openForecastDetails).toHaveBeenCalledWith();
   });
 });

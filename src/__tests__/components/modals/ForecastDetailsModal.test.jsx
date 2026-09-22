@@ -192,6 +192,42 @@ describe('ForecastDetailsModal', () => {
     expect(selectorValue.current.methodId).toBe('m3');
   });
 
+  it('opens on a requested selection, pinning its configuration', () => {
+    app.methodConfig = {method: {id: 'm1'}, config: null};
+    app.entityId = 7;
+    const request = {selection: {methodId: 'm2', configId: 'c3', entityId: 9, lead: 48}};
+    render(<ForecastDetailsModal open={true} onClose={onClose} request={request}/>);
+
+    expect(selectorValue.current).toEqual({
+      methodId: 'm2', configId: 'c3', configPinned: true, entityId: 9, lead: 48
+    });
+  });
+
+  it('fills what a request leaves out from the app', () => {
+    app.methodConfig = {method: {id: 'm1'}, config: {id: 'c1'}};
+    render(<ForecastDetailsModal open={true} onClose={onClose} request={{selection: {entityId: 9, lead: 24}}}/>);
+
+    expect(selectorValue.current).toEqual({
+      methodId: 'm1', configId: 'c1', configPinned: true, entityId: 9, lead: 24
+    });
+  });
+
+  it('does not carry the app configuration over to another requested method', () => {
+    app.methodConfig = {method: {id: 'm1'}, config: {id: 'c1'}};
+    render(<ForecastDetailsModal open={true} onClose={onClose} request={{selection: {methodId: 'm2', entityId: 9}}}/>);
+
+    expect(selectorValue.current).toMatchObject({methodId: 'm2', configId: null, configPinned: false, entityId: 9});
+  });
+
+  it('re-seeds on a new request while open', () => {
+    const {rerender} = render(
+      <ForecastDetailsModal open={true} onClose={onClose} request={{selection: {methodId: 'm1', entityId: 1, lead: 0}}}/>
+    );
+    rerender(<ForecastDetailsModal open={true} onClose={onClose} request={{selection: {methodId: 'm1', entityId: 2, lead: 24}}}/>);
+
+    expect(selectorValue.current).toMatchObject({entityId: 2, lead: 24});
+  });
+
   it('calls onClose from the close button', async () => {
     const user = userEvent.setup();
     render(<ForecastDetailsModal open={true} onClose={onClose}/>);

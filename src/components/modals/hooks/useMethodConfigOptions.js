@@ -138,12 +138,11 @@ export function useMethodConfigOptions({open, value}) {
   const leads = useMemo(() => (Array.isArray(leadsRaw) ? leadsRaw : EMPTY_LIST), [leadsRaw]);
 
   // RELEVANCE: the entities each configuration of the method is relevant to. It does not depend
-  // on the entity, so one entry per method serves every entity the user picks. The result carries
-  // its method id because a key change only resets the data after a render.
+  // on the entity, so one entry per method serves every entity the user picks.
   const relevanceKey = (sessionPart && selectedMethodId && methodsData?.methods?.length)
     ? `relevant_entities_by_config|${sessionPart}|${selectedMethodId}`
     : null;
-  const {data: relevanceData} = useCachedRequest(
+  const {data: relevance} = useCachedRequest(
     relevanceKey,
     async () => {
       const methodNode = methodsData.methods.find(m => m.id === selectedMethodId);
@@ -157,11 +156,10 @@ export function useMethodConfigOptions({open, value}) {
           }
         })
       );
-      return {methodId: selectedMethodId, byConfig: new Map(byConfig)};
+      return new Map(byConfig);
     },
     {enabled: !!relevanceKey, initialData: null, ttlMs: DEFAULT_TTL}
   );
-  const relevance = (relevanceData && relevanceData.methodId === selectedMethodId) ? relevanceData.byConfig : null;
 
   const relevantConfigIds = useMemo(() => {
     if (!relevance || selectedStationId == null) return EMPTY_RELEVANCE;

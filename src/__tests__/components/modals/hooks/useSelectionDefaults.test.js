@@ -78,6 +78,12 @@ describe('resolveSelection', () => {
     expect(next).toMatchObject({entityId: 1, lead: 0});
   });
 
+  it('keeps a requested lead while the leads load, and once they offer it', () => {
+    const requested = {methodId: 'm1', configId: 'south', configPinned: true, entityId: 2, lead: 24};
+    expect(resolveSelection(requested, {...OPTIONS, leads: []})).toBe(requested);
+    expect(resolveSelection(requested, OPTIONS)).toBe(requested);
+  });
+
   it('returns the same object once the selection is settled', () => {
     const settled = resolveSelection(EMPTY, OPTIONS);
     expect(resolveSelection(settled, OPTIONS)).toBe(settled);
