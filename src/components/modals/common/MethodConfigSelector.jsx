@@ -23,7 +23,7 @@ import {useSelectionDefaults} from '../hooks/useSelectionDefaults.js';
  * MethodConfigSelector component.
  * @param {Object} props
  * @param {boolean} props.open - Whether the parent modal is open (controls fetching enablement)
- * @param {Object} props.value - Current selection state { methodId, configId, entityId, lead }
+ * @param {Object} props.value - Current selection `{ methodId, configId, configPinned, entityId, lead }` (see `ModalSelection`)
  * @param {Function} props.onChange - Callback receiving updated selection object
  * @param {React.ReactNode} [props.children] - Optional extra controls rendered beneath standard selectors
  * @returns {React.ReactElement}
@@ -56,10 +56,11 @@ export default function MethodConfigSelector(
     leads,
     leadsLoading,
     leadsError,
+    relevance,
     relevantConfigIds
   } = useMethodConfigOptions({open, value});
 
-  useSelectionDefaults({open, value, onChange, methodOptions, stations, leads});
+  useSelectionDefaults({open, value, onChange, methodOptions, stations, leads, relevance});
 
   // Ensure selected values exist in available options, otherwise use empty string
   const safeMethodId = useMemo(() => {
@@ -107,12 +108,14 @@ export default function MethodConfigSelector(
     onChange({
       ...value,
       methodId: newMethodId,
-      configId: configStillValid ? selectedConfigId : null
+      configId: configStillValid ? selectedConfigId : null,
+      configPinned: configStillValid ? !!value.configPinned : false
     });
   };
 
+  // A configuration picked by hand stays put; otherwise it follows the entity's relevance.
   const handleConfigChange = (e) => {
-    onChange({...value, configId: e.target.value});
+    onChange({...value, configId: e.target.value, configPinned: true});
   };
 
   const handleEntityChange = (e) => {

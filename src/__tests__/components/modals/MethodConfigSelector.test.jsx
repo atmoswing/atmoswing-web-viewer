@@ -1,10 +1,10 @@
 import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {cleanup, render, screen} from '@testing-library/react';
+import {cleanup, render, screen, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import {resetTestUtils, setUseCachedRequestDefault, useCachedRequestMock} from '../../testUtils.js';
 import MethodConfigSelector from '@/components/modals/common/MethodConfigSelector.jsx';
-import {useModalSelectionData} from '@/components/modals/hooks/useModalSelectionData.js';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 vi.mock('@/hooks/useCachedRequest.js', async () => (await import('@/__tests__/testUtils.js')).cachedRequestMockModule());
@@ -53,29 +53,32 @@ describe('MethodConfigSelector (smoke)', () => {
     expect(screen.getByText('detailsAnalogsModal.lead')).toBeInTheDocument();
   });
 
-  it('useModalSelectionData returns resolved config when methods data provided', () => {
-    // Simulate methodsData returned by cached request for useModalSelectionData
-    useCachedRequestMock.mockImplementationOnce(() => ({
-      data: {methods: [{id: 'm1', configurations: [{id: 'c1'}]}]},
-      loading: false,
-      error: null
-    }));
+  describe('with two configurations', () => {
+    const METHODS = {methods: [{id: 'm1', name: 'M1', configurations: [{id: 'c1', name: 'Config 1'}, {id: 'c2', name: 'Config 2'}]}]};
+    const SELECTION = {methodId: 'm1', configId: 'c1', configPinned: false, entityId: null, lead: null};
 
-    function HookConsumer({selection}) {
-      const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData(true, selection);
-      return (
-        <div>
-          <span data-testid="rid">{resolvedMethodId}</span>
-          <span data-testid="rcid">{resolvedConfigId}</span>
-          <span data-testid="reid">{String(resolvedEntityId)}</span>
-        </div>
-      );
-    }
+    beforeEach(() => {
+      useCachedRequestMock.mockImplementation((key, fn, opts) => (
+        key?.startsWith('methods|')
+          ? {data: METHODS, loading: false, error: null}
+          : {data: opts?.initialData ?? null, loading: false, error: null}
+      ));
+    });
 
-    const {getByTestId} = render(<HookConsumer selection={{methodId: 'm1', configId: null, entityId: 5}}/>);
-    expect(getByTestId('rid').textContent).toBe('m1');
-    expect(getByTestId('rcid').textContent).toBe('c1');
-    expect(getByTestId('reid').textContent).toBe('5');
+    const pickConfig = async (name) => {
+      const user = userEvent.setup();
+      const [, configSelect] = screen.getAllByRole('combobox');
+      await user.click(configSelect);
+      await user.click(within(screen.getByRole('listbox')).getByText(name));
+    };
+
+    it('pins a configuration the user picks, so it no longer follows the entity', async () => {
+      const onChange = vi.fn();
+      render(<MethodConfigSelector open={true} value={SELECTION} onChange={onChange}/>);
+
+      await pickConfig('Config 2');
+
+      expect(onChange).toHaveBeenLastCalledWith({...SELECTION, configId: 'c2', configPinned: true});
+    });
   });
 });
-

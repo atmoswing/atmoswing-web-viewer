@@ -9,13 +9,17 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
-vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({
-  useForecastSession: vi.fn(() => ({workspace: 'ws', activeForecastDate: '2024-01-01'}))
+const {details, exportAnalogsCSV, app, selectorValue} = vi.hoisted(() => ({
+  details: {current: null},
+  exportAnalogsCSV: vi.fn(),
+  app: {methodConfig: null, entityId: null},
+  selectorValue: {current: null}
 }));
 
-const {details, exportAnalogsCSV} = vi.hoisted(() => ({
-  details: {current: null},
-  exportAnalogsCSV: vi.fn()
+vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
+  useForecastSession: vi.fn(() => ({workspace: 'ws', activeForecastDate: '2024-01-01'})),
+  useMethods: vi.fn(() => ({selectedMethodConfig: app.methodConfig})),
+  useSelectedEntity: vi.fn(() => ({selectedEntityId: app.entityId}))
 }));
 
 vi.mock('@/components/modals/hooks/useForecastDetailsData.js', () => ({
@@ -26,9 +30,13 @@ vi.mock('@/components/modals/common/analogRows.js', async (importOriginal) => ({
   exportAnalogsCSV
 }));
 
-// The selector renders its children (the chart options) like the real one does.
+// The selector renders its children (the chart options) like the real one does, and records the
+// selection it is given.
 vi.mock('@/components/modals/common/MethodConfigSelector.jsx', () => ({
-  default: ({children}) => <div data-testid="method-config-selector">{children}</div>
+  default: ({value, children}) => {
+    selectorValue.current = value;
+    return <div data-testid="method-config-selector">{children}</div>;
+  }
 }));
 vi.mock('@/components/modals/common/ExportMenu.jsx', () => ({
   default: ({formats}) => (
@@ -62,9 +70,6 @@ function loaded(overrides = {}) {
     percentileMarkers: null,
     referenceValues: null,
     stationName: 'Station A',
-    resolvedMethodId: 'm1',
-    resolvedConfigId: 'c1',
-    resolvedEntityId: 1,
     ...overrides
   };
 }
@@ -77,6 +82,9 @@ describe('ForecastDetailsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     details.current = loaded();
+    app.methodConfig = null;
+    app.entityId = null;
+    selectorValue.current = null;
   });
 
   it('renders nothing while closed', () => {
@@ -153,6 +161,35 @@ describe('ForecastDetailsModal', () => {
     expect(screen.getByText('distributionPlots.noAnalogs')).toBeInTheDocument();
     await user.click(screen.getByRole('tab', {name: 'forecastDetails.tab.criteria'}));
     expect(screen.getByText('distributionPlots.noCriteria')).toBeInTheDocument();
+  });
+
+  it('opens on the method selected in the app, leaving the configuration to follow the entity', () => {
+    app.methodConfig = {method: {id: 'm2'}, config: null};
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(selectorValue.current).toEqual({
+      methodId: 'm2', configId: null, configPinned: false, entityId: null, lead: null
+    });
+  });
+
+  it('keeps a configuration chosen in the app, and the selected entity', () => {
+    app.methodConfig = {method: {id: 'm2'}, config: {id: 'c5'}};
+    app.entityId = 7;
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(selectorValue.current).toEqual({
+      methodId: 'm2', configId: 'c5', configPinned: true, entityId: 7, lead: null
+    });
+  });
+
+  it('seeds again from the app on every opening', () => {
+    app.methodConfig = {method: {id: 'm1'}, config: null};
+    const {rerender} = render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+    rerender(<ForecastDetailsModal open={false} onClose={onClose}/>);
+
+    app.methodConfig = {method: {id: 'm3'}, config: null};
+    rerender(<ForecastDetailsModal open={true} onClose={onClose}/>);
+    expect(selectorValue.current.methodId).toBe('m3');
   });
 
   it('calls onClose from the close button', async () => {

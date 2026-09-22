@@ -13,14 +13,6 @@ vi.mock('@/contexts/forecast/ForecastSessionContext.jsx', () => ({
   useForecastSession: vi.fn(() => ({workspace: 'ws', activeForecastDate: '2025-01-01'}))
 }));
 
-vi.mock('@/components/modals/hooks/useModalSelectionData.js', () => ({
-  useModalSelectionData: vi.fn(() => ({
-    resolvedMethodId: 'm1',
-    resolvedConfigId: 'c1',
-    resolvedEntityId: 3
-  }))
-}));
-
 const {analogRecords} = vi.hoisted(() => ({
   analogRecords: {
     current: [
@@ -140,6 +132,15 @@ describe('useForecastDetailsData', () => {
     await waitFor(() => expect(result.current.bestAnalogsData).not.toBeNull(), {timeout: 3000});
     expect(result.current.bestAnalogsData).toHaveLength(10);
     expect(result.current.bestAnalogsData[0]).toEqual({rank: 12, value: 11}); // lowest criteria
+  });
+
+  it('loads nothing until the configuration is settled', () => {
+    renderHook(() => useForecastDetailsData({
+      open: true, selection: {...SELECTION, configId: null}, options: {...OPTIONS_OFF, tenYearReturn: true}
+    }));
+    expect(api.getAnalogs).not.toHaveBeenCalled();
+    expect(api.getReferenceValues).not.toHaveBeenCalled();
+    expect(api.getEntities).not.toHaveBeenCalled();
   });
 
   it('skips the per-lead requests when no lead is selected', async () => {

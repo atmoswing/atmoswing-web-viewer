@@ -9,7 +9,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import {Box, CircularProgress, Tab, Tabs, Typography} from '@mui/material';
-import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
+import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
 import {useForecastDetailsData} from './hooks/useForecastDetailsData.js';
@@ -34,7 +34,28 @@ const DISTRIBUTION_TAB = 0;
 const CRITERIA_TAB = 1;
 const ANALOGS_TAB = 2;
 
-const EMPTY_SELECTION = {methodId: null, configId: null, entityId: null, lead: null};
+const EMPTY_SELECTION = {methodId: null, configId: null, configPinned: false, entityId: null, lead: null};
+
+/**
+ * The selection the window opens on: the app's method, its configuration when one is chosen
+ * explicitly (kept as is), and the selected entity. Whatever is missing is filled in by the
+ * selector, which picks the configuration the entity is relevant to.
+ *
+ * @private
+ * @param {Object|null} selectedMethodConfig - The app's method/config selection
+ * @param {string|number|null} selectedEntityId - The app's selected entity
+ * @returns {Object} Initial selection
+ */
+function initialSelection(selectedMethodConfig, selectedEntityId) {
+  const configId = selectedMethodConfig?.config?.id ?? null;
+  return {
+    ...EMPTY_SELECTION,
+    methodId: selectedMethodConfig?.method?.id ?? null,
+    configId,
+    configPinned: configId != null,
+    entityId: selectedEntityId ?? null
+  };
+}
 
 /**
  * ForecastDetailsModal component.
@@ -45,10 +66,21 @@ const EMPTY_SELECTION = {methodId: null, configId: null, entityId: null, lead: n
  */
 export default function ForecastDetailsModal({open, onClose}) {
   const {activeForecastDate} = useForecastSession();
+  const {selectedMethodConfig} = useMethods();
+  const {selectedEntityId} = useSelectedEntity();
   const {t} = useTranslation();
 
-  // One selection shared by the three tabs.
+  // One selection shared by the three tabs, seeded from the app each time the window opens.
+  // Seeding during render rather than in an effect means the selector never sees an empty
+  // selection first and races to fill it with its own defaults.
   const [selection, setSelection] = useState(EMPTY_SELECTION);
+  const [seeded, setSeeded] = useState(false);
+  if (open && !seeded) {
+    setSeeded(true);
+    setSelection(initialSelection(selectedMethodConfig, selectedEntityId));
+  } else if (!open && seeded) {
+    setSeeded(false);
+  }
   const [tabIndex, setTabIndex] = useState(DISTRIBUTION_TAB);
   const {options, handleOptionChange} = useChartOptions({
     bestAnalogs: false,
@@ -70,9 +102,7 @@ export default function ForecastDetailsModal({open, onClose}) {
     bestAnalogsData,
     percentileMarkers,
     referenceValues,
-    stationName,
-    resolvedMethodId,
-    resolvedConfigId
+    stationName
   } = useForecastDetailsData({open, selection, options});
 
   // Redraw on window resize (debounced).
@@ -108,7 +138,7 @@ export default function ForecastDetailsModal({open, onClose}) {
   const buildExportFilenamePrefix = () => {
     const datePart = formatExportDatePart(activeForecastDate);
     const entityPart = safeForFilename(stationName || 'entity');
-    const safeMethod = safeForFilename(resolvedMethodId || 'method');
+    const safeMethod = safeForFilename(selection.methodId || 'method');
     const leadPart = (selection.lead != null) ? `L${selection.lead}` : '';
     const tabPart = TABS[tabIndex];
     return [datePart, entityPart, safeMethod, leadPart, tabPart].filter(Boolean).join('_') || tabPart;
@@ -167,8 +197,8 @@ export default function ForecastDetailsModal({open, onClose}) {
                 percentileMarkers={percentileMarkers}
                 referenceValues={referenceValues}
                 options={options}
-                selectedMethodId={resolvedMethodId}
-                selectedConfigId={resolvedConfigId}
+                selectedMethodId={selection.methodId}
+                selectedConfigId={selection.configId}
                 selectedLead={selection.lead}
                 leads={[]}
                 activeForecastDate={activeForecastDate}
@@ -183,8 +213,8 @@ export default function ForecastDetailsModal({open, onClose}) {
                 ref={critRef}
                 criteriaValues={criteriaValues}
                 analogValues={analogValues}
-                selectedMethodId={resolvedMethodId}
-                selectedConfigId={resolvedConfigId}
+                selectedMethodId={selection.methodId}
+                selectedConfigId={selection.configId}
                 selectedLead={selection.lead}
                 leads={[]}
                 activeForecastDate={activeForecastDate}
