@@ -60,25 +60,41 @@ describe('sortAnalogs', () => {
 
 describe('analogsToCsv', () => {
   // Semicolons and comma decimals: what a spreadsheet set to French reads without an import step.
+  // These analogs all fall at midnight, so the dates are written without a time.
   it('writes a header and one row per analog, in rank order', () => {
     expect(analogsToCsv(ANALOGS)).toBe(
       'rank;date;precipitation;criteria\r\n' +
-      '1;1990-09-04T00:00:00;0,3;50,33\r\n' +
-      '2;2019-09-03T00:00:00;12,4;54,35\r\n' +
-      '3;2003-01-10T00:00:00;12,4;60,1\r\n' +
+      '1;1990-09-04;0,3;50,33\r\n' +
+      '2;2019-09-03;12,4;54,35\r\n' +
+      '3;2003-01-10;12,4;60,1\r\n' +
       '4;;;\r\n'
     );
+  });
+
+  it('keeps the time, without the T, when the analogs are sub-daily', () => {
+    const subDaily = [
+      {rank: 1, date: '1994-11-20T18:00:00', value: 1, criteria: 2},
+      {rank: 2, date: '2007-08-05T00:00:00', value: 3, criteria: 4}
+    ];
+    // One analog at another hour makes the time meaningful for the whole column.
+    expect(analogsToCsv(subDaily).split('\r\n').slice(1, 3))
+      .toEqual(['1;1994-11-20 18:00:00;1;2', '2;2007-08-05 00:00:00;3;4']);
+  });
+
+  it('leaves a date it does not recognise alone', () => {
+    expect(analogsToCsv([{rank: 1, date: 'whenever', value: 1, criteria: 2}]))
+      .toContain('1;whenever;1;2');
   });
 
   it('writes the column labels it is given, so the file reads in the user language', () => {
     const csv = analogsToCsv(ANALOGS, ['Rang', 'Date', 'Précipitation', 'Critère']);
     expect(csv.split('\r\n')[0]).toBe('Rang;Date;Précipitation;Critère');
-    expect(csv.split('\r\n')[1]).toBe('1;1990-09-04T00:00:00;0,3;50,33');
+    expect(csv.split('\r\n')[1]).toBe('1;1990-09-04;0,3;50,33');
   });
 
   it('keeps full precision rather than the table rounding', () => {
-    expect(analogsToCsv([{rank: 1, date: 'd', value: 0.123456, criteria: 1.23456789}]))
-      .toContain('1;d;0,123456;1,23456789');
+    expect(analogsToCsv([{rank: 1, date: '2007-08-05T00:00:00', value: 0.123456, criteria: 1.23456789}]))
+      .toContain('1;2007-08-05;0,123456;1,23456789');
   });
 
   it('quotes a cell containing a separator or quote, and leaves commas in text alone', () => {

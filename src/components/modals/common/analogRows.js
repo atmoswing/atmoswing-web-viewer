@@ -67,6 +67,43 @@ export function sortAnalogs(analogs, column, direction) {
   });
 }
 
+/** An API date: `YYYY-MM-DDThh:mm(:ss)`, the only form the dates below are rewritten from. */
+const API_DATE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}(?::\d{2})?)$/;
+
+/**
+ * Writes a date the way a spreadsheet reads it.
+ *
+ * `YYYY-MM-DD hh:mm:ss` is recognised as a date-time whatever the spreadsheet's locale, while the
+ * `T` of the API form leaves it as text; the order stays unambiguous, unlike a day-first format,
+ * and still sorts chronologically if a tool does treat it as text. Sub-daily methods analogue at
+ * 06:00, 12:00 and 18:00, so the time is kept whenever it says something; on a daily method every
+ * analog falls at midnight and the whole column is written as plain dates.
+ *
+ * @private
+ * @param {*} raw - Date as the API gave it
+ * @param {boolean} withTime - Whether this file keeps the time part
+ * @returns {*} Rewritten date, or the value untouched when it is not an API date
+ */
+function csvDate(raw, withTime) {
+  const parts = typeof raw === 'string' ? raw.match(API_DATE) : null;
+  if (!parts) return raw;
+  return withTime ? `${parts[1]} ${parts[2]}` : parts[1];
+}
+
+/**
+ * Whether any analog falls at another time than midnight, which makes the time worth writing.
+ *
+ * @private
+ * @param {Array<Object>} analogs - Normalized analog records
+ * @returns {boolean} True when at least one date carries a time
+ */
+function anyTimeOfDay(analogs) {
+  return analogs.some(a => {
+    const parts = typeof a?.date === 'string' ? a.date.match(API_DATE) : null;
+    return !!parts && !/^00:00(:00)?$/.test(parts[2]);
+  });
+}
+
 /**
  * Formats one CSV cell: numbers with the decimal mark, and quotes around anything holding a
  * separator, quote or line break.
@@ -87,10 +124,10 @@ function csvCell(value) {
  * Builds a CSV document of the analogs, in rank order.
  *
  * The headers are the table's own column labels, in the reader's language, since the file is
- * written to be opened in a spreadsheet and read by a person. Dates stay in the API's ISO form,
- * which sorts correctly and cannot be read day-first or month-first by mistake, and numbers keep
- * the full precision the table rounds away, written for the spreadsheet (see `SEPARATOR`). Rows
- * are in rank order, whatever sort the table happens to show.
+ * written to be opened in a spreadsheet and read by a person. Dates keep the ISO order but are
+ * written so the spreadsheet reads them as dates (see `csvDate`), and numbers keep the full
+ * precision the table rounds away, written for its locale (see `SEPARATOR`). Rows are in rank
+ * order, whatever sort the table happens to show.
  *
  * @param {Array<Object>} analogs - Normalized analog records
  * @param {Array<string>} [headers] - Column labels for rank, date, precipitation and criteria
@@ -98,10 +135,12 @@ function csvCell(value) {
  * @example
  * analogsToCsv([{rank: 1, date: '1990-09-04T00:00:00', value: 0.3, criteria: 50.33}],
  *   ['Rang', 'Date', 'Précipitation', 'Critère'])
- * // "Rang;Date;Précipitation;Critère\r\n1;1990-09-04T00:00:00;0,3;50,33\r\n"
+ * // "Rang;Date;Précipitation;Critère\r\n1;1990-09-04;0,3;50,33\r\n"
  */
 export function analogsToCsv(analogs, headers = CSV_COLUMNS) {
-  const rows = sortAnalogs(analogs, 'rank', 'asc').map(a => [a.rank, a.date, a.value, a.criteria]);
+  const sorted = sortAnalogs(analogs, 'rank', 'asc');
+  const withTime = anyTimeOfDay(sorted);
+  const rows = sorted.map(a => [a.rank, csvDate(a.date, withTime), a.value, a.criteria]);
   return [headers, ...rows].map(row => row.map(csvCell).join(SEPARATOR)).join('\r\n') + '\r\n';
 }
 
