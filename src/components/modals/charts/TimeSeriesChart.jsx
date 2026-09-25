@@ -6,6 +6,7 @@
 import {useEffect, useMemo} from 'react';
 import * as d3 from 'd3';
 import {parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {formatDateLabel} from '@/utils/formattingUtils.js';
 import {
   computeChartGeometry,
   computeTimeDomain,
@@ -17,6 +18,7 @@ import {
   buildLegendItems,
   drawAxes,
   drawBestAnalogMarkers,
+  drawDatePicker,
   drawForecastDateMarker,
   drawPastForecasts,
   drawPercentileBands,
@@ -40,6 +42,8 @@ import {
  * @param {string} props.stationName - Display station name
  * @param {Function} props.onHoverShow - Show hover popper handler (anchor, title)
  * @param {Function} props.onHoverHide - Hide hover popper handler
+ * @param {Function} [props.onPickDate] - `(date) => void`; when given, clicking the plot picks the
+ *   nearest target date, shown by a hover guide
  */
 export default function TimeSeriesChart(
   {
@@ -55,6 +59,7 @@ export default function TimeSeriesChart(
     stationName,
     onHoverShow,
     onHoverHide,
+    onPickDate,
   }
 ) {
   const pctList = useMemo(() => (series?.pctList ?? []), [series]);
@@ -123,6 +128,10 @@ export default function TimeSeriesChart(
     }
     drawReturnPeriodLines({plotG, g, tenYearVal, rpPairs, options, innerW, yScale});
     drawForecastDateMarker(plotG, {activeDateObj, xScale, innerH});
+    drawDatePicker(plotG, {
+      dates, xScale, innerW, innerH, onPick: onPickDate,
+      labelFor: date => t('seriesModal.detailsFor', {date: formatDateLabel(date)})
+    });
 
     // --- chrome ---
     drawAxes(g, {xScale, yScale, innerH, margin, dates, domain, t});
@@ -143,7 +152,7 @@ export default function TimeSeriesChart(
       // would risk an update loop.
       d3.select(container).selectAll('*').remove();
     };
-  }, [containerRef, t, dates, series, pctList, percentilesMap, bestAnalogs, referenceValues, pastForecasts, options, activeForecastDate, selectedMethodConfig, stationName, onHoverShow, onHoverHide]);
+  }, [containerRef, t, dates, series, pctList, percentilesMap, bestAnalogs, referenceValues, pastForecasts, options, activeForecastDate, selectedMethodConfig, stationName, onHoverShow, onHoverHide, onPickDate]);
 
   return null;
 }

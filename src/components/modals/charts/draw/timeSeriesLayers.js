@@ -6,6 +6,7 @@
 
 import * as d3 from 'd3';
 import {ANALOG_MARKER_COLOR, QUANTILE_COLORS, SELECTED_RPS, TEN_YEAR_COLOR} from '../plotConstants.js';
+import {nearestDateIndex} from '@/utils/forecastDateUtils.js';
 
 /** Percentiles drawn for each previous forecast run. */
 const HISTORY_PCTS = [20, 60, 90];
@@ -300,6 +301,65 @@ export function drawForecastDateMarker(plotG, {activeDateObj, xScale, innerH}) {
     .attr('x1', xPos).attr('x2', xPos).attr('y1', 0).attr('y2', innerH)
     .attr('stroke', '#888').attr('stroke-width', 5).attr('stroke-opacity', 0.4)
     .append('title').text(activeDateObj.toISOString());
+}
+
+/**
+ * Makes the plot pick a target date: hovering shows a guide on the nearest one, labelled by
+ * `labelFor(date)`, and clicking calls `onPick(date)`.
+ *
+ * A transparent rect under every other layer catches the pointer over empty space; the listeners
+ * sit on the plot group, so a pointer over a band, line or marker reaches them too while those
+ * keep their own hover tooltips. Call it after the other layers so the guide is drawn on top.
+ *
+ * @param {Object} plotG - Clipped plot-area selection
+ * @param {Object} params
+ * @param {Array<Date>} params.dates - Target dates that can be picked
+ * @param {Function} params.xScale - Time scale
+ * @param {number} params.innerW - Plot width
+ * @param {number} params.innerH - Plot height
+ * @param {Function} params.labelFor - `(date) => string`, the guide's label
+ * @param {Function} params.onPick - `(date) => void`, called on click
+ * @returns {void}
+ */
+export function drawDatePicker(plotG, {dates, xScale, innerW, innerH, labelFor, onPick}) {
+  if (!dates?.length || !onPick) return;
+  plotG.insert('rect', ':first-child')
+    .attr('class', 'date-picker-area')
+    .attr('x', 0).attr('y', 0).attr('width', innerW).attr('height', innerH)
+    .attr('fill', 'transparent');
+
+  const guide = plotG.append('g')
+    .attr('class', 'date-picker-guide')
+    .attr('pointer-events', 'none')
+    .style('display', 'none');
+  const line = guide.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#1976d2').attr('stroke-width', 1.5).attr('stroke-dasharray', '4 3');
+  const label = guide.append('text')
+    .attr('y', 14).attr('font-size', 12).attr('fill', '#1976d2');
+
+  const dateAt = (event) => {
+    const [x] = d3.pointer(event, plotG.node());
+    return dates[nearestDateIndex(dates, xScale.invert(x))] ?? null;
+  };
+
+  plotG
+    .style('cursor', 'pointer')
+    .on('mousemove.datepicker', (event) => {
+      const date = dateAt(event);
+      if (!date) return;
+      const x = xScale(date);
+      line.attr('x1', x).attr('x2', x);
+      // Keep the label inside the plot: to the left of the guide on the right half.
+      const right = x > innerW / 2;
+      label.attr('x', right ? x - 6 : x + 6).attr('text-anchor', right ? 'end' : 'start').text(labelFor(date));
+      guide.style('display', null);
+    })
+    .on('mouseleave.datepicker', () => guide.style('display', 'none'))
+    .on('click.datepicker', (event) => {
+      const date = dateAt(event);
+      if (date) onPick(date);
+    });
 }
 
 /**

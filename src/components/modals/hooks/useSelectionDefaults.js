@@ -20,6 +20,20 @@ import {useEffect} from 'react';
  */
 
 /**
+ * The offered lead closest to a wanted one; the earlier one on a tie, the first when none is wanted.
+ *
+ * @private
+ * @param {Array<{lead: number}>} leads - Offered leads, in order
+ * @param {number|null} wanted - Lead in hours
+ * @returns {number} An offered lead
+ */
+function nearestLead(leads, wanted) {
+  const target = Number(wanted);
+  if (wanted == null || wanted === '' || !Number.isFinite(target)) return leads[0].lead;
+  return leads.reduce((best, l) => (Math.abs(l.lead - target) < Math.abs(best - target) ? l.lead : best), leads[0].lead);
+}
+
+/**
  * Corrects a selection against the options currently available.
  *
  * - Method: the first one when none is chosen or the chosen one is not offered.
@@ -28,7 +42,8 @@ import {useEffect} from 'react';
  * - Configuration: the one the entity is relevant to, falling back to the method's first. It is
  *   left empty until relevance is known, so nothing is loaded for a provisional configuration.
  *   An unpinned configuration follows the entity to its relevant configuration.
- * - Lead: the first one when none is chosen or it is not offered.
+ * - Lead: the first one when none is chosen; the nearest offered one when the chosen lead is not
+ *   offered (a lead requested from the time series, or kept across an entity change).
  *
  * @param {ModalSelection} value - Current selection
  * @param {Object} options - Available options
@@ -74,7 +89,7 @@ export function resolveSelection(value, {methodOptions, stations, leads, relevan
   }
 
   if (leads.length && !leads.some(l => l.lead === next.lead)) {
-    next.lead = leads[0].lead;
+    next.lead = nearestLead(leads, next.lead);
   }
 
   const changed = Object.keys(next).some(k => next[k] !== value[k]);

@@ -9,17 +9,25 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
-const {details, exportAnalogsCSV, app, selectorValue} = vi.hoisted(() => ({
+const {details, exportAnalogsCSV, app, selectorValue, TREE} = vi.hoisted(() => ({
+  TREE: [
+    {id: 'm1', children: [{id: 'c1'}, {id: 'c2'}]},
+    {id: 'm2', children: [{id: 'c3'}]}
+  ],
   details: {current: null},
   exportAnalogsCSV: vi.fn(),
-  app: {methodConfig: null, entityId: null},
+  app: {methodConfig: null, entityId: null, setMethodConfig: null, setEntityId: null},
   selectorValue: {current: null}
 }));
 
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useForecastSession: vi.fn(() => ({workspace: 'ws', activeForecastDate: '2024-01-01'})),
-  useMethods: vi.fn(() => ({selectedMethodConfig: app.methodConfig})),
-  useSelectedEntity: vi.fn(() => ({selectedEntityId: app.entityId}))
+  useMethods: vi.fn(() => ({
+    selectedMethodConfig: app.methodConfig,
+    methodConfigTree: TREE,
+    setSelectedMethodConfig: app.setMethodConfig
+  })),
+  useSelectedEntity: vi.fn(() => ({selectedEntityId: app.entityId, setSelectedEntityId: app.setEntityId}))
 }));
 
 vi.mock('@/components/modals/hooks/useForecastDetailsData.js', () => ({
@@ -84,6 +92,8 @@ describe('ForecastDetailsModal', () => {
     details.current = loaded();
     app.methodConfig = null;
     app.entityId = null;
+    app.setMethodConfig = vi.fn();
+    app.setEntityId = vi.fn();
     selectorValue.current = null;
   });
 
@@ -226,6 +236,50 @@ describe('ForecastDetailsModal', () => {
     rerender(<ForecastDetailsModal open={true} onClose={onClose} request={{selection: {methodId: 'm1', entityId: 2, lead: 24}}}/>);
 
     expect(selectorValue.current).toMatchObject({entityId: 2, lead: 24});
+  });
+
+  describe('back to the time series', () => {
+    const openSeries = async (request) => {
+      const user = userEvent.setup();
+      render(<ForecastDetailsModal open={true} onClose={onClose} request={request}/>);
+      await user.click(screen.getByRole('button', {name: 'forecastDetails.openSeries'}));
+    };
+
+    it('shows the series of this entity, leaving the app selection when it already matches', async () => {
+      app.methodConfig = {method: TREE[0], config: null};
+      await openSeries({selection: {entityId: 9}});
+
+      expect(onClose).toHaveBeenCalled();
+      expect(app.setEntityId).toHaveBeenCalledWith(9);
+      expect(app.setMethodConfig).not.toHaveBeenCalled();
+    });
+
+    it('keeps a configuration the app already pins', async () => {
+      app.methodConfig = {method: TREE[0], config: TREE[0].children[1]};
+      await openSeries({selection: {entityId: 9}});
+
+      expect(app.setMethodConfig).not.toHaveBeenCalled();
+    });
+
+    it('brings another method along, leaving its configuration to follow the entity', async () => {
+      app.methodConfig = {method: TREE[0], config: null};
+      await openSeries({selection: {methodId: 'm2', entityId: 9}});
+
+      expect(app.setMethodConfig).toHaveBeenCalledWith({method: TREE[1], config: null});
+      expect(app.setEntityId).toHaveBeenCalledWith(9);
+    });
+
+    it('brings a configuration picked here along', async () => {
+      app.methodConfig = {method: TREE[0], config: null};
+      await openSeries({selection: {methodId: 'm1', configId: 'c2', entityId: 9}});
+
+      expect(app.setMethodConfig).toHaveBeenCalledWith({method: TREE[0], config: TREE[0].children[1]});
+    });
+
+    it('is unavailable until an entity is selected', () => {
+      render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+      expect(screen.getByRole('button', {name: 'forecastDetails.openSeries'})).toBeDisabled();
+    });
   });
 
   it('calls onClose from the close button', async () => {

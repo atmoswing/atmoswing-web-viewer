@@ -76,3 +76,45 @@ export function formatForecastDateForApi(dateObj, reference) {
   return dateObj.toISOString();
 }
 
+
+/**
+ * Lead time in hours of a target date, counted from the forecast base date.
+ *
+ * The one place leads are derived from dates: the details window lists its leads with it and the
+ * time series converts a clicked date with it, so both sides agree on the lead of a given date.
+ *
+ * @param {Date|null} baseDate - Forecast base date
+ * @param {Date|null} targetDate - Target date
+ * @returns {number|null} Lead in whole hours (negative before the base date), or null if either date is invalid
+ * @example
+ * leadHours(new Date('2025-01-01T00:00'), new Date('2025-01-02T00:00')) // 24
+ */
+export function leadHours(baseDate, targetDate) {
+  const valid = d => d instanceof Date && !isNaN(d);
+  if (!valid(baseDate) || !valid(targetDate)) return null;
+  return Math.round((targetDate.getTime() - baseDate.getTime()) / 3600000);
+}
+
+/**
+ * Index of the date closest in time to a target; the earlier one on a tie.
+ *
+ * @param {Array<Date>} dates - Candidate dates
+ * @param {Date|null} target - Date to match
+ * @returns {number} Index into `dates`, or -1 when there is no valid candidate or target
+ * @example
+ * nearestDateIndex([new Date('2025-01-01'), new Date('2025-01-02')], new Date('2025-01-01T20:00')) // 1
+ */
+export function nearestDateIndex(dates, target) {
+  if (!Array.isArray(dates) || !(target instanceof Date) || isNaN(target)) return -1;
+  let best = -1;
+  let bestDist = Infinity;
+  dates.forEach((d, i) => {
+    if (!(d instanceof Date) || isNaN(d)) return;
+    const dist = Math.abs(d.getTime() - target.getTime());
+    if (dist < bestDist) {
+      best = i;
+      bestDist = dist;
+    }
+  });
+  return best;
+}

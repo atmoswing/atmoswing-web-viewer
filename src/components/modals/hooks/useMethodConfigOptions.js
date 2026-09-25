@@ -13,6 +13,7 @@ import {normalizeRelevantEntityIds} from '@/utils/normalize/entities.js';
 import {extractTargetDatesArray} from '@/utils/normalize/series.js';
 import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
+import {leadHours, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
 const EMPTY_LIST = [];
 const EMPTY_RELEVANCE = new Map();
@@ -29,22 +30,14 @@ function toLeadOptions(resp, forecastBaseDate) {
   const rawDates = extractTargetDatesArray(resp);
   const baseDate = (forecastBaseDate && !isNaN(forecastBaseDate.getTime()))
     ? forecastBaseDate
-    : (resp?.parameters?.forecast_date ? new Date(resp.parameters.forecast_date) : null);
+    : parseForecastDate(resp?.parameters?.forecast_date);
 
+  // Parsed like the time series parses the same dates, so a date clicked there maps to one of
+  // these leads exactly.
   return rawDates.map(s => {
-    let d = null;
-    try {
-      d = s ? new Date(s) : null;
-      if (d && isNaN(d)) d = null;
-    } catch {
-      d = null;
-    }
-    const label = d ? formatDateLabel(d) : String(s);
-    const leadNum = (d && baseDate && !isNaN(baseDate.getTime()))
-      ? Math.round((d.getTime() - baseDate.getTime()) / 3600000)
-      : null;
-    return {lead: leadNum, date: d, label};
-  }).filter(x => x.lead != null && !isNaN(x.lead));
+    const d = s instanceof Date ? s : (typeof s === 'string' ? parseForecastDate(s) : null);
+    return {lead: leadHours(baseDate, d), date: d, label: d ? formatDateLabel(d) : String(s)};
+  }).filter(x => x.lead != null);
 }
 
 /**

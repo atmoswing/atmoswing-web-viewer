@@ -89,7 +89,9 @@
     "analogWithIndex": "Analog {{index}}",
     "close": "Close",
     "export": "Export",
-    "exportFailed": "Export to {{format}} failed: {{error}}"
+    "exportFailed": "Export to {{format}} failed: {{error}}",
+    "openDetails": "Forecast details",
+    "detailsFor": "Details for {{date}}"
   },
   "forecastDetails": {
     "title": "Forecast details",
@@ -97,7 +99,8 @@
       "distribution": "Distribution",
       "criteria": "Criteria",
       "analogs": "Analogs"
-    }
+    },
+    "openSeries": "Time series"
   },
   "distributionPlots": {
     "cumulativeFrequency": "Cumulative frequency",

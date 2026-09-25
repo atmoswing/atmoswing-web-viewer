@@ -73,9 +73,15 @@ describe('resolveSelection', () => {
     expect(next).toMatchObject({methodId: 'm1', configId: 'south', configPinned: false, entityId: 2});
   });
 
-  it('replaces an entity or a lead that is not offered', () => {
+  it('replaces an entity that is not offered, and a lead with the nearest offered one', () => {
     const next = resolveSelection({methodId: 'm1', configId: 'south', configPinned: false, entityId: 99, lead: 6}, OPTIONS);
     expect(next).toMatchObject({entityId: 1, lead: 0});
+    expect(resolveSelection({...next, lead: 20}, OPTIONS).lead).toBe(24);
+    expect(resolveSelection({...next, lead: 500}, OPTIONS).lead).toBe(24);
+  });
+
+  it('prefers the earlier lead when a requested one is exactly between two', () => {
+    expect(resolveSelection({methodId: 'm1', configId: 'south', configPinned: false, entityId: 1, lead: 12}, OPTIONS).lead).toBe(0);
   });
 
   it('keeps a requested lead while the leads load, and once they offer it', () => {

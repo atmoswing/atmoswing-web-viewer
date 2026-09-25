@@ -8,7 +8,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import {Box, CircularProgress, Tab, Tabs, Typography} from '@mui/material';
+import {Box, Button, CircularProgress, Tab, Tabs, Typography} from '@mui/material';
 import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
 import {useTranslation} from 'react-i18next';
 import * as d3 from 'd3';
@@ -67,6 +67,32 @@ function initialSelection(requested, selectedMethodConfig, selectedEntityId) {
 }
 
 /**
+ * The app's method/config selection the time series needs to show what this window shows, or
+ * null when the app's current one already does.
+ *
+ * The time series follows the app's selection: its configuration when one is pinned, otherwise
+ * the one the entity is relevant to, which is also what an unpinned configuration here is. So the
+ * app only changes when this window shows another method, or a configuration picked by hand.
+ *
+ * @private
+ * @param {Object} selection - This window's selection
+ * @param {Object|null} selectedMethodConfig - The app's method/config selection
+ * @param {Array} methodConfigTree - The app's methods, each with its configurations as `children`
+ * @returns {Object|null} `{ method, config }` to select in the app, or null to leave it as is
+ */
+function appSelectionForSeries(selection, selectedMethodConfig, methodConfigTree) {
+  const {methodId, configId, configPinned} = selection;
+  const appConfigId = selectedMethodConfig?.config?.id ?? null;
+  if (selectedMethodConfig?.method?.id === methodId && (appConfigId === configId || (appConfigId == null && !configPinned))) {
+    return null;
+  }
+  const method = (methodConfigTree || []).find(m => m.id === methodId);
+  if (!method) return null;
+  const config = configPinned ? (method.children || []).find(c => c.id === configId) ?? null : null;
+  return {method, config};
+}
+
+/**
  * ForecastDetailsModal component.
  * @param {Object} props
  * @param {boolean} props.open - Whether the modal is open
@@ -77,8 +103,8 @@ function initialSelection(requested, selectedMethodConfig, selectedEntityId) {
  */
 export default function ForecastDetailsModal({open, onClose, request}) {
   const {activeForecastDate} = useForecastSession();
-  const {selectedMethodConfig} = useMethods();
-  const {selectedEntityId} = useSelectedEntity();
+  const {selectedMethodConfig, methodConfigTree, setSelectedMethodConfig} = useMethods();
+  const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
   const {t} = useTranslation();
 
   // One selection shared by the three tabs, seeded on each opening request (from the request,
@@ -171,6 +197,15 @@ export default function ForecastDetailsModal({open, onClose, request}) {
 
   const status = {loading: analogsLoading, error: analogsError, t};
 
+  // Back to the time series of this window's entity, bringing the app's method/config along when
+  // the series would otherwise show another forecast.
+  const openSeries = () => {
+    const appSelection = appSelectionForSeries(selection, selectedMethodConfig, methodConfigTree);
+    onClose();
+    if (appSelection) setSelectedMethodConfig(appSelection);
+    setSelectedEntityId(selection.entityId);
+  };
+
   return (
     <Dialog open={Boolean(open)} onClose={onClose} fullWidth maxWidth="lg"
             sx={{'& .MuiPaper-root': {width: '100%', maxWidth: '1100px'}}}>
@@ -180,6 +215,10 @@ export default function ForecastDetailsModal({open, onClose, request}) {
         closeLabel={t('detailsAnalogsModal.close')}
       >
         <ExportMenu t={t} formats={exportFormats} sx={{marginLeft: 5}}/>
+        <Button variant="outlined" size="small" onClick={openSeries} sx={{marginLeft: 1}}
+                disabled={selection.entityId == null}>
+          {t('forecastDetails.openSeries')}
+        </Button>
       </ModalTitleBar>
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>

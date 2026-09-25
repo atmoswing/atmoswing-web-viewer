@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {formatForecastDateForApi, parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {formatForecastDateForApi, leadHours, nearestDateIndex, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
 describe('forecastDateUtils', () => {
   describe('parseForecastDate', () => {
@@ -118,3 +118,41 @@ describe('forecastDateUtils', () => {
   });
 });
 
+describe('leadHours', () => {
+  const base = new Date(2025, 0, 1, 12);
+
+  it('counts whole hours from the base date, negative before it', () => {
+    expect(leadHours(base, new Date(2025, 0, 2, 12))).toBe(24);
+    expect(leadHours(base, new Date(2025, 0, 1, 0))).toBe(-12);
+    expect(leadHours(base, new Date(2025, 0, 1, 18, 20))).toBe(6);
+  });
+
+  it('agrees with the leads of dates parsed from the API', () => {
+    const apiBase = parseForecastDate('2025-01-01T00');
+    expect(leadHours(apiBase, parseForecastDate('2025-01-03T00:00:00'))).toBe(48);
+  });
+
+  it('returns null for a missing or invalid date', () => {
+    expect(leadHours(null, base)).toBeNull();
+    expect(leadHours(base, new Date('nope'))).toBeNull();
+  });
+});
+
+describe('nearestDateIndex', () => {
+  const dates = [new Date(2025, 0, 1), new Date(2025, 0, 2), new Date(2025, 0, 3)];
+
+  it('finds the closest date', () => {
+    expect(nearestDateIndex(dates, new Date(2025, 0, 2, 20))).toBe(2);
+    expect(nearestDateIndex(dates, new Date(2024, 11, 1))).toBe(0);
+  });
+
+  it('prefers the earlier date on a tie', () => {
+    expect(nearestDateIndex(dates, new Date(2025, 0, 1, 12))).toBe(0);
+  });
+
+  it('returns -1 when there is nothing to match', () => {
+    expect(nearestDateIndex([], new Date())).toBe(-1);
+    expect(nearestDateIndex(dates, null)).toBe(-1);
+    expect(nearestDateIndex(null, new Date())).toBe(-1);
+  });
+});
