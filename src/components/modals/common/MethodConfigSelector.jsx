@@ -1,7 +1,8 @@
 /**
  * @module components/modals/common/MethodConfigSelector
- * @description Shared modal selection component to pick method, configuration, entity and lead time.
- * Handles chained data fetching, validity maintenance and relevance highlighting.
+ * @description Dropdowns to pick the method, configuration, entity and lead time of a modal's
+ * selection, with the configurations the entity is relevant to marked. The option lists are
+ * loaded by the owning modal (`useMethodConfigOptions`) and handed in.
  */
 
 import React, {useMemo} from 'react';
@@ -16,23 +17,21 @@ import {
   Typography
 } from '@mui/material';
 import {useTranslation} from 'react-i18next';
-import {useMethodConfigOptions} from '../hooks/useMethodConfigOptions.js';
-import {useSelectionDefaults} from '../hooks/useSelectionDefaults.js';
 
 /**
  * MethodConfigSelector component.
  * @param {Object} props
- * @param {boolean} props.open - Whether the parent modal is open (controls fetching enablement)
  * @param {Object} props.value - Current selection `{ methodId, configId, configPinned, entityId, lead }` (see `ModalSelection`)
  * @param {Function} props.onChange - Callback receiving updated selection object
+ * @param {Object} props.options - Option lists and their status, from `useMethodConfigOptions`
  * @param {React.ReactNode} [props.children] - Optional extra controls rendered beneath standard selectors
  * @returns {React.ReactElement}
  */
 export default function MethodConfigSelector(
   {
-    open,
     value = {},
     onChange,
+    options,
     children
   }
 ) {
@@ -56,11 +55,8 @@ export default function MethodConfigSelector(
     leads,
     leadsLoading,
     leadsError,
-    relevance,
-    relevantConfigIds
-  } = useMethodConfigOptions({open, value});
-
-  useSelectionDefaults({open, value, onChange, methodOptions, stations, leads, relevance});
+    relevantConfigIds,
+  } = options;
 
   // Ensure selected values exist in available options, otherwise use empty string
   const safeMethodId = useMemo(() => {

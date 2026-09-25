@@ -24,6 +24,8 @@ import {formatExportDatePart, safeForFilename} from './common/chartExport.js';
 import PrecipitationDistributionChart from './charts/PrecipitationDistributionChart.jsx';
 import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
+import {useMethodConfigOptions} from './hooks/useMethodConfigOptions.js';
+import {useSelectionDefaults} from './hooks/useSelectionDefaults.js';
 
 /** Display options offered on the distribution tab, in the order they are listed. */
 const DISTRIBUTION_OPTION_KEYS = ['bestAnalogs', 'tenYearReturn', 'allReturnPeriods'];
@@ -135,6 +137,19 @@ export default function ForecastDetailsModal({open, onClose, request}) {
   const precipRef = useRef(null);
   const critRef = useRef(null);
 
+  // The option lists behind the selector live here, because the window needs them too: a
+  // selection that is not settled yet means "still working it out", not "nothing to show".
+  const selectorOptions = useMethodConfigOptions({open, value: selection});
+  useSelectionDefaults({
+    open,
+    value: selection,
+    onChange: setSelection,
+    methodOptions: selectorOptions.methodOptions,
+    stations: selectorOptions.stations,
+    leads: selectorOptions.leads,
+    relevance: selectorOptions.relevance
+  });
+
   const {
     analogs,
     analogValues,
@@ -206,7 +221,16 @@ export default function ForecastDetailsModal({open, onClose, request}) {
     ? [{label: 'CSV', onExport: () => exportAnalogsCSV(analogs, buildExportFilenamePrefix(), csvHeaders())}]
     : chartFormats;
 
-  const status = {loading: analogsLoading, error: analogsError, t};
+  // Until the lists have answered, the selection has no configuration or lead and nothing is
+  // requested. Saying "no data" then would be wrong, and is what the window used to show for a
+  // second on opening; once the lists are in, an incomplete selection really means no data.
+  const selectionSettled = selection.configId != null && selection.entityId != null && selection.lead != null;
+  const settling = !selectionSettled && (
+    selectorOptions.methodsLoading || selectorOptions.stationsLoading ||
+    selectorOptions.leadsLoading || selectorOptions.relevance === null
+  );
+
+  const status = {loading: analogsLoading || settling, error: analogsError, t};
 
   // Back to the time series of this window's entity, bringing the app's method/config along when
   // the series would otherwise show another forecast.
@@ -234,9 +258,9 @@ export default function ForecastDetailsModal({open, onClose, request}) {
       <DialogContent dividers>
         <Box sx={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2}}>
           <MethodConfigSelector
-            open={open}
             value={selection}
             onChange={setSelection}
+            options={selectorOptions}
           >
             {tabIndex === DISTRIBUTION_TAB && (
               <ChartOptionsGroup

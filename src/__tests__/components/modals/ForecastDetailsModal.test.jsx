@@ -9,12 +9,13 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
-const {details, exportAnalogsCSV, app, selectorValue, chartProps, TREE} = vi.hoisted(() => ({
+const {details, selectorOptions, exportAnalogsCSV, app, selectorValue, chartProps, TREE} = vi.hoisted(() => ({
   TREE: [
     {id: 'm1', children: [{id: 'c1'}, {id: 'c2'}]},
     {id: 'm2', children: [{id: 'c3'}]}
   ],
   details: {current: null},
+  selectorOptions: {current: null},
   exportAnalogsCSV: vi.fn(),
   app: {methodConfig: null, entityId: null, setMethodConfig: null, setEntityId: null},
   chartProps: {current: null},
@@ -33,6 +34,12 @@ vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
 
 vi.mock('@/components/modals/hooks/useForecastDetailsData.js', () => ({
   useForecastDetailsData: vi.fn(() => details.current)
+}));
+
+// The option lists the window loads for the selector. Empty by default, with the relevance known,
+// which is the settled state: nothing is being resolved any more.
+vi.mock('@/components/modals/hooks/useMethodConfigOptions.js', () => ({
+  useMethodConfigOptions: vi.fn(() => selectorOptions.current)
 }));
 vi.mock('@/components/modals/common/analogRows.js', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -88,6 +95,17 @@ function loaded(overrides = {}) {
 
 const exportLabels = () => screen.getAllByRole('button', {name: /^export /}).map(b => b.textContent);
 
+/** Option lists with nothing left to resolve: loaded (here, empty) and relevance known. */
+function settledOptions(overrides = {}) {
+  return {
+    methodOptions: [], configsForSelectedMethod: [], stations: [], leads: [],
+    methodsLoading: false, stationsLoading: false, leadsLoading: false,
+    methodsError: null, stationsError: null, leadsError: null,
+    relevance: new Map(), relevantConfigIds: new Map(),
+    ...overrides
+  };
+}
+
 describe('ForecastDetailsModal', () => {
   const onClose = vi.fn();
 
@@ -98,6 +116,7 @@ describe('ForecastDetailsModal', () => {
     app.entityId = null;
     app.setMethodConfig = vi.fn();
     app.setEntityId = vi.fn();
+    selectorOptions.current = settledOptions();
     selectorValue.current = null;
   });
 
@@ -171,6 +190,23 @@ describe('ForecastDetailsModal', () => {
       await user.click(screen.getByRole('tab', {name: `forecastDetails.tab.${name}`}));
       expect(screen.getByText('detailsAnalogsModal.errorLoadingAnalogs')).toBeInTheDocument();
     }
+  });
+
+  it('says it is still working while the option lists load, rather than "no data"', () => {
+    details.current = loaded({analogs: [], analogValues: null, criteriaValues: null});
+    selectorOptions.current = settledOptions({methodsLoading: true});
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(screen.getByText('detailsAnalogsModal.loadingAnalogs')).toBeInTheDocument();
+    expect(screen.queryByText('distributionPlots.noAnalogs')).not.toBeInTheDocument();
+  });
+
+  it('says it is still working until the relevance decides the configuration', () => {
+    details.current = loaded({analogs: [], analogValues: null, criteriaValues: null});
+    selectorOptions.current = settledOptions({relevance: null});
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(screen.getByText('detailsAnalogsModal.loadingAnalogs')).toBeInTheDocument();
   });
 
   it('says when there is nothing to show', async () => {
