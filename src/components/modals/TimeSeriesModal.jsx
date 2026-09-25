@@ -100,8 +100,11 @@ export default function TimeSeriesModal() {
     openDetailsAt(dates[nearestDateIndex(dates, selectedTargetDate)] ?? dates[0] ?? null);
   };
 
-  const showHover = (anchorEl, title) => setAnalogTooltip({open: true, anchorEl, title});
-  const hideHover = () => setAnalogTooltip(prev => ({...prev, open: false}));
+  // Stable, because the chart redraws whenever a prop it is given changes identity. A hover
+  // would otherwise replace the very element under the pointer, which then never gets its
+  // `mouseleave` and leaves the tooltip on screen.
+  const showHover = useCallback((anchorEl, title) => setAnalogTooltip({open: true, anchorEl, title}), []);
+  const hideHover = useCallback(() => setAnalogTooltip(prev => ({...prev, open: false})), []);
 
   const findChartSVG = () => {
     const el = chartRef.current;
@@ -198,7 +201,7 @@ export default function TimeSeriesModal() {
                 activeForecastDate={activeForecastDate}
                 selectedMethodConfig={selectedMethodConfig}
                 stationName={stationName}
-                onHoverShow={(anchor, title) => showHover(anchor, title)}
+                onHoverShow={showHover}
                 onHoverHide={hideHover}
                 onPickDate={openDetailsAt}
               />

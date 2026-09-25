@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
-const {details, exportAnalogsCSV, app, selectorValue, TREE} = vi.hoisted(() => ({
+const {details, exportAnalogsCSV, app, selectorValue, chartProps, TREE} = vi.hoisted(() => ({
   TREE: [
     {id: 'm1', children: [{id: 'c1'}, {id: 'c2'}]},
     {id: 'm2', children: [{id: 'c3'}]}
@@ -17,6 +17,7 @@ const {details, exportAnalogsCSV, app, selectorValue, TREE} = vi.hoisted(() => (
   details: {current: null},
   exportAnalogsCSV: vi.fn(),
   app: {methodConfig: null, entityId: null, setMethodConfig: null, setEntityId: null},
+  chartProps: {current: null},
   selectorValue: {current: null}
 }));
 
@@ -54,7 +55,10 @@ vi.mock('@/components/modals/common/ExportMenu.jsx', () => ({
   )
 }));
 vi.mock('@/components/modals/charts/PrecipitationDistributionChart.jsx', () => ({
-  default: () => <div data-testid="precip-chart"/>
+  default: (props) => {
+    chartProps.current = props;
+    return <div data-testid="precip-chart"/>;
+  }
 }));
 vi.mock('@/components/modals/charts/CriteriaDistributionChart.jsx', () => ({
   default: () => <div data-testid="criteria-chart"/>
@@ -280,6 +284,16 @@ describe('ForecastDetailsModal', () => {
       render(<ForecastDetailsModal open={true} onClose={onClose}/>);
       expect(screen.getByRole('button', {name: 'forecastDetails.openSeries'})).toBeDisabled();
     });
+  });
+
+  it('hands the chart the same lead list on every render, so it is not redrawn for nothing', async () => {
+    const user = userEvent.setup();
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+    const firstLeads = chartProps.current.leads;
+
+    await user.click(screen.getAllByRole('checkbox')[0]);
+
+    expect(chartProps.current.leads).toBe(firstLeads);
   });
 
   it('calls onClose from the close button', async () => {

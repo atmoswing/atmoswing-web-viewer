@@ -4,12 +4,14 @@
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
-const {app, openForecastDetails, chartProps, seriesData} = vi.hoisted(() => ({
+const {app, openForecastDetails, chartProps, seriesData, BASE_DATE} = vi.hoisted(() => ({
+  // The real contexts hold these in state, so they keep their identity between renders.
+  BASE_DATE: new Date(2024, 0, 1, 0),
   app: {entityId: 1, setSelectedEntityId: null, methodConfig: null, targetDate: null},
   openForecastDetails: vi.fn(),
   chartProps: {current: null},
@@ -23,7 +25,7 @@ vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useForecastSession: () => ({
     workspace: 'test',
     activeForecastDate: '2024-01-01T00',
-    forecastBaseDate: new Date(2024, 0, 1, 0)
+    forecastBaseDate: BASE_DATE
   }),
   useSynthesis: () => ({selectedTargetDate: app.targetDate})
 }));
@@ -120,6 +122,25 @@ describe('TimeSeriesModal', () => {
     await user.click(screen.getByRole('button', {name: 'seriesModal.openDetails'}));
 
     expect(openForecastDetails).toHaveBeenCalledWith({methodId: 'm1', entityId: 1, lead: 0});
+  });
+
+  it('keeps the chart callbacks stable, so hovering a marker does not redraw the chart', () => {
+    render(<TimeSeriesModal/>);
+    const first = {...chartProps.current};
+
+    // What a hovered best-analog marker does: it shows the tooltip, re-rendering the modal.
+    act(() => first.onHoverShow({getBoundingClientRect: () => ({top: 0, left: 0, width: 0, height: 0})}, 'analog 1'));
+    expect(screen.getByText('analog 1')).toBeInTheDocument();
+
+    // A changed callback would redraw the chart, destroying the element the pointer is on, which
+    // then never fires `mouseleave` and leaves the tooltip up.
+    expect(chartProps.current.onHoverShow).toBe(first.onHoverShow);
+    expect(chartProps.current.onHoverHide).toBe(first.onHoverHide);
+    expect(chartProps.current.onPickDate).toBe(first.onPickDate);
+    expect(chartProps.current.options).toBe(first.options);
+
+    act(() => first.onHoverHide());
+    expect(screen.queryByText('analog 1')).not.toBeInTheDocument();
   });
 
   it('still opens the details, on their default lead, before the series has loaded', async () => {

@@ -36,6 +36,10 @@ const ANALOGS_TAB = 2;
 
 const EMPTY_SELECTION = {methodId: null, configId: null, configPinned: false, entityId: null, lead: null};
 
+/** The distribution charts take a lead list only to title themselves; this window has none.
+ *  Shared so the charts are not handed a new array, and redrawn, on every render. */
+const NO_LEADS = [];
+
 /** Stands for "no opening request" when the window is used without one. */
 const NO_REQUEST = {selection: null};
 
@@ -251,7 +255,7 @@ export default function ForecastDetailsModal({open, onClose, request}) {
                 selectedMethodId={selection.methodId}
                 selectedConfigId={selection.configId}
                 selectedLead={selection.lead}
-                leads={[]}
+                leads={NO_LEADS}
                 activeForecastDate={activeForecastDate}
                 stationName={stationName}
                 t={t}
@@ -267,7 +271,7 @@ export default function ForecastDetailsModal({open, onClose, request}) {
                 selectedMethodId={selection.methodId}
                 selectedConfigId={selection.configId}
                 selectedLead={selection.lead}
-                leads={[]}
+                leads={NO_LEADS}
                 activeForecastDate={activeForecastDate}
                 stationName={stationName}
                 t={t}
