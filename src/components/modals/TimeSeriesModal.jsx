@@ -120,10 +120,13 @@ export default function TimeSeriesModal() {
     return [datePart, entityPart, safeMethod].filter(p => p).join('_') || 'series';
   };
 
-  const {formats: exportFormats} = useChartExport({
+  const {formats: chartFormats} = useChartExport({
     getSVG: findChartSVG,
     getBaseName: buildExportFilenamePrefix
   });
+  // With no chart drawn there is nothing to export, and the exporters would quietly do nothing.
+  const hasChart = !!series || (options.bestAnalogs && !!bestAnalogs);
+  const exportFormats = chartFormats.map(format => ({...format, disabled: !hasChart}));
 
   // When the modal closes the request keys all go null and the hooks reset themselves.
   // The cached entries are deliberately kept: a forecast for a given station is immutable,

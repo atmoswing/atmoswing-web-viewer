@@ -57,7 +57,9 @@ vi.mock('@/components/modals/common/MethodConfigSelector.jsx', () => ({
 vi.mock('@/components/modals/common/ExportMenu.jsx', () => ({
   default: ({formats}) => (
     <div data-testid="export-menu">
-      {formats.map(f => <button key={f.label} onClick={f.onExport}>{`export ${f.label}`}</button>)}
+      {formats.map(f => (
+        <button key={f.label} disabled={!!f.disabled} onClick={f.onExport}>{`export ${f.label}`}</button>
+      ))}
     </div>
   )
 }));
@@ -94,6 +96,7 @@ function loaded(overrides = {}) {
 }
 
 const exportLabels = () => screen.getAllByRole('button', {name: /^export /}).map(b => b.textContent);
+const exportDisabled = () => screen.getAllByRole('button', {name: /^export /}).map(b => b.disabled);
 
 /** Option lists with nothing left to resolve: loaded (here, empty) and relevance known. */
 function settledOptions(overrides = {}) {
@@ -168,6 +171,20 @@ describe('ForecastDetailsModal', () => {
       ['detailsAnalogsModal.colRank', 'detailsAnalogsModal.colDate',
         'detailsAnalogsModal.colPrecipitation', 'detailsAnalogsModal.colCriteria']
     );
+  });
+
+  it('offers no export for a tab with nothing on it', async () => {
+    details.current = loaded({analogs: [], analogValues: null, criteriaValues: null});
+    const user = userEvent.setup();
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(exportDisabled()).toEqual([true, true, true]); // the three chart formats
+    await user.click(screen.getByRole('tab', {name: 'forecastDetails.tab.analogs'}));
+    expect(exportDisabled()).toEqual([true]); // CSV
+
+    details.current = loaded();
+    await user.click(screen.getByRole('tab', {name: 'forecastDetails.tab.distribution'}));
+    expect(exportDisabled()).toEqual([false, false, false]);
   });
 
   it('shows the loading message instead of the table while the analogs load', async () => {

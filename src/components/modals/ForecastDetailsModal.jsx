@@ -217,9 +217,16 @@ export default function ForecastDetailsModal({open, onClose, request}) {
     t('detailsAnalogsModal.colPrecipitation'),
     t('detailsAnalogsModal.colCriteria')
   ];
+  // Nothing on the tab means nothing to export: the chart exporters would quietly do nothing and
+  // the CSV one would raise an error after the fact, neither of which says why.
+  const tabIsEmpty = [!analogValues, !criteriaValues, !analogs.length][tabIndex];
   const exportFormats = tabIndex === ANALOGS_TAB
-    ? [{label: 'CSV', onExport: () => exportAnalogsCSV(analogs, buildExportFilenamePrefix(), csvHeaders())}]
-    : chartFormats;
+    ? [{
+      label: 'CSV',
+      disabled: tabIsEmpty,
+      onExport: () => exportAnalogsCSV(analogs, buildExportFilenamePrefix(), csvHeaders())
+    }]
+    : chartFormats.map(format => ({...format, disabled: tabIsEmpty}));
 
   // Until the lists have answered, the selection has no configuration or lead and nothing is
   // requested. Saying "no data" then would be wrong, and is what the window used to show for a

@@ -14,6 +14,8 @@ import {useSnackbar} from '@/contexts/SnackbarContext.jsx';
  * @typedef {Object} ExportFormat
  * @property {string} label - Menu entry and the format named in an error message (e.g. 'PNG')
  * @property {Function} onExport - Performs the export; may return a promise that rejects
+ * @property {boolean} [disabled] - Greys the entry out when there is nothing to export, which
+ *   tells the user more than a menu that closes with no file, or an error afterwards
  */
 
 /**
@@ -70,8 +72,13 @@ export default function ExportMenu({t, formats, sx}) {
         onClose={closeMenu}
         anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
       >
-        {(formats || []).map(({label, onExport}) => (
-          <MenuItem key={label} onClick={() => runExport(label, onExport)}>{label}</MenuItem>
+        {(formats || []).map(({label, onExport, disabled}) => (
+          <MenuItem
+            key={label}
+            disabled={!!disabled}
+            // A disabled entry keeps its handler in MUI; only its pointer events are off.
+            onClick={() => !disabled && runExport(label, onExport)}
+          >{label}</MenuItem>
         ))}
       </Menu>
     </>
