@@ -12,11 +12,27 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 const GLOBAL_CACHE = new Map();
 
 /**
+ * Whether a cache entry exists and is within its time-to-live.
+ * @private
+ * @param {{timestamp: number, data: any}|undefined|null} entry - Cache entry
+ * @param {number|null} ttlMs - Time-to-live; null means entries never expire
+ * @returns {boolean} True if the entry can be served
+ */
+function isFresh(entry, ttlMs) {
+  return !!entry && (ttlMs == null || Date.now() - entry.timestamp <= ttlMs);
+}
+
+/**
  * Custom hook for making cached API requests with automatic deduplication.
  *
  * The `key` is the single source of truth for when a refetch happens: it must encode every
  * value `fetchFn` reads. A null key (or `enabled: false`) resets the hook back to `initialData`,
  * so a cleared selection never leaves the previous selection's data behind.
+ *
+ * The data returned always belongs to the current key. State is only updated in an effect, so on
+ * the render where the key changes it still holds the previous key's result; that render gets the
+ * new key's cached entry instead, or `initialData` while it loads. Without this, a caller that
+ * validates a choice against the returned list would check it against another selection's list.
  *
  * @param {string|null} key - Unique cache key. If null/undefined, the fetch is skipped and state resets
  * @param {Function} fetchFn - Async function that returns the data. Always called at its latest version
@@ -45,7 +61,9 @@ export function useCachedRequest(key, fetchFn, options = {}) {
   // downstream useMemo/useEffect from churning on every render.
   const initialDataRef = useRef(initialData);
 
+  // `key` records which request the state belongs to (null for the reset state).
   const [state, setState] = useState(() => ({
+    key: null,
     data: initialDataRef.current,
     loading: false,
     error: null,
@@ -67,24 +85,24 @@ export function useCachedRequest(key, fetchFn, options = {}) {
 
   const reqIdRef = useRef(0);
   const active = enabled && !!key;
+  const activeKey = active ? key : null;
 
   useEffect(() => {
     // Invalidate any in-flight request from a previous key.
     const localReqId = ++reqIdRef.current;
 
     if (!active) {
-      setState({data: initialDataRef.current, loading: false, error: null, fromCache: false});
+      setState({key: null, data: initialDataRef.current, loading: false, error: null, fromCache: false});
       return;
     }
 
     const cached = GLOBAL_CACHE.get(key);
-    const fresh = cached && (ttlMs == null || Date.now() - cached.timestamp <= ttlMs);
-    if (fresh) {
-      setState({data: cached.data, loading: false, error: null, fromCache: true});
+    if (isFresh(cached, ttlMs)) {
+      setState({key, data: cached.data, loading: false, error: null, fromCache: true});
       return;
     }
 
-    setState({data: initialDataRef.current, loading: true, error: null, fromCache: false});
+    setState({key, data: initialDataRef.current, loading: true, error: null, fromCache: false});
 
     let cancelled = false;
     (async () => {
@@ -92,10 +110,10 @@ export function useCachedRequest(key, fetchFn, options = {}) {
         const result = await fetchFnRef.current();
         if (cancelled || localReqId !== reqIdRef.current) return;
         GLOBAL_CACHE.set(key, {timestamp: Date.now(), data: result});
-        setState({data: result, loading: false, error: null, fromCache: false});
+        setState({key, data: result, loading: false, error: null, fromCache: false});
       } catch (e) {
         if (cancelled || localReqId !== reqIdRef.current) return;
-        setState({data: initialDataRef.current, loading: false, error: e, fromCache: false});
+        setState({key, data: initialDataRef.current, loading: false, error: e, fromCache: false});
       }
     })();
 
@@ -103,6 +121,20 @@ export function useCachedRequest(key, fetchFn, options = {}) {
       cancelled = true;
     };
   }, [key, active, ttlMs, refreshCount]);
+
+  // The key changed and the effect has not caught up yet: answer for the new key.
+  if (state.key !== activeKey) {
+    const cached = activeKey ? GLOBAL_CACHE.get(activeKey) : null;
+    const fresh = isFresh(cached, ttlMs);
+    return {
+      data: fresh ? cached.data : initialDataRef.current,
+      loading: !!activeKey && !fresh,
+      error: null,
+      fromCache: fresh,
+      cacheHit: fresh,
+      refresh
+    };
+  }
 
   return {
     data: state.data,

@@ -9,15 +9,17 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
 
-const {getMethodsAndConfigs, getEntities, getReferenceValues} = vi.hoisted(() => ({
+const {getMethodsAndConfigs, getEntities, getReferenceValues, getRelevantEntities} = vi.hoisted(() => ({
   getMethodsAndConfigs: vi.fn(),
   getEntities: vi.fn(),
-  getReferenceValues: vi.fn()
+  getReferenceValues: vi.fn(),
+  getRelevantEntities: vi.fn()
 }));
 
-vi.mock('@/services/api.js', () => ({getMethodsAndConfigs, getEntities, getReferenceValues}));
+vi.mock('@/services/api.js', () => ({getMethodsAndConfigs, getEntities, getReferenceValues, getRelevantEntities}));
 vi.mock('@/utils/normalize/entities.js', () => ({
-  normalizeEntitiesResponse: (r) => r?.entities ?? []
+  normalizeEntitiesResponse: (r) => r?.entities ?? [],
+  normalizeRelevantEntityIds: (r) => new Set((r?.entities ?? []).map(e => e.id))
 }));
 vi.mock('@/utils/normalize/values.js', () => ({
   normalizeReferenceValues: (r) => r?.values ?? null
@@ -28,9 +30,11 @@ import {
   entitiesKey,
   methodsAndConfigsKey,
   referenceValuesKey,
+  relevantEntitiesByConfigKey,
   useEntitiesList,
   useMethodsAndConfigs,
-  useReferenceValues
+  useReferenceValues,
+  useRelevantEntitiesByConfig
 } from '@/hooks/forecastQueries.js';
 
 const WS = 'rhone';
@@ -42,6 +46,8 @@ describe('forecast query cache keys', () => {
     expect(entitiesKey(WS, DATE, 'm1', 'c1')).toBe('entities|rhone|2025-01-01T06:00|m1|c1');
     expect(referenceValuesKey(WS, DATE, 'm1', 'c1', 42))
       .toBe('reference|rhone|2025-01-01T06:00|m1|c1|42');
+    expect(relevantEntitiesByConfigKey(WS, DATE, 'm1'))
+      .toBe('relevant_entities_by_config|rhone|2025-01-01T06:00|m1');
   });
 
   it('return null when any part of the selection is missing', () => {
@@ -115,6 +121,50 @@ describe('forecast query hooks', () => {
     await waitFor(() => expect(b.result.current.loading).toBe(false));
 
     expect(getEntities).toHaveBeenCalledTimes(2);
+  });
+
+  describe('useRelevantEntitiesByConfig', () => {
+    const CONFIGS = ['c1', 'c2'];
+
+    beforeEach(() => {
+      getRelevantEntities.mockImplementation((ws, date, m, c) =>
+        Promise.resolve({entities: c === 'c1' ? [{id: 1}, {id: 2}] : [{id: 3}]}));
+    });
+
+    it('maps each configuration to the entities it covers', async () => {
+      const {result} = renderHook(() => useRelevantEntitiesByConfig(WS, DATE, 'm1', CONFIGS));
+
+      await waitFor(() => expect(result.current.data).not.toBeNull());
+      expect([...result.current.data.get('c1')]).toEqual([1, 2]);
+      expect([...result.current.data.get('c2')]).toEqual([3]);
+      expect(getRelevantEntities).toHaveBeenCalledTimes(2);
+    });
+
+    it('serves the time series and the details window from one entry', async () => {
+      const details = renderHook(() => useRelevantEntitiesByConfig(WS, DATE, 'm1', CONFIGS));
+      await waitFor(() => expect(details.result.current.data).not.toBeNull());
+
+      const series = renderHook(() => useRelevantEntitiesByConfig(WS, DATE, 'm1', CONFIGS));
+      await waitFor(() => expect(series.result.current.data).not.toBeNull());
+      expect(getRelevantEntities).toHaveBeenCalledTimes(2); // still one per configuration
+    });
+
+    it('gives a configuration whose request fails an empty set, keeping the others', async () => {
+      getRelevantEntities.mockImplementation((ws, date, m, c) =>
+        c === 'c1' ? Promise.reject(new Error('nope')) : Promise.resolve({entities: [{id: 3}]}));
+
+      const {result} = renderHook(() => useRelevantEntitiesByConfig(WS, DATE, 'm1', CONFIGS));
+
+      await waitFor(() => expect(result.current.data).not.toBeNull());
+      expect(result.current.data.get('c1').size).toBe(0);
+      expect([...result.current.data.get('c2')]).toEqual([3]);
+    });
+
+    it('requests nothing without configurations, or while disabled', () => {
+      renderHook(() => useRelevantEntitiesByConfig(WS, DATE, 'm1', []));
+      renderHook(() => useRelevantEntitiesByConfig(WS, DATE, 'm1', CONFIGS, {enabled: false}));
+      expect(getRelevantEntities).not.toHaveBeenCalled();
+    });
   });
 
   it('requests nothing while disabled', async () => {

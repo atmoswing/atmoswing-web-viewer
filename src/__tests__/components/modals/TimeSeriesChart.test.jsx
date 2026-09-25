@@ -74,5 +74,16 @@ describe('TimeSeriesChart (smoke)', () => {
     // There should be path elements for the main quantiles and past forecasts and lines
     const paths = ref.current.querySelectorAll('path');
     expect(paths.length).toBeGreaterThan(0);
+
+    // The hoverable markers must be painted last, and the axes must not catch the pointer:
+    // markers on the zero line would otherwise be covered and their tooltips unreachable.
+    const plotChildren = [...ref.current.querySelector('.plot-area').children];
+    const lastMarker = plotChildren.map(e => e.tagName).lastIndexOf('circle');
+    const runDateLine = plotChildren.findIndex(e => e.getAttribute('class') === 'forecast-date-line');
+    expect(lastMarker).toBeGreaterThan(runDateLine);
+    expect(plotChildren[plotChildren.length - 1].tagName).toBe('circle');
+    svg.querySelectorAll('.x-axis, .y-axis').forEach(axis => {
+      expect(axis.getAttribute('pointer-events')).toBe('none');
+    });
   });
 });

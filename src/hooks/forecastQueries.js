@@ -15,9 +15,9 @@
  * could not call a hook that used `useForecastSession()`.
  */
 
-import {getEntities, getMethodsAndConfigs, getReferenceValues} from '@/services/api.js';
+import {getEntities, getMethodsAndConfigs, getReferenceValues, getRelevantEntities} from '@/services/api.js';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {normalizeEntitiesResponse} from '@/utils/normalize/entities.js';
+import {normalizeEntitiesResponse, normalizeRelevantEntityIds} from '@/utils/normalize/entities.js';
 import {normalizeReferenceValues} from '@/utils/normalize/values.js';
 import {DEFAULT_TTL} from '@/utils/cacheTTLs.js';
 
@@ -131,6 +131,61 @@ export function useReferenceValues(workspace, forecastDate, methodId, configId, 
   const result = useCachedRequest(
     key,
     async () => normalizeReferenceValues(await getReferenceValues(workspace, forecastDate, methodId, configId, entityId)),
+    {enabled: !!key, initialData: null, ttlMs: DEFAULT_TTL}
+  );
+  return {...result, key};
+}
+
+/**
+ * Canonical cache key for the relevant entities of every configuration of a method.
+ *
+ * @param {string|null} workspace - Workspace key
+ * @param {string|null} forecastDate - Active forecast date
+ * @param {string|number|null} methodId - Method identifier
+ * @returns {string|null} Cache key, or null when the selection is incomplete
+ */
+export function relevantEntitiesByConfigKey(workspace, forecastDate, methodId) {
+  return (workspace && forecastDate && methodId)
+    ? `relevant_entities_by_config|${workspace}|${forecastDate}|${methodId}`
+    : null;
+}
+
+/**
+ * Loads, for each configuration of a method, the entities it is relevant to.
+ *
+ * Which entities a configuration covers does not depend on the entity in hand, so one entry per
+ * method answers for every entity: the details window labels and picks configurations with it,
+ * and the time series resolves the configuration of the entity it shows with it. A configuration
+ * whose request fails comes back with an empty set rather than failing the others.
+ *
+ * The key holds the method rather than the configurations, which are themselves fixed by the
+ * workspace, date and method; pass the ids of that same method.
+ *
+ * @param {string|null} workspace - Workspace key
+ * @param {string|null} forecastDate - Active forecast date
+ * @param {string|number|null} methodId - Method identifier
+ * @param {Array<string|number>} configIds - Configuration ids of that method
+ * @param {Object} [options]
+ * @param {boolean} [options.enabled=true] - Set false to hold the request
+ * @returns {Object} `useCachedRequest` result plus the `key` in use; the data is a
+ *   `Map` of configuration id to a `Set` of relevant entity ids, or null until loaded
+ * @example
+ * const {data: relevance} = useRelevantEntitiesByConfig(ws, date, methodId, configIds);
+ * const isRelevant = !!relevance?.get(configId)?.has(entityId);
+ */
+export function useRelevantEntitiesByConfig(workspace, forecastDate, methodId, configIds, {enabled = true} = {}) {
+  const key = (enabled && configIds?.length) ? relevantEntitiesByConfigKey(workspace, forecastDate, methodId) : null;
+  const result = useCachedRequest(
+    key,
+    async () => new Map(await Promise.all(
+      configIds.map(async configId => {
+        try {
+          return [configId, normalizeRelevantEntityIds(await getRelevantEntities(workspace, forecastDate, methodId, configId))];
+        } catch {
+          return [configId, new Set()];
+        }
+      })
+    )),
     {enabled: !!key, initialData: null, ttlMs: DEFAULT_TTL}
   );
   return {...result, key};

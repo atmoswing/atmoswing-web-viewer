@@ -4,13 +4,20 @@
  * Supports exporting charts (SVG/PNG/PDF) and dynamic configuration resolution for selected entity.
  */
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import {Box, CircularProgress, Typography} from '@mui/material';
+import {Box, Button, CircularProgress, Typography} from '@mui/material';
 import Popper from '@mui/material/Popper';
-import {useEntities, useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
+import {
+  useEntities,
+  useForecastSession,
+  useMethods,
+  useSelectedEntity,
+  useSynthesis
+} from '@/contexts/forecast/ForecastsContext.jsx';
+import {useForecastDetails} from '@/contexts/ForecastDetailsContext.jsx';
 import {useTimeSeriesData} from './hooks/useTimeSeriesData.js';
 import TimeSeriesChart from './charts/TimeSeriesChart.jsx';
 import ExportMenu from './common/ExportMenu.jsx';
@@ -21,6 +28,7 @@ import {useChartExport} from './hooks/useChartExport.js';
 import {formatExportDatePart, safeForFilename} from './common/chartExport.js';
 import {useTranslation} from 'react-i18next';
 import {entityDisplayName} from '@/utils/formattingUtils.js';
+import {leadHours, nearestDateIndex} from '@/utils/forecastDateUtils.js';
 
 /** Display options offered by this modal, in the order they are listed. */
 const SERIES_OPTION_KEYS = [
@@ -39,8 +47,10 @@ const SERIES_OPTION_KEYS = [
 export default function TimeSeriesModal() {
   const {selectedEntityId, setSelectedEntityId} = useSelectedEntity();
   const {selectedMethodConfig} = useMethods();
-  const {activeForecastDate} = useForecastSession();
+  const {activeForecastDate, forecastBaseDate} = useForecastSession();
+  const {selectedTargetDate} = useSynthesis();
   const {entities} = useEntities();
+  const {openForecastDetails} = useForecastDetails();
   const {t} = useTranslation();
 
   // Sidebar state
@@ -75,8 +85,26 @@ export default function TimeSeriesModal() {
 
   const handleClose = () => setSelectedEntityId(null);
 
-  const showHover = (anchorEl, title) => setAnalogTooltip({open: true, anchorEl, title});
-  const hideHover = () => setAnalogTooltip(prev => ({...prev, open: false}));
+  // Hands over to the details window on the lead of `date`, for this station and method. The
+  // configuration is left to the details window: it keeps one the app pins and otherwise picks the
+  // one the station is relevant to, as this window did, and can then follow a change of station.
+  const methodId = selectedMethodConfig?.method?.id;
+  const openDetailsAt = useCallback((date) => {
+    openForecastDetails({methodId, entityId: selectedEntityId, lead: leadHours(forecastBaseDate, date)});
+    setSelectedEntityId(null);
+  }, [openForecastDetails, methodId, selectedEntityId, forecastBaseDate, setSelectedEntityId]);
+
+  // The title bar button opens on the date shown on the map, or the nearest one in the series.
+  const openDetailsForMapDate = () => {
+    const dates = series?.dates || [];
+    openDetailsAt(dates[nearestDateIndex(dates, selectedTargetDate)] ?? dates[0] ?? null);
+  };
+
+  // Stable, because the chart redraws whenever a prop it is given changes identity. A hover
+  // would otherwise replace the very element under the pointer, which then never gets its
+  // `mouseleave` and leaves the tooltip on screen.
+  const showHover = useCallback((anchorEl, title) => setAnalogTooltip({open: true, anchorEl, title}), []);
+  const hideHover = useCallback(() => setAnalogTooltip(prev => ({...prev, open: false})), []);
 
   const findChartSVG = () => {
     const el = chartRef.current;
@@ -92,10 +120,13 @@ export default function TimeSeriesModal() {
     return [datePart, entityPart, safeMethod].filter(p => p).join('_') || 'series';
   };
 
-  const {formats: exportFormats} = useChartExport({
+  const {formats: chartFormats} = useChartExport({
     getSVG: findChartSVG,
     getBaseName: buildExportFilenamePrefix
   });
+  // With no chart drawn there is nothing to export, and the exporters would quietly do nothing.
+  const hasChart = !!series || (options.bestAnalogs && !!bestAnalogs);
+  const exportFormats = chartFormats.map(format => ({...format, disabled: !hasChart}));
 
   // When the modal closes the request keys all go null and the hooks reset themselves.
   // The cached entries are deliberately kept: a forecast for a given station is immutable,
@@ -124,6 +155,10 @@ export default function TimeSeriesModal() {
             }}>
       <ModalTitleBar title={stationName || ''} onClose={handleClose} closeLabel={t('seriesModal.close')}>
         <ExportMenu t={t} formats={exportFormats} sx={{marginLeft: 5}}/>
+        <Button variant="outlined" size="small" onClick={openDetailsForMapDate} sx={{marginLeft: 1}}
+                disabled={selectedEntityId == null}>
+          {t('seriesModal.openDetails')}
+        </Button>
       </ModalTitleBar>
       <DialogContent dividers
                      sx={{display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'stretch', flex: 1, minHeight: 0}}>
@@ -169,8 +204,9 @@ export default function TimeSeriesModal() {
                 activeForecastDate={activeForecastDate}
                 selectedMethodConfig={selectedMethodConfig}
                 stationName={stationName}
-                onHoverShow={(anchor, title) => showHover(anchor, title)}
+                onHoverShow={showHover}
                 onHoverHide={hideHover}
+                onPickDate={openDetailsAt}
               />
             </div>
           )}

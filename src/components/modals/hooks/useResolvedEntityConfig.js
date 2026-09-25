@@ -1,23 +1,23 @@
 /**
  * @module components/modals/hooks/useResolvedEntityConfig
  * @description Determines which configuration to use for the selected entity when the user has
- * not chosen one explicitly, by probing each configuration's relevant-entities list in turn.
+ * not chosen one explicitly, from the relevant entities of the method's configurations.
  */
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMemo} from 'react';
 import {useForecastSession, useMethods, useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
-import {getRelevantEntities} from '@/services/api.js';
+import {useRelevantEntitiesByConfig} from '@/hooks/forecastQueries.js';
 
 /**
  * Resolves the effective configuration id for the currently selected entity.
  *
- * An explicit user selection always wins. Otherwise each configuration of the selected method is
- * probed until one lists the entity as relevant; the first configuration is used as a fallback.
- * Results are memoised per workspace/method/entity for the lifetime of the component.
+ * An explicit user selection always wins. Otherwise it is the configuration that lists the entity
+ * as relevant, with the method's first configuration as a fallback. The relevance lists are the
+ * ones the forecast details window uses, so the two agree and share one cached request.
  *
  * @returns {Object} Resolution state
  * @returns {string|number|null} returns.resolvedConfigId - Effective configuration id, or null while unknown
- * @returns {boolean} returns.resolvingConfig - Whether a probe is currently in progress
+ * @returns {boolean} returns.resolvingConfig - Whether the relevance lists are still loading
  * @example
  * const { resolvedConfigId, resolvingConfig } = useResolvedEntityConfig();
  */
@@ -26,67 +26,27 @@ export function useResolvedEntityConfig() {
   const {selectedMethodConfig, methodConfigTree} = useMethods();
   const {workspace, activeForecastDate} = useForecastSession();
 
-  const [autoConfigId, setAutoConfigId] = useState(null);
-  const [resolvingConfig, setResolvingConfig] = useState(false);
-  const autoConfigCache = useRef(new Map()); // workspace|methodId|entityId -> configId
+  const methodId = selectedMethodConfig?.method?.id;
+  const explicitConfigId = selectedMethodConfig?.config?.id ?? null;
+  const configIds = useMemo(() => {
+    const methodNode = methodConfigTree.find(m => m.id === methodId);
+    return (methodNode?.children || []).map(c => c.id);
+  }, [methodConfigTree, methodId]);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Nothing to resolve while the user has chosen a configuration, or no entity is selected.
+  const needed = !explicitConfigId && !!methodId && selectedEntityId != null;
+  const {data: relevance, loading} = useRelevantEntitiesByConfig(
+    workspace, activeForecastDate, methodId, configIds, {enabled: needed}
+  );
 
-    async function resolve() {
-      // Reset the previous resolution whenever the inputs change.
-      setAutoConfigId(null);
-      setResolvingConfig(false);
-      if (!workspace || !activeForecastDate || !selectedMethodConfig?.method || selectedMethodConfig?.config || selectedEntityId == null) {
-        // Explicit config selected or insufficient info; nothing to resolve.
-        return;
-      }
-      const methodNode = methodConfigTree.find(m => m.id === selectedMethodConfig.method.id);
-      if (!methodNode || !methodNode.children?.length) {
-        return;
-      }
-      const cacheKey = `${workspace}|${selectedMethodConfig.method.id}|${selectedEntityId}`;
-      if (autoConfigCache.current.has(cacheKey)) {
-        setAutoConfigId(autoConfigCache.current.get(cacheKey));
-        return;
-      }
-      setResolvingConfig(true);
-      // Try each config until the entity is relevant to one of them.
-      for (const cfg of methodNode.children) {
-        try {
-          const rel = await getRelevantEntities(workspace, activeForecastDate, selectedMethodConfig.method.id, cfg.id);
-          if (cancelled) return;
-          if (Array.isArray(rel?.entities) && rel.entities.find(e => e.id === selectedEntityId)) {
-            autoConfigCache.current.set(cacheKey, cfg.id);
-            setAutoConfigId(cfg.id);
-            setResolvingConfig(false);
-            return;
-          }
-        } catch {
-          if (cancelled) return; // ignore individual errors and keep probing
-        }
-      }
-      // Fall back to the first configuration when none matched.
-      const fallback = methodNode.children[0].id;
-      autoConfigCache.current.set(cacheKey, fallback);
-      if (!cancelled) {
-        setAutoConfigId(fallback);
-        setResolvingConfig(false);
-      }
-    }
-
-    resolve();
-    return () => {
-      cancelled = true;
-    };
-  }, [workspace, activeForecastDate, selectedMethodConfig, selectedEntityId, methodConfigTree]);
+  const resolvingConfig = needed && configIds.length > 0 && !relevance;
 
   const resolvedConfigId = useMemo(() => {
-    if (!selectedMethodConfig?.method) return null;
-    if (selectedMethodConfig.config) return selectedMethodConfig.config.id; // user selection overrides
-    if (resolvingConfig) return null; // hold off until the probe finishes
-    return autoConfigId || null;
-  }, [selectedMethodConfig, autoConfigId, resolvingConfig]);
+    if (explicitConfigId) return explicitConfigId;
+    if (!needed || !relevance) return null;
+    const relevant = configIds.find(id => relevance.get(id)?.has(selectedEntityId));
+    return relevant ?? configIds[0] ?? null;
+  }, [explicitConfigId, needed, relevance, configIds, selectedEntityId]);
 
-  return {resolvedConfigId, resolvingConfig};
+  return {resolvedConfigId, resolvingConfig: resolvingConfig || (needed && loading)};
 }

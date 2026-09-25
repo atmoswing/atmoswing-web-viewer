@@ -13,7 +13,6 @@ import {useEntitiesList, useReferenceValues} from '@/hooks/forecastQueries.js';
 import {normalizeAnalogPercentiles, normalizeAnalogsResponse} from '@/utils/normalize/analogs.js';
 import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {entityDisplayName} from '@/utils/formattingUtils.js';
-import {useModalSelectionData} from './useModalSelectionData.js';
 
 /** Percentiles marked on the precipitation distribution. */
 const MARKER_PERCENTILES = [20, 60, 90];
@@ -68,7 +67,7 @@ function criteriaOf(analogs) {
  *
  * @param {Object} params
  * @param {boolean} params.open - Whether the window is open; nothing is fetched while closed
- * @param {Object} params.selection - Raw selection `{ methodId, configId, entityId, lead }`
+ * @param {Object} params.selection - Selection `{ methodId, configId, entityId, lead }`
  * @param {Object} params.options - Display options `{ bestAnalogs, tenYearReturn, allReturnPeriods }`
  * @returns {Object} Details data and status
  * @returns {Array} returns.analogs - Analog records `{rank, date, value, criteria}`; empty when none
@@ -80,29 +79,27 @@ function criteriaOf(analogs) {
  * @returns {Object|null} returns.percentileMarkers - Percentile marker values
  * @returns {Object|null} returns.referenceValues - Reference (return period) values
  * @returns {string} returns.stationName - Display name of the selected entity
- * @returns {string|number|null} returns.resolvedMethodId - Effective method id
- * @returns {string|number|null} returns.resolvedConfigId - Effective configuration id
- * @returns {string|number|null} returns.resolvedEntityId - Effective entity id
  * @example
  * const { analogs, analogValues, criteriaValues, analogsLoading } = useForecastDetailsData({open, selection, options});
  */
 export function useForecastDetailsData({open, selection, options}) {
   const {workspace, activeForecastDate} = useForecastSession();
-  const {resolvedMethodId, resolvedConfigId, resolvedEntityId} = useModalSelectionData(open, selection);
-  const lead = selection.lead;
+  // Nothing loads until the selector has settled the configuration: a provisional one would
+  // fetch analogs that are replaced as soon as the entity's relevant configuration is known.
+  const {methodId, configId, entityId, lead} = selection;
 
   // Shared prefix of the per-selection keys; null disables them all.
-  const methodConfigPart = (open && workspace && activeForecastDate && resolvedMethodId && resolvedConfigId)
-    ? `${workspace}|${activeForecastDate}|${resolvedMethodId}|${resolvedConfigId}`
+  const methodConfigPart = (open && workspace && activeForecastDate && methodId && configId)
+    ? `${workspace}|${activeForecastDate}|${methodId}|${configId}`
     : null;
-  const hasEntity = methodConfigPart && resolvedEntityId != null;
+  const hasEntity = methodConfigPart && entityId != null;
   const hasEntityAndLead = hasEntity && lead != null;
 
-  const analogsKey = hasEntityAndLead ? `analogs|${methodConfigPart}|${resolvedEntityId}|${lead}` : null;
+  const analogsKey = hasEntityAndLead ? `analogs|${methodConfigPart}|${entityId}|${lead}` : null;
   const {data: analogsData, loading: analogsLoading, error: analogsError} = useCachedRequest(
     analogsKey,
     async () => normalizeAnalogsResponse(
-      await getAnalogs(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, lead)
+      await getAnalogs(workspace, activeForecastDate, methodId, configId, entityId, lead)
     ),
     {enabled: !!analogsKey, initialData: EMPTY_ANALOGS, ttlMs: SHORT_TTL}
   );
@@ -111,26 +108,26 @@ export function useForecastDetailsData({open, selection, options}) {
   const analogValues = analogs.length ? analogs : null;
   const criteriaValues = useMemo(() => criteriaOf(analogs), [analogs]);
 
-  const pctsKey = hasEntityAndLead ? `analog_percentiles|${methodConfigPart}|${resolvedEntityId}|${lead}` : null;
+  const pctsKey = hasEntityAndLead ? `analog_percentiles|${methodConfigPart}|${entityId}|${lead}` : null;
   const {data: percentileMarkers} = useCachedRequest(
     pctsKey,
-    async () => normalizeAnalogPercentiles(await getAnalogValuesPercentiles(workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId, lead, MARKER_PERCENTILES)),
+    async () => normalizeAnalogPercentiles(await getAnalogValuesPercentiles(workspace, activeForecastDate, methodId, configId, entityId, lead, MARKER_PERCENTILES)),
     {enabled: !!pctsKey, initialData: null, ttlMs: SHORT_TTL}
   );
 
   const {data: referenceValues} = useReferenceValues(
-    workspace, activeForecastDate, resolvedMethodId, resolvedConfigId, resolvedEntityId,
+    workspace, activeForecastDate, methodId, configId, entityId,
     {enabled: !!hasEntity && (options.tenYearReturn || options.allReturnPeriods)}
   );
 
   // Entity list, used only to show and export the station's display name.
   const {data: entities} = useEntitiesList(
-    workspace, activeForecastDate, resolvedMethodId, resolvedConfigId,
+    workspace, activeForecastDate, methodId, configId,
     {enabled: !!methodConfigPart}
   );
   const stationName = useMemo(
-    () => entityDisplayName(entities, resolvedEntityId),
-    [entities, resolvedEntityId]
+    () => entityDisplayName(entities, entityId),
+    [entities, entityId]
   );
 
   const bestAnalogsData = useMemo(
@@ -147,9 +144,6 @@ export function useForecastDetailsData({open, selection, options}) {
     bestAnalogsData,
     percentileMarkers,
     referenceValues,
-    stationName,
-    resolvedMethodId,
-    resolvedConfigId,
-    resolvedEntityId
+    stationName
   };
 }

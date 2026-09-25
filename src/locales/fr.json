@@ -89,7 +89,9 @@
     "analogWithIndex": "Analogue {{index}}",
     "close": "Fermer",
     "export": "Exporter",
-    "exportFailed": "L'export en {{format}} a échoué : {{error}}"
+    "exportFailed": "L'export en {{format}} a échoué : {{error}}",
+    "openDetails": "Détails de la prévision",
+    "detailsFor": "Détails du {{date}}"
   },
   "forecastDetails": {
     "title": "Détails de la prévision",
@@ -97,7 +99,8 @@
       "distribution": "Distribution",
       "criteria": "Critères",
       "analogs": "Analogues"
-    }
+    },
+    "openSeries": "Série temporelle"
   },
   "distributionPlots": {
     "cumulativeFrequency": "Fréquence cumulative",
@@ -121,6 +124,7 @@
     "loadingAnalogs": "Chargement des analogues...",
     "errorLoadingMethods": "Erreur lors du chargement des méthodes",
     "errorLoadingAnalogs": "Erreur lors du chargement des analogues",
+    "colRank": "Rang",
     "colDate": "Date",
     "colPrecipitation": "Précipitation",
     "colCriteria": "Critère",

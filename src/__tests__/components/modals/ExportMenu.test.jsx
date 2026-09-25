@@ -78,6 +78,21 @@ describe('ExportMenu', () => {
     expect(onCsv).toHaveBeenCalledTimes(1);
   }, 20000);
 
+  it('greys out a format with nothing to export, and will not run it', async () => {
+    const user = userEvent.setup();
+    const onCsv = vi.fn();
+    render(<ExportMenu t={(k) => k} formats={[{label: 'CSV', onExport: onCsv, disabled: true}]}/>);
+
+    await user.click(screen.getByText('seriesModal.export'));
+
+    const item = (await screen.findAllByRole('menuitem'))[0];
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    // It is unreachable for a real pointer (`pointer-events: none`), and clicking past that
+    // guard runs nothing either.
+    await userEvent.setup({pointerEventsCheck: 0}).click(item);
+    expect(onCsv).not.toHaveBeenCalled();
+  }, 20000);
+
   it('names the failing format in the error', async () => {
     const user = userEvent.setup();
     const t = vi.fn((k) => k);

@@ -120,7 +120,6 @@ describe('api service endpoint URLs', () => {
     ['getReferenceValues', () => api.getReferenceValues('r', DATE, 'm', 'c', 7), `/forecasts/r/${ENC}/m/c/7/reference-values`],
     ['getSeriesBestAnalogs', () => api.getSeriesBestAnalogs('r', DATE, 'm', 'c', 7), `/forecasts/r/${ENC}/m/c/7/series-values-best-analogs`],
     ['getAnalogs', () => api.getAnalogs('r', DATE, 'm', 'c', 7, 24), `/forecasts/r/${ENC}/m/c/7/24/analogs`],
-    ['getAnalogValues', () => api.getAnalogValues('r', DATE, 'm', 'c', 7, 24), `/forecasts/r/${ENC}/m/c/7/24/analog-values`],
 
     ['getSynthesisPerMethod', () => api.getSynthesisPerMethod('r', DATE, 90), `/aggregations/r/${ENC}/series-synthesis-per-method/90`],
   ];

@@ -7,12 +7,12 @@
 import {useMemo} from 'react';
 import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {useEntitiesList, useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
-import {getRelevantEntities, getSeriesValuesPercentiles} from '@/services/api.js';
-import {normalizeRelevantEntityIds} from '@/utils/normalize/entities.js';
+import {useEntitiesList, useMethodsAndConfigs, useRelevantEntitiesByConfig} from '@/hooks/forecastQueries.js';
+import {getSeriesValuesPercentiles} from '@/services/api.js';
 import {extractTargetDatesArray} from '@/utils/normalize/series.js';
-import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
+import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
+import {leadHours, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
 const EMPTY_LIST = [];
 const EMPTY_RELEVANCE = new Map();
@@ -29,22 +29,14 @@ function toLeadOptions(resp, forecastBaseDate) {
   const rawDates = extractTargetDatesArray(resp);
   const baseDate = (forecastBaseDate && !isNaN(forecastBaseDate.getTime()))
     ? forecastBaseDate
-    : (resp?.parameters?.forecast_date ? new Date(resp.parameters.forecast_date) : null);
+    : parseForecastDate(resp?.parameters?.forecast_date);
 
+  // Parsed like the time series parses the same dates, so a date clicked there maps to one of
+  // these leads exactly.
   return rawDates.map(s => {
-    let d = null;
-    try {
-      d = s ? new Date(s) : null;
-      if (d && isNaN(d)) d = null;
-    } catch {
-      d = null;
-    }
-    const label = d ? formatDateLabel(d) : String(s);
-    const leadNum = (d && baseDate && !isNaN(baseDate.getTime()))
-      ? Math.round((d.getTime() - baseDate.getTime()) / 3600000)
-      : null;
-    return {lead: leadNum, date: d, label};
-  }).filter(x => x.lead != null && !isNaN(x.lead));
+    const d = s instanceof Date ? s : (typeof s === 'string' ? parseForecastDate(s) : null);
+    return {lead: leadHours(baseDate, d), date: d, label: d ? formatDateLabel(d) : String(s)};
+  }).filter(x => x.lead != null);
 }
 
 /**
@@ -67,7 +59,8 @@ function toLeadOptions(resp, forecastBaseDate) {
  * @returns {Array} returns.leads - Selectable lead times
  * @returns {boolean} returns.leadsLoading - Whether leads are loading
  * @returns {Error|null} returns.leadsError - Error from the leads request
- * @returns {Map} returns.relevantConfigIds - configId -> whether the entity is relevant to it
+ * @returns {Map|null} returns.relevance - configId -> Set of the entity ids relevant to it, or null while loading
+ * @returns {Map} returns.relevantConfigIds - configId -> whether the selected entity is relevant to it
  * @example
  * const { methodOptions, stations, leads } = useMethodConfigOptions({open, value});
  */
@@ -98,7 +91,8 @@ export function useMethodConfigOptions({open, value}) {
     return selectedConfigId || (m.configurations?.[0]?.id) || null;
   }, [methodsData, selectedMethodId, selectedConfigId]);
 
-  // ENTITIES
+  // ENTITIES: listed before a configuration is chosen, since the default configuration depends on
+  // the entity. A method's configurations all list the same entities, so the first one serves.
   const {data: entitiesDataRaw, loading: stationsLoading, error: stationsError} = useEntitiesList(
     workspace,
     activeForecastDate,
@@ -119,13 +113,15 @@ export function useMethodConfigOptions({open, value}) {
   const leadsBasePart = (forecastBaseDate && !isNaN(forecastBaseDate.getTime()))
     ? forecastBaseDate.getTime()
     : 'resp';
-  const leadsCacheKey = (sessionPart && selectedMethodId && resolvedConfig && selectedStationId != null)
-    ? `leads|${sessionPart}|${selectedMethodId}|${resolvedConfig}|${selectedStationId}|${leadsBasePart}`
+  // Leads wait for an actual configuration: the provisional first one would cost a request that
+  // is thrown away as soon as the entity's relevant configuration is known.
+  const leadsCacheKey = (sessionPart && selectedMethodId && selectedConfigId && selectedStationId != null)
+    ? `leads|${sessionPart}|${selectedMethodId}|${selectedConfigId}|${selectedStationId}|${leadsBasePart}`
     : null;
   const {data: leadsRaw, loading: leadsLoading, error: leadsError} = useCachedRequest(
     leadsCacheKey,
     async () => {
-      const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodId, resolvedConfig, selectedStationId);
+      const resp = await getSeriesValuesPercentiles(workspace, activeForecastDate, selectedMethodId, selectedConfigId, selectedStationId);
       return toLeadOptions(resp, forecastBaseDate);
     },
     {enabled: !!leadsCacheKey, initialData: [], ttlMs: SHORT_TTL}
@@ -133,36 +129,17 @@ export function useMethodConfigOptions({open, value}) {
 
   const leads = useMemo(() => (Array.isArray(leadsRaw) ? leadsRaw : EMPTY_LIST), [leadsRaw]);
 
-  // RELEVANCE: which configurations list the selected entity as relevant.
-  const relevanceKey = (sessionPart && selectedMethodId && selectedStationId != null)
-    ? `relevance|${sessionPart}|${selectedMethodId}|${selectedStationId}`
-    : null;
-  const {data: relevanceMap} = useCachedRequest(
-    relevanceKey,
-    async () => {
-      const methodNode = methodsData?.methods?.find(m => m.id === selectedMethodId);
-      if (!methodNode?.configurations) return {};
-      const results = await Promise.all(
-        methodNode.configurations.map(async cfg => {
-          try {
-            const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodId, cfg.id);
-            const idsSet = normalizeRelevantEntityIds(resp);
-            return [cfg.id, idsSet.has(selectedStationId)];
-          } catch {
-            return [cfg.id, false];
-          }
-        })
-      );
-      return Object.fromEntries(results);
-    },
-    {enabled: !!relevanceKey && !!methodsData?.methods?.length, initialData: null, ttlMs: DEFAULT_TTL}
+  // RELEVANCE: which entities each configuration of the method covers. Shared with the time
+  // series, which resolves the configuration of the entity it shows from the same entry.
+  const configIds = useMemo(() => configsForSelectedMethod.map(c => c.id), [configsForSelectedMethod]);
+  const {data: relevance} = useRelevantEntitiesByConfig(
+    workspace, activeForecastDate, selectedMethodId, configIds, {enabled: !!sessionPart}
   );
 
-  // The key carries the method and entity, so a change resets relevanceMap to null on its own.
-  const relevantConfigIds = useMemo(
-    () => (relevanceMap && typeof relevanceMap === 'object' ? new Map(Object.entries(relevanceMap)) : EMPTY_RELEVANCE),
-    [relevanceMap]
-  );
+  const relevantConfigIds = useMemo(() => {
+    if (!relevance || selectedStationId == null) return EMPTY_RELEVANCE;
+    return new Map([...relevance].map(([cfgId, ids]) => [cfgId, ids.has(selectedStationId)]));
+  }, [relevance, selectedStationId]);
 
   return {
     methodOptions,
@@ -176,6 +153,7 @@ export function useMethodConfigOptions({open, value}) {
     leads,
     leadsLoading,
     leadsError,
+    relevance,
     relevantConfigIds
   };
 }

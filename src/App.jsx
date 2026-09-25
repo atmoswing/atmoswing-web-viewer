@@ -16,6 +16,7 @@ import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 import LazyModalBoundary from '@/components/modals/common/LazyModalBoundary.jsx';
 import {useModalFailureNotice} from '@/components/modals/hooks/useModalFailureNotice.js';
 import {useSelectedEntity} from '@/contexts/forecast/ForecastsContext.jsx';
+import {ForecastDetailsProvider} from '@/contexts/ForecastDetailsContext.jsx';
 
 // Lazy load heavy modal component to reduce initial bundle size
 const TimeSeriesModal = lazy(() => import('@/components/modals/TimeSeriesModal.jsx'));
@@ -62,7 +63,8 @@ function TimeSeriesModalArea() {
  * - Main content (right):
  *   - Toolbar (top): Map tools and interaction controls
  *   - Map viewer: Interactive OpenLayers map
- * - Modals: Time series and distribution charts (lazy loaded)
+ * - Modals: Time series and forecast details (lazy loaded). The details window is rendered by
+ *   `ForecastDetailsProvider`, so both the toolbar and the time series can open it
  * - Snackbars: Notification system
  * - Error boundary: Catches and displays React errors; each modal also has its own, so a
  *   failing modal does not take the rest of the app with it
@@ -75,9 +77,11 @@ export default function App() {
       <ErrorBoundary>
         <SideBar/>
         <div className="main-content">
-          <ToolBar/>
-          <MapArea/>
-          <TimeSeriesModalArea/>
+          <ForecastDetailsProvider>
+            <ToolBar/>
+            <MapArea/>
+            <TimeSeriesModalArea/>
+          </ForecastDetailsProvider>
         </div>
         <AppSnackbars/>
       </ErrorBoundary>
