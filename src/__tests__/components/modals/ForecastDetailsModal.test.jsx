@@ -99,6 +99,8 @@ const exportLabels = () => screen.getAllByRole('button', {name: /^export /}).map
 const exportDisabled = () => screen.getAllByRole('button', {name: /^export /}).map(b => b.disabled);
 
 /** Option lists with nothing left to resolve: loaded (here, empty) and relevance known. */
+const METHOD = {id: 'm1', configurations: [{id: 'c1'}]};
+
 function settledOptions(overrides = {}) {
   return {
     methodOptions: [], configsForSelectedMethod: [], stations: [], leads: [],
@@ -220,10 +222,32 @@ describe('ForecastDetailsModal', () => {
 
   it('says it is still working until the relevance decides the configuration', () => {
     details.current = loaded({analogs: [], analogValues: null, criteriaValues: null});
-    selectorOptions.current = settledOptions({relevance: null});
+    selectorOptions.current = settledOptions({
+      methodOptions: [METHOD], configsForSelectedMethod: METHOD.configurations, relevance: null
+    });
     render(<ForecastDetailsModal open={true} onClose={onClose}/>);
 
     expect(screen.getByText('detailsAnalogsModal.loadingAnalogs')).toBeInTheDocument();
+  });
+
+  it('stops waiting when the methods cannot be loaded, rather than spinning forever', () => {
+    details.current = loaded({analogs: [], analogValues: null, criteriaValues: null});
+    // Nothing more is coming: the request failed, so there is no method, configuration or relevance.
+    selectorOptions.current = settledOptions({relevance: null, methodsError: new Error('down')});
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(screen.queryByText('detailsAnalogsModal.loadingAnalogs')).not.toBeInTheDocument();
+    expect(screen.getByText('distributionPlots.noAnalogs')).toBeInTheDocument();
+  });
+
+  it('stops waiting for the relevance of a method that has no configurations', () => {
+    details.current = loaded({analogs: [], analogValues: null, criteriaValues: null});
+    selectorOptions.current = settledOptions({
+      methodOptions: [{id: 'm1', configurations: []}], configsForSelectedMethod: [], relevance: null
+    });
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(screen.queryByText('detailsAnalogsModal.loadingAnalogs')).not.toBeInTheDocument();
   });
 
   it('says when there is nothing to show', async () => {

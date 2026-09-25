@@ -19,6 +19,8 @@ vi.mock('@/components/modals/common/chartExport.js', () => ({
 
 import {useChartExport} from '@/components/modals/hooks/useChartExport.js';
 
+const byLabel = (result, label) => result.current.formats.find(f => f.label === label).onExport;
+
 describe('useChartExport', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -29,9 +31,9 @@ describe('useChartExport', () => {
       getBaseName: () => 'chart-name'
     }));
 
-    result.current.exportSVG();
-    result.current.exportPNG();
-    result.current.exportPDF();
+    byLabel(result, 'SVG')();
+    byLabel(result, 'PNG')();
+    byLabel(result, 'PDF')();
 
     expect(exportChartSVG).toHaveBeenCalledWith(svg, 'chart-name');
     expect(exportChartPNG).toHaveBeenCalledWith(svg, 'chart-name');
@@ -48,7 +50,7 @@ describe('useChartExport', () => {
     }));
 
     current = 'second';
-    result.current.exportPNG();
+    byLabel(result, 'PNG')();
 
     expect(exportChartPNG).toHaveBeenCalledWith('second', 'name');
   });
@@ -59,7 +61,7 @@ describe('useChartExport', () => {
       getBaseName: () => 'name'
     }));
 
-    result.current.exportSVG();
+    byLabel(result, 'SVG')();
 
     expect(exportChartSVG).toHaveBeenCalledWith(null, 'name');
   });
@@ -72,7 +74,7 @@ describe('useChartExport', () => {
       getBaseName: () => 'name'
     }));
 
-    await expect(result.current.exportPDF()).rejects.toThrow('render failed');
+    await expect(byLabel(result, 'PDF')()).rejects.toThrow('render failed');
   });
 
   it('lists the three chart formats for ExportMenu, wired to the right exporters', () => {

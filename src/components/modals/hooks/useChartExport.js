@@ -19,26 +19,17 @@ import {exportChartPDF, exportChartPNG, exportChartSVG} from '../common/chartExp
  * @param {Function} params.getSVG - Returns the SVG element to export, or null
  * @param {Function} params.getBaseName - Returns the filename without extension
  * @returns {Object} Export handlers
- * @returns {Function} returns.exportSVG - Exports the chart as .svg
- * @returns {Function} returns.exportPNG - Exports the chart as .png
- * @returns {Function} returns.exportPDF - Exports the chart as .pdf
- * @returns {Array<Object>} returns.formats - The three as `{label, onExport}`, for ExportMenu
+ * @returns {Array<Object>} returns.formats - PNG, SVG and PDF as `{label, onExport}`, for ExportMenu
  * @example
  * const {formats} = useChartExport({getSVG, getBaseName});
  * <ExportMenu t={t} formats={formats}/>
  */
 export function useChartExport({getSVG, getBaseName}) {
-  const exportSVG = () => exportChartSVG(getSVG(), getBaseName());
-  const exportPNG = () => exportChartPNG(getSVG(), getBaseName());
-  const exportPDF = () => exportChartPDF(getSVG(), getBaseName());
   return {
-    exportSVG,
-    exportPNG,
-    exportPDF,
     formats: [
-      {label: 'PNG', onExport: exportPNG},
-      {label: 'SVG', onExport: exportSVG},
-      {label: 'PDF', onExport: exportPDF}
+      {label: 'PNG', onExport: () => exportChartPNG(getSVG(), getBaseName())},
+      {label: 'SVG', onExport: () => exportChartSVG(getSVG(), getBaseName())},
+      {label: 'PDF', onExport: () => exportChartPDF(getSVG(), getBaseName())}
     ]
   };
 }

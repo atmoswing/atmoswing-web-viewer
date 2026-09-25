@@ -231,10 +231,13 @@ export default function ForecastDetailsModal({open, onClose, request}) {
   // Until the lists have answered, the selection has no configuration or lead and nothing is
   // requested. Saying "no data" then would be wrong, and is what the window used to show for a
   // second on opening; once the lists are in, an incomplete selection really means no data.
+  // Each condition names something that is still on its way, so nothing waits for a list that
+  // failed or came back empty, which would leave the tab spinning for good.
   const selectionSettled = selection.configId != null && selection.entityId != null && selection.lead != null;
   const settling = !selectionSettled && (
-    selectorOptions.methodsLoading || selectorOptions.stationsLoading ||
-    selectorOptions.leadsLoading || selectorOptions.relevance === null
+    selectorOptions.methodsLoading || selectorOptions.stationsLoading || selectorOptions.leadsLoading
+    || (!selection.methodId && selectorOptions.methodOptions.length > 0)
+    || (selectorOptions.configsForSelectedMethod.length > 0 && selectorOptions.relevance === null)
   );
 
   const status = {loading: analogsLoading || settling, error: analogsError, t};
