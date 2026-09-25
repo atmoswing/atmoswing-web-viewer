@@ -59,24 +59,31 @@ describe('sortAnalogs', () => {
 });
 
 describe('analogsToCsv', () => {
+  // Semicolons and comma decimals: what a spreadsheet set to French reads without an import step.
   it('writes a header and one row per analog, in rank order', () => {
     expect(analogsToCsv(ANALOGS)).toBe(
-      'rank,date,precipitation,criteria\r\n' +
-      '1,1990-09-04T00:00:00,0.3,50.33\r\n' +
-      '2,2019-09-03T00:00:00,12.4,54.35\r\n' +
-      '3,2003-01-10T00:00:00,12.4,60.1\r\n' +
-      '4,,,\r\n'
+      'rank;date;precipitation;criteria\r\n' +
+      '1;1990-09-04T00:00:00;0,3;50,33\r\n' +
+      '2;2019-09-03T00:00:00;12,4;54,35\r\n' +
+      '3;2003-01-10T00:00:00;12,4;60,1\r\n' +
+      '4;;;\r\n'
     );
+  });
+
+  it('writes the column labels it is given, so the file reads in the user language', () => {
+    const csv = analogsToCsv(ANALOGS, ['Rang', 'Date', 'Précipitation', 'Critère']);
+    expect(csv.split('\r\n')[0]).toBe('Rang;Date;Précipitation;Critère');
+    expect(csv.split('\r\n')[1]).toBe('1;1990-09-04T00:00:00;0,3;50,33');
   });
 
   it('keeps full precision rather than the table rounding', () => {
     expect(analogsToCsv([{rank: 1, date: 'd', value: 0.123456, criteria: 1.23456789}]))
-      .toContain('1,d,0.123456,1.23456789');
+      .toContain('1;d;0,123456;1,23456789');
   });
 
-  it('quotes a cell containing a separator or quote', () => {
-    const csv = analogsToCsv([{rank: 1, date: 'a,"b"', value: 1, criteria: 2}]);
-    expect(csv).toContain('1,"a,""b""",1,2');
+  it('quotes a cell containing a separator or quote, and leaves commas in text alone', () => {
+    const csv = analogsToCsv([{rank: 1, date: 'a;"b", c', value: 1, criteria: 2}]);
+    expect(csv).toContain('1;"a;""b"", c";1;2');
   });
 });
 
@@ -90,13 +97,16 @@ describe('exportAnalogsCSV', () => {
     const [blob, name] = downloadBlob.mock.calls[0];
     expect(name).toBe('details_analogs.csv');
     expect(blob.type).toBe('text/csv;charset=utf-8');
-    // jsdom's Blob has no .text(), so read it the way a browser page would.
-    const text = await new Promise(resolve => {
+    // jsdom's Blob has no .text(), so read it the way a browser page would. Reading as text
+    // decodes and drops the byte-order mark, so the bytes are what shows it is there.
+    const read = (method) => new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.readAsText(blob);
+      reader[method](blob);
     });
-    expect(text).toBe(analogsToCsv(ANALOGS));
+    expect(await read('readAsText')).toBe(analogsToCsv(ANALOGS));
+    // EF BB BF: the UTF-8 byte-order mark that tells Excel how to decode the file.
+    expect([...new Uint8Array(await read('readAsArrayBuffer')).slice(0, 3)]).toEqual([0xEF, 0xBB, 0xBF]);
   });
 
   it('refuses to save an empty file', () => {

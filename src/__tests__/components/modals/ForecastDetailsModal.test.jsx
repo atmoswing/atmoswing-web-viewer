@@ -142,7 +142,13 @@ describe('ForecastDetailsModal', () => {
     expect(exportLabels()).toEqual(['export CSV']);
 
     await user.click(screen.getByRole('button', {name: 'export CSV'}));
-    expect(exportAnalogsCSV).toHaveBeenCalledWith(ANALOGS, expect.stringMatching(/Station_A.*_analogs$/));
+    expect(exportAnalogsCSV).toHaveBeenCalledWith(
+      ANALOGS,
+      expect.stringMatching(/Station_A.*_analogs$/),
+      // The table's own column labels, translated.
+      ['detailsAnalogsModal.colRank', 'detailsAnalogsModal.colDate',
+        'detailsAnalogsModal.colPrecipitation', 'detailsAnalogsModal.colCriteria']
+    );
   });
 
   it('shows the loading message instead of the table while the analogs load', async () => {

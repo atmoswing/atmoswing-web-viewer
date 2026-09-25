@@ -124,6 +124,7 @@
     "loadingAnalogs": "Loading analogs...",
     "errorLoadingMethods": "Error loading methods",
     "errorLoadingAnalogs": "Error loading analogs",
+    "colRank": "Rank",
     "colDate": "Date",
     "colPrecipitation": "Precipitation",
     "colCriteria": "Criteria",

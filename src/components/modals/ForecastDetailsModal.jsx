@@ -195,8 +195,15 @@ export default function ForecastDetailsModal({open, onClose, request}) {
     getSVG: findCurrentChartSVG,
     getBaseName: buildExportFilenamePrefix
   });
+  // The table's own column labels, so the file reads like what is on screen.
+  const csvHeaders = () => [
+    t('detailsAnalogsModal.colRank'),
+    t('detailsAnalogsModal.colDate'),
+    t('detailsAnalogsModal.colPrecipitation'),
+    t('detailsAnalogsModal.colCriteria')
+  ];
   const exportFormats = tabIndex === ANALOGS_TAB
-    ? [{label: 'CSV', onExport: () => exportAnalogsCSV(analogs, buildExportFilenamePrefix())}]
+    ? [{label: 'CSV', onExport: () => exportAnalogsCSV(analogs, buildExportFilenamePrefix(), csvHeaders())}]
     : chartFormats;
 
   const status = {loading: analogsLoading, error: analogsError, t};
