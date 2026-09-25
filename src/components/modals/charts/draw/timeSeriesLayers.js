@@ -396,7 +396,9 @@ export function drawYGrid(g, {yScale, innerW, innerH}) {
  */
 export function drawAxes(g, {xScale, yScale, innerH, margin, dates, domain, t}) {
   const ticks = Math.min(10, Math.max(3, Math.floor(innerH / 55)));
-  const yAxisG = g.append('g').attr('class', 'y-axis')
+  // The axes paint over the plot area, so they must not catch the pointer: a marker sitting on
+  // the zero line would otherwise be unhoverable, its tooltip out of reach.
+  const yAxisG = g.append('g').attr('class', 'y-axis').attr('pointer-events', 'none')
     .call(d3.axisLeft(yScale).ticks(ticks).tickSize(0).tickPadding(8));
   yAxisG.selectAll('path.domain').remove();
   g.selectAll('.y-axis text').attr('fill', '#555').attr('font-size', 11);
@@ -419,7 +421,9 @@ export function drawAxes(g, {xScale, yScale, innerH, margin, dates, domain, t}) 
   const dateFmt = d3.timeFormat('%-d/%-m');
 
   g.append('g')
+    .attr('class', 'x-axis')
     .attr('transform', `translate(0,${innerH})`)
+    .attr('pointer-events', 'none')
     .call(d3.axisBottom(xScale).tickValues(tickValues).tickFormat(d => (dayStarts.has(+d) ? dateFmt(d) : '')))
     .selectAll('text')
     .attr('fill', '#555').attr('font-size', 11).attr('text-anchor', 'middle');
