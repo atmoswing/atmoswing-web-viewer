@@ -379,6 +379,18 @@ describe('ForecastDetailsModal', () => {
     expect(chartProps.current.leads).toBe(firstLeads);
   });
 
+  it('opens on the distribution again after being closed on another tab', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+    await user.click(screen.getByRole('tab', {name: 'forecastDetails.tab.analogs'}));
+    expect(screen.getByRole('tab', {selected: true})).toHaveTextContent('forecastDetails.tab.analogs');
+
+    rerender(<ForecastDetailsModal open={false} onClose={onClose}/>);
+    rerender(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    expect(screen.getByRole('tab', {selected: true})).toHaveTextContent('forecastDetails.tab.distribution');
+  });
+
   it('calls onClose from the close button', async () => {
     const user = userEvent.setup();
     render(<ForecastDetailsModal open={true} onClose={onClose}/>);

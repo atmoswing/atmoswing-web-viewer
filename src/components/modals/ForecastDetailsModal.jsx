@@ -178,8 +178,9 @@ export default function ForecastDetailsModal({open, onClose, request}) {
     };
   }, []);
 
-  // Cleanup on close: the request keys go null with `open`, so only the chart DOM
-  // and the local selection need resetting.
+  // Cleanup on close: the request keys go null with `open`, so only the chart DOM, the local
+  // selection and the tab need resetting. The window reopens on the app's current selection, so
+  // it opens on the tab that goes with it rather than wherever the last visit ended.
   useEffect(() => {
     if (!open) {
       [precipRef, critRef].forEach(ref => {
@@ -189,6 +190,7 @@ export default function ForecastDetailsModal({open, onClose, request}) {
         }
       });
       setSelection(EMPTY_SELECTION);
+      setTabIndex(DISTRIBUTION_TAB);
     }
   }, [open]);
 
