@@ -208,17 +208,6 @@ export const getSeriesValuesPercentilesHistory = (region, date, methodId, config
  */
 export const getAnalogs = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analogs`);
 
-/**
- * Gets precipitation values for analog dates.
- * @param {string} region - The region/workspace identifier
- * @param {string} date - ISO date string
- * @param {string|number} methodId - Method identifier
- * @param {string|number} configId - Configuration identifier
- * @param {string|number} entity - Entity identifier
- * @param {number} lead - Lead time index
- * @returns {Promise<Array>} Array of analog precipitation values
- */
-export const getAnalogValues = (region, date, methodId, configId, entity, lead) => request(`/forecasts/${region}/${encodeURIComponent(date)}/${methodId}/${configId}/${entity}/${lead}/analog-values`);
 
 /**
  * Retrieves analog values at specified percentiles.

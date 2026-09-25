@@ -7,11 +7,10 @@
 import {useMemo} from 'react';
 import {useForecastSession} from '@/contexts/forecast/ForecastSessionContext.jsx';
 import {useCachedRequest} from '@/hooks/useCachedRequest.js';
-import {useEntitiesList, useMethodsAndConfigs} from '@/hooks/forecastQueries.js';
-import {getRelevantEntities, getSeriesValuesPercentiles} from '@/services/api.js';
-import {normalizeRelevantEntityIds} from '@/utils/normalize/entities.js';
+import {useEntitiesList, useMethodsAndConfigs, useRelevantEntitiesByConfig} from '@/hooks/forecastQueries.js';
+import {getSeriesValuesPercentiles} from '@/services/api.js';
 import {extractTargetDatesArray} from '@/utils/normalize/series.js';
-import {DEFAULT_TTL, SHORT_TTL} from '@/utils/cacheTTLs.js';
+import {SHORT_TTL} from '@/utils/cacheTTLs.js';
 import {compareEntitiesByName, formatDateLabel} from '@/utils/formattingUtils.js';
 import {leadHours, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
@@ -130,28 +129,11 @@ export function useMethodConfigOptions({open, value}) {
 
   const leads = useMemo(() => (Array.isArray(leadsRaw) ? leadsRaw : EMPTY_LIST), [leadsRaw]);
 
-  // RELEVANCE: the entities each configuration of the method is relevant to. It does not depend
-  // on the entity, so one entry per method serves every entity the user picks.
-  const relevanceKey = (sessionPart && selectedMethodId && methodsData?.methods?.length)
-    ? `relevant_entities_by_config|${sessionPart}|${selectedMethodId}`
-    : null;
-  const {data: relevance} = useCachedRequest(
-    relevanceKey,
-    async () => {
-      const methodNode = methodsData.methods.find(m => m.id === selectedMethodId);
-      const byConfig = await Promise.all(
-        (methodNode?.configurations || []).map(async cfg => {
-          try {
-            const resp = await getRelevantEntities(workspace, activeForecastDate, selectedMethodId, cfg.id);
-            return [cfg.id, normalizeRelevantEntityIds(resp)];
-          } catch {
-            return [cfg.id, new Set()];
-          }
-        })
-      );
-      return new Map(byConfig);
-    },
-    {enabled: !!relevanceKey, initialData: null, ttlMs: DEFAULT_TTL}
+  // RELEVANCE: which entities each configuration of the method covers. Shared with the time
+  // series, which resolves the configuration of the entity it shows from the same entry.
+  const configIds = useMemo(() => configsForSelectedMethod.map(c => c.id), [configsForSelectedMethod]);
+  const {data: relevance} = useRelevantEntitiesByConfig(
+    workspace, activeForecastDate, selectedMethodId, configIds, {enabled: !!sessionPart}
   );
 
   const relevantConfigIds = useMemo(() => {
