@@ -12,6 +12,7 @@ vi.mock('ol/layer/Tile', () => ({
     return {
       set: vi.fn(),
       get: vi.fn(),
+      setSource: vi.fn(),
     };
   }),
 }));
@@ -317,6 +318,59 @@ describe('useOverlayGlobalLayers', () => {
 
     // Should cleanup timers without throwing
     expect(true).toBe(true);
+  });
+
+  it('loads GeoJSON overlays without waiting for the WMTS capabilities', async () => {
+    const {loadWmtsCapabilities} = await import('@/components/map/utils/loadWmtsCapabilities.js');
+    loadWmtsCapabilities.mockReturnValueOnce(new Promise(() => {}));
+    global.fetch.mockResolvedValue({ok: true, json: async () => ({type: 'FeatureCollection', features: []})});
+    const wmtsItem = {source: 'wmts', title: 'Hydro', wmtsLayer: 'HYDRO', provider: 'IGN'};
+    const runtimeConfig = {
+      overlayLayers: [wmtsItem, {source: 'geojson', title: 'Vigicrues', url: '/proxy/vigicrues.geojson'}],
+    };
+
+    renderHook(() =>
+      useOverlayGlobalLayers({
+        mapReady: true,
+        runtimeConfig,
+        overlayGroupRef: {current: mockOverlayGroup},
+        layerSwitcherRef: {current: mockLayerSwitcher},
+      })
+    );
+
+    // Both layers are in place, in config order, while the capabilities are still pending.
+    expect(mockLayersCollection.push).toHaveBeenCalledTimes(2);
+    const TileLayer = (await import('ol/layer/Tile')).default;
+    expect(mockLayersCollection.push.mock.calls[0][0]).toBe(TileLayer.mock.results[0].value);
+    expect(global.fetch).toHaveBeenCalledWith('/proxy/vigicrues.geojson', expect.anything());
+    expect(loadWmtsCapabilities).toHaveBeenCalledWith(runtimeConfig, expect.any(Function), {items: [wmtsItem]});
+  });
+
+  it('gives a WMTS overlay its source once ready, or removes it when it cannot be built', async () => {
+    const {createWmtsTileLayer} = await import('@/components/map/utils/loadWmtsCapabilities.js');
+    const source = {url: 'hydro'};
+    createWmtsTileLayer.mockReturnValueOnce(source).mockReturnValueOnce(null);
+    const runtimeConfig = {
+      overlayLayers: [
+        {source: 'wmts', title: 'Hydro', wmtsLayer: 'HYDRO'},
+        {source: 'wmts', title: 'Missing', wmtsLayer: 'MISSING'},
+      ],
+    };
+
+    renderHook(() =>
+      useOverlayGlobalLayers({
+        mapReady: true,
+        runtimeConfig,
+        overlayGroupRef: {current: mockOverlayGroup},
+        layerSwitcherRef: {current: mockLayerSwitcher},
+      })
+    );
+
+    const TileLayer = (await import('ol/layer/Tile')).default;
+    const [hydro, missing] = TileLayer.mock.results.map(r => r.value);
+    await waitFor(() => expect(hydro.setSource).toHaveBeenCalledWith(source));
+    expect(mockLayersCollection.remove).toHaveBeenCalledWith(missing);
+    expect(mockLayerSwitcher.renderPanel).toHaveBeenCalledTimes(2);
   });
 
   it('invokes enqueueSnackbar when provided', async () => {

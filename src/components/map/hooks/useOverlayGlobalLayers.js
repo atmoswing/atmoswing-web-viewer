@@ -86,92 +86,103 @@ export default function useOverlayGlobalLayers(
     if (!items.length) return () => {
     };
 
-    (async () => {
-      // Preload WMTS capabilities for all configured providers/items (base+overlay)
-      const wmtsOptionsCache = await loadWmtsCapabilities(
-        runtimeConfig,
-        (msg) => enqueueSnackbar && enqueueSnackbar(msg, {variant: 'warning'})
-      );
-
-      for (const item of items) {
-        if (cancelled) break;
-        const title = item.title || 'Overlay';
-        try {
-          if (item.source === 'wmts' && item.wmtsLayer) {
-            const source = createWmtsTileLayer(item, wmtsOptionsCache);
-            if (source) {
-              const layer = new TileLayer({title, visible: !!item.visible, source});
-              layer.set('__fromGlobalOverlayConfig', true);
-              createdLayers.push(layer);
-              layersCollection.push(layer);
-            }
-          } else if (item.source === 'geojson' && item.url) {
-            const src = new VectorSource();
-            const styleFn = makeCategoricalLineStyle(item.valueAttr || 'value', item.colors || {}, Number(item.lineWidth || 2));
-            const layer = new VectorLayer({title, visible: !!item.visible, source: src, style: styleFn});
-            layer.set('__fromGlobalOverlayConfig', true);
-            createdLayers.push(layer);
-            layersCollection.push(layer);
-
-            const loadOnce = async (signal) => {
-              try {
-                const res = await fetch(item.url, {cache: 'no-store', signal});
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const json = await res.json();
-                const fmt = new GeoJSON();
-                const feats = fmt.readFeatures(json, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
-                src.clear();
-                src.addFeatures(feats);
-              } catch (e) {
-                if (e && e.name === 'AbortError') return;
-                if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e);
-              }
-            };
-
-            const controller = new AbortController();
-            try {
-              layer.set('__abortController', controller);
-            } catch { /* ignore */
-            }
-            loadOnce(controller.signal);
-
-            // Optional refresh
-            const minutes = Number(item.refreshMinutes || 0);
-            if (minutes > 0) {
-              const timer = setInterval(() => {
-                if (cancelled) return; // best-effort guard
-                const c = new AbortController();
-                try {
-                  const prev = layer.get('__abortController');
-                  if (prev) prev.abort();
-                } catch { /* ignore */
-                }
-                try {
-                  layer.set('__abortController', c);
-                } catch { /* ignore */
-                }
-                loadOnce(c.signal);
-              }, minutes * 60 * 1000);
-              try {
-                layer.set('__refreshTimer', timer);
-              } catch { /* ignore */
-              }
-            }
-          } else {
-            if (config.API_DEBUG) console.warn('Unsupported overlay config item', item);
-          }
-        } catch (e) {
-          if (config.API_DEBUG) console.warn('Failed to create overlay layer', title, e);
-        }
-      }
-
+    const renderPanel = () => {
       if (!cancelled && layerSwitcherRef?.current) {
         try {
           layerSwitcherRef.current.renderPanel();
         } catch { /* ignore */
         }
       }
-    })();
+    };
+
+    // WMTS layers are added at once, in config order, and get their source when the capabilities
+    // arrive; nothing else (the GeoJSON overlays in particular) waits for that request.
+    const pendingWmtsLayers = [];
+    for (const item of items) {
+      const title = item.title || 'Overlay';
+      try {
+        if (item.source === 'wmts' && item.wmtsLayer) {
+          const layer = new TileLayer({title, visible: !!item.visible});
+          layer.set('__fromGlobalOverlayConfig', true);
+          createdLayers.push(layer);
+          layersCollection.push(layer);
+          pendingWmtsLayers.push({item, layer});
+        } else if (item.source === 'geojson' && item.url) {
+          const src = new VectorSource();
+          const styleFn = makeCategoricalLineStyle(item.valueAttr || 'value', item.colors || {}, Number(item.lineWidth || 2));
+          const layer = new VectorLayer({title, visible: !!item.visible, source: src, style: styleFn});
+          layer.set('__fromGlobalOverlayConfig', true);
+          createdLayers.push(layer);
+          layersCollection.push(layer);
+
+          const loadOnce = async (signal) => {
+            try {
+              const res = await fetch(item.url, {cache: 'no-store', signal});
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const json = await res.json();
+              const fmt = new GeoJSON();
+              const feats = fmt.readFeatures(json, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
+              src.clear();
+              src.addFeatures(feats);
+            } catch (e) {
+              if (e && e.name === 'AbortError') return;
+              if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e);
+            }
+          };
+
+          const controller = new AbortController();
+          try {
+            layer.set('__abortController', controller);
+          } catch { /* ignore */
+          }
+          loadOnce(controller.signal);
+
+          // Optional refresh
+          const minutes = Number(item.refreshMinutes || 0);
+          if (minutes > 0) {
+            const timer = setInterval(() => {
+              if (cancelled) return; // best-effort guard
+              const c = new AbortController();
+              try {
+                const prev = layer.get('__abortController');
+                if (prev) prev.abort();
+              } catch { /* ignore */
+              }
+              try {
+                layer.set('__abortController', c);
+              } catch { /* ignore */
+              }
+              loadOnce(c.signal);
+            }, minutes * 60 * 1000);
+            try {
+              layer.set('__refreshTimer', timer);
+            } catch { /* ignore */
+            }
+          }
+        } else {
+          if (config.API_DEBUG) console.warn('Unsupported overlay config item', item);
+        }
+      } catch (e) {
+        if (config.API_DEBUG) console.warn('Failed to create overlay layer', title, e);
+      }
+    }
+    renderPanel();
+
+    if (pendingWmtsLayers.length) {
+      loadWmtsCapabilities(
+        runtimeConfig,
+        (msg) => enqueueSnackbar && enqueueSnackbar(msg, {variant: 'warning'}),
+        {items: pendingWmtsLayers.map(({item}) => item)}
+      ).then(wmtsOptionsCache => {
+        if (cancelled) return;
+        pendingWmtsLayers.forEach(({item, layer}) => {
+          const source = createWmtsTileLayer(item, wmtsOptionsCache);
+          if (source) layer.setSource(source);
+          else layersCollection.remove(layer);
+        });
+        renderPanel();
+      });
+    }
 
     return () => {
       cancelled = true;
