@@ -124,7 +124,7 @@ The `overlayLayers` array defines global overlay layers visible across all works
 {
   "title": "Vigilance Vigicrues",
   "source": "geojson",
-  "url": "https://www.vigicrues.gouv.fr/services/InfoVigiCru.geojson",
+  "url": "/proxy/vigicrues.geojson",
   "visible": true,
   "valueAttr": "NivInfViCr",
   "lineWidth": 3,
@@ -142,7 +142,11 @@ The `overlayLayers` array defines global overlay layers visible across all works
 #### Fields
 - **title** (string, required): Display name
 - **source** (string, required): Must be `"geojson"`
-- **url** (string, required): URL to the GeoJSON file
+- **url** (string, required): URL to the GeoJSON file. The browser fetches it directly, so a URL on
+  another origin only works if that server sends `Access-Control-Allow-Origin`. Vigicrues does not:
+  use `/proxy/vigicrues.geojson`, which `nginx.conf` (and the Vite dev server) relays to
+  `https://www.vigicrues.gouv.fr/services/InfoVigiCru.geojson`. For another source without CORS,
+  add a similar `location` to `nginx.conf`.
 - **visible** (boolean, default: false): Initial visibility
 - **valueAttr** (string, optional): Feature property name used for styling
 - **lineWidth** (number, default: 2): Line width for line features
@@ -301,7 +305,7 @@ The `style` object defines how features are rendered. Styles can be defined for 
     {
       "title": "Vigilance Vigicrues",
       "source": "geojson",
-      "url": "https://www.vigicrues.gouv.fr/services/InfoVigiCru.geojson",
+      "url": "/proxy/vigicrues.geojson",
       "visible": true,
       "valueAttr": "NivInfViCr",
       "lineWidth": 3,

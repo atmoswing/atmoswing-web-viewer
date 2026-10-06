@@ -12,5 +12,15 @@ export default defineConfig({
     alias: {
       '@': srcDir
     }
+  },
+  server: {
+    proxy: {
+      // Mirrors the same-origin relay in nginx.conf (Vigicrues sends no CORS headers).
+      '/proxy/vigicrues.geojson': {
+        target: 'https://www.vigicrues.gouv.fr',
+        changeOrigin: true,
+        rewrite: () => '/services/InfoVigiCru.geojson'
+      }
+    }
   }
 })

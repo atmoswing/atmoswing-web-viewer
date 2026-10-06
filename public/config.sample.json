@@ -32,7 +32,7 @@
     {
       "title": "Vigilance Vigicrues",
       "source": "geojson",
-      "url": "https://www.vigicrues.gouv.fr/services/InfoVigiCru.geojson",
+      "url": "/proxy/vigicrues.geojson",
       "visible": true,
       "valueAttr": "NivInfViCr",
       "lineWidth": 3,
