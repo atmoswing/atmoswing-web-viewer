@@ -180,6 +180,51 @@ describe('useWorkspaceLayers (smoke)', () => {
     }, {timeout: 3000});
   });
 
+  describe('reports layers that cannot be loaded', () => {
+    const render = (shapefiles, reportLayerError) => renderHook(() =>
+      useWorkspaceLayers({
+        mapReady: true,
+        runtimeConfig: {workspaces: [{key: 'demo', shapefiles}]},
+        workspace: 'demo',
+        overlayGroupRef: {current: mockOverlayGroup},
+        layerSwitcherRef: {current: mockLayerSwitcher},
+        reportLayerError,
+      })
+    );
+
+    it('a GeoJSON file the server refuses', async () => {
+      global.fetch.mockResolvedValue({ok: false, status: 404});
+      const reportLayerError = vi.fn();
+      render([{name: 'Bassins', url: 'http://example.com/b.geojson'}], reportLayerError);
+      await waitFor(() => expect(reportLayerError).toHaveBeenCalledWith('Bassins', 'HTTP 404'));
+    });
+
+    it('a GeoJSON file that cannot be parsed', async () => {
+      global.fetch.mockResolvedValue({ok: true, json: async () => ({})});
+      const GeoJSON = (await import('ol/format/GeoJSON')).default;
+      GeoJSON.mockImplementationOnce(function () {
+        return {readFeatures: () => { throw new Error('bad geometry'); }};
+      });
+      const reportLayerError = vi.fn();
+      render([{name: 'Bassins', url: 'http://example.com/b.geojson'}], reportLayerError);
+      await waitFor(() => expect(reportLayerError).toHaveBeenCalledWith('Bassins', 'bad geometry'));
+    });
+
+    it('a shapefile that fails to load', async () => {
+      const shp = await import('shpjs');
+      shp.default.mockRejectedValueOnce(new Error('HTTP 404'));
+      const reportLayerError = vi.fn();
+      render([{name: 'TCC', url: 'http://example.com/tcc.zip'}], reportLayerError);
+      await waitFor(() => expect(reportLayerError).toHaveBeenCalledWith('TCC', 'HTTP 404'));
+    });
+
+    it('a URL of an unsupported format', () => {
+      const reportLayerError = vi.fn();
+      render([{name: 'Odd', url: 'http://example.com/odd.kml'}], reportLayerError);
+      expect(reportLayerError).toHaveBeenCalledWith('Odd', expect.stringMatching(/unsupported format/));
+    });
+  });
+
   it('attaches AbortController and aborts on unmount', async () => {
     const url = 'http://example.com/overlay.geojson';
     const mockGeoJSON = {type: 'FeatureCollection', features: []};

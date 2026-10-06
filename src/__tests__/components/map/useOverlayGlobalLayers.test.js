@@ -329,6 +329,7 @@ describe('useOverlayGlobalLayers', () => {
     const runtimeConfig = {
       overlayLayers: [wmtsItem, {source: 'geojson', title: 'Vigicrues', url: '/proxy/vigicrues.geojson'}],
     };
+    const reportLayerError = vi.fn();
 
     renderHook(() =>
       useOverlayGlobalLayers({
@@ -336,6 +337,7 @@ describe('useOverlayGlobalLayers', () => {
         runtimeConfig,
         overlayGroupRef: {current: mockOverlayGroup},
         layerSwitcherRef: {current: mockLayerSwitcher},
+        reportLayerError,
       })
     );
 
@@ -344,7 +346,7 @@ describe('useOverlayGlobalLayers', () => {
     const TileLayer = (await import('ol/layer/Tile')).default;
     expect(mockLayersCollection.push.mock.calls[0][0]).toBe(TileLayer.mock.results[0].value);
     expect(global.fetch).toHaveBeenCalledWith('/proxy/vigicrues.geojson', expect.anything());
-    expect(loadWmtsCapabilities).toHaveBeenCalledWith(runtimeConfig, expect.any(Function), {items: [wmtsItem]});
+    expect(loadWmtsCapabilities).toHaveBeenCalledWith(runtimeConfig, reportLayerError, {items: [wmtsItem]});
   });
 
   it('gives a WMTS overlay its source once ready, or removes it when it cannot be built', async () => {
@@ -374,24 +376,60 @@ describe('useOverlayGlobalLayers', () => {
     expect(mockLayerSwitcher.renderPanel).toHaveBeenCalledTimes(2);
   });
 
-  it('invokes enqueueSnackbar when provided', async () => {
-    const enqueueSnackbar = vi.fn();
+  it('reports a GeoJSON layer that fails, once per run of failures across refreshes', async () => {
+    vi.useFakeTimers();
+    try {
+      const reportLayerError = vi.fn();
+      const ok = {ok: true, json: async () => ({type: 'FeatureCollection', features: []})};
+      global.fetch
+        .mockResolvedValueOnce({ok: false, status: 502})  // initial load
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'))  // refresh 1: still down
+        .mockResolvedValueOnce(ok)  // refresh 2: back
+        .mockResolvedValueOnce({ok: false, status: 503});  // refresh 3: down again
+      const runtimeConfig = {
+        overlayLayers: [{source: 'geojson', title: 'Vigicrues', url: '/proxy/vigicrues.geojson', refreshMinutes: 1}],
+      };
 
-    const runtimeConfig = {
-      overlayLayers: [],
-    };
+      renderHook(() =>
+        useOverlayGlobalLayers({
+          mapReady: true,
+          runtimeConfig,
+          overlayGroupRef: {current: mockOverlayGroup},
+          layerSwitcherRef: {current: mockLayerSwitcher},
+          reportLayerError,
+        })
+      );
 
-    renderHook(() =>
+      await vi.advanceTimersByTimeAsync(0);
+      expect(reportLayerError).toHaveBeenCalledExactlyOnceWith('Vigicrues', 'HTTP 502');
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(reportLayerError).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      expect(reportLayerError).toHaveBeenCalledTimes(2);
+      expect(reportLayerError).toHaveBeenLastCalledWith('Vigicrues', 'HTTP 503');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not report a load cut short by unmounting', async () => {
+    const reportLayerError = vi.fn();
+    let reject;
+    global.fetch.mockReturnValue(new Promise((_, r) => {
+      reject = r;
+    }));
+    const {unmount} = renderHook(() =>
       useOverlayGlobalLayers({
         mapReady: true,
-        runtimeConfig,
+        runtimeConfig: {overlayLayers: [{source: 'geojson', title: 'Vigicrues', url: '/v.geojson'}]},
         overlayGroupRef: {current: mockOverlayGroup},
         layerSwitcherRef: {current: mockLayerSwitcher},
-        enqueueSnackbar,
+        reportLayerError,
       })
     );
-
-    // Should complete without error
-    expect(enqueueSnackbar).toBeDefined();
+    unmount();
+    reject(new Error('late failure'));
+    await new Promise(r => setTimeout(r, 0));
+    expect(reportLayerError).not.toHaveBeenCalled();
   });
 });

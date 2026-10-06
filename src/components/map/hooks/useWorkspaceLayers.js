@@ -34,6 +34,7 @@ import config from '@/config.js';
  * @param {string} params.workspace - Current workspace key
  * @param {React.RefObject} params.overlayGroupRef - Ref to overlay layer group
  * @param {React.RefObject} params.layerSwitcherRef - Ref to layer switcher control
+ * @param {Function} [params.reportLayerError] - Called as `(title, reason)` when a layer cannot be loaded
  * @example
  * useWorkspaceLayers({
  *   mapReady: true,
@@ -49,7 +50,8 @@ export default function useWorkspaceLayers(
     runtimeConfig,
     workspace,
     overlayGroupRef,
-    layerSwitcherRef
+    layerSwitcherRef,
+    reportLayerError
   }
 ) {
   useEffect(() => {
@@ -95,6 +97,9 @@ export default function useWorkspaceLayers(
 
     const addLayerForItem = (item) => {
       const title = item.name || 'Layer';
+      const report = (e) => {
+        if (!cancelled && reportLayerError) reportLayerError(title, e?.message || String(e));
+      };
       const url = item.url;
       const dataProj = item.projection || item.epsg || 'EPSG:4326';
       ensureProjDefined(dataProj);
@@ -126,12 +131,14 @@ export default function useWorkspaceLayers(
               src.addFeatures(feats);
             } catch (e) {
               if (config.API_DEBUG) console.warn('Failed to parse GeoJSON for overlay', title, e);
+              report(e);
             }
           })
           .catch(e => {
             if (cancelled) return;
             if (e && e.name === 'AbortError') return;
             if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e);
+            report(e);
           });
         // Attach controller to layer for potential manual abort later
         try {
@@ -152,14 +159,17 @@ export default function useWorkspaceLayers(
               src.addFeatures(feats);
             } catch (e) {
               if (config.API_DEBUG) console.warn('Failed to parse Shapefile (as GeoJSON) for overlay', title, e);
+              report(e);
             }
           })
           .catch(e => {
             if (cancelled) return;
             if (config.API_DEBUG) console.warn('Failed to load Shapefile overlay', title, e);
+            report(e);
           });
       } else {
         if (config.API_DEBUG) console.warn('Unsupported overlay URL (expect .geojson/.json/.shp/.zip):', url);
+        report(new Error('unsupported format, expected .geojson, .json, .shp or .zip'));
       }
     };
 
@@ -177,5 +187,5 @@ export default function useWorkspaceLayers(
       } catch { /* cleanup errors ignored */
       }
     };
-  }, [mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef]);
+  }, [mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef, reportLayerError]);
 }

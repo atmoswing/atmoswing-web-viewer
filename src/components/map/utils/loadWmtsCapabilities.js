@@ -3,6 +3,8 @@
  * @description Utilities for loading WMTS (Web Map Tile Service) capabilities and creating tile layers.
  * Fetches each provider's capabilities document once per page (with a timeout), parses layer
  * options from it, and builds sources whose tiles are retried after transient failures.
+ * The part of each document the configured layers need is kept in `localStorage`, so later
+ * visits show those layers without downloading and parsing the whole (multi-megabyte) document.
  */
 
 import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
@@ -11,9 +13,15 @@ import TileState from 'ol/TileState';
 import {
   WMTS_CAPABILITIES_TIMEOUT_MS,
   WMTS_MATRIX_SET_DEFAULT,
+  WMTS_STORED_CAPABILITIES_FRESH_MS,
+  WMTS_STORED_CAPABILITIES_MAX_AGE_MS,
   WMTS_TILE_MAX_RETRIES,
   WMTS_TILE_RETRY_DELAY_MS
 } from '@/components/map/mapConstants.js';
+
+const STORAGE_PREFIX = 'atmoswing.wmtsCapabilities:';
+// URLs whose stored copy is being refreshed in this page, so it happens once per page.
+const backgroundRefreshes = new Set();
 
 // Parsed capabilities per URL, as promises so concurrent callers share one request. The map's
 // base layers and its overlays both ask for the same (multi-megabyte) document.
@@ -62,10 +70,77 @@ export function fetchWmtsCapabilities(url, timeoutMs = WMTS_CAPABILITIES_TIMEOUT
 }
 
 /**
- * Forgets every fetched capabilities document (mainly for tests).
+ * Forgets every fetched capabilities document held in memory (mainly for tests).
+ * Copies stored in `localStorage` are kept.
  */
 export function clearWmtsCapabilitiesCache() {
   capabilitiesCache.clear();
+  backgroundRefreshes.clear();
+}
+
+/**
+ * Reduces parsed capabilities to the given layers and the tile matrix sets they use, which is
+ * all `optionsFromCapabilities` reads for them (with the service metadata, kept as is).
+ *
+ * @param {Object} caps - Capabilities parsed by OpenLayers
+ * @param {Array<string>} layerIds - Layer identifiers to keep
+ * @returns {Object|null} The reduced capabilities, or null if the document has no contents
+ */
+export function trimWmtsCapabilities(caps, layerIds) {
+  const contents = caps?.Contents;
+  if (!Array.isArray(contents?.Layer) || !Array.isArray(contents?.TileMatrixSet)) return null;
+  const layers = contents.Layer.filter(l => layerIds.includes(l.Identifier));
+  const sets = new Set(layers.flatMap(l => (l.TileMatrixSetLink || []).map(link => link.TileMatrixSet)));
+  return {
+    ...caps,
+    Contents: {...contents, Layer: layers, TileMatrixSet: contents.TileMatrixSet.filter(s => sets.has(s.Identifier))}
+  };
+}
+
+// Storage may be unavailable (private mode, quota, blocked site data): every access is guarded,
+// and failing to read or write only means fetching the document as if nothing was stored.
+function readStoredCapabilities(url) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_PREFIX + url));
+    if (!stored || typeof stored.savedAt !== 'number' || !stored.caps) return null;
+    if (Date.now() - stored.savedAt > WMTS_STORED_CAPABILITIES_MAX_AGE_MS) return null;
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+function storeCapabilities(url, caps, layerIds) {
+  const trimmed = trimWmtsCapabilities(caps, layerIds);
+  if (!trimmed) return;
+  try {
+    localStorage.setItem(STORAGE_PREFIX + url, JSON.stringify({savedAt: Date.now(), caps: trimmed}));
+  } catch { /* storage unavailable or full: the next visit fetches again */
+  }
+}
+
+/**
+ * Capabilities for one provider URL: the stored copy when it holds every wanted layer, refreshed
+ * in the background once older than a day, otherwise the full document, stored for next time.
+ *
+ * @param {string} url - GetCapabilities URL
+ * @param {Array<string>} layerIds - Every configured layer of this provider
+ * @returns {Promise<Object>} Parsed (possibly reduced) capabilities
+ */
+async function capabilitiesFor(url, layerIds) {
+  const stored = readStoredCapabilities(url);
+  const storedIds = new Set((stored?.caps?.Contents?.Layer || []).map(l => l.Identifier));
+  if (stored && layerIds.every(id => storedIds.has(id))) {
+    if (Date.now() - stored.savedAt > WMTS_STORED_CAPABILITIES_FRESH_MS && !backgroundRefreshes.has(url)) {
+      backgroundRefreshes.add(url);
+      fetchWmtsCapabilities(url).then(caps => storeCapabilities(url, caps, layerIds), () => {
+      });
+    }
+    return stored.caps;
+  }
+  const caps = await fetchWmtsCapabilities(url);
+  storeCapabilities(url, caps, layerIds);
+  return caps;
 }
 
 /**
@@ -78,37 +153,44 @@ export function clearWmtsCapabilitiesCache() {
 /**
  * Fetches WMTS capabilities from configured providers and builds options cache.
  * Providers are fetched in parallel; a provider that fails or times out only loses its own
- * layers, each reported through `enqueueWarning`.
+ * layers, each reported through `onLayerError`. The settings of every configured layer of a
+ * provider are stored, whichever `items` were asked for, so the base layers and the overlays,
+ * which ask separately, write the same copy.
  *
  * @param {Object} runtimeConfig - Runtime configuration with providers and layers
- * @param {Function} [enqueueWarning] - Optional callback to display warning messages
+ * @param {Function} [onLayerError] - Called as `(title, reason)` for each layer that cannot be built
  * @param {LoadWmtsOptions} [options] - Which items to resolve, and style preference
  * @returns {Promise<Object>} Cache object mapping wmtsLayer name to OpenLayers WMTS options
  * @example
- * const cache = await loadWmtsCapabilities(config, (msg) => console.warn(msg));
+ * const cache = await loadWmtsCapabilities(config, (title, reason) => console.warn(title, reason));
  * // Returns: { 'layerName': { ...wmtsOptions } }
  */
-export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, options = {}) {
+export async function loadWmtsCapabilities(runtimeConfig, onLayerError, options = {}) {
   const {preferStyleForItem} = options;
   const items = options.items
     || [...(runtimeConfig?.baseLayers || []), ...(runtimeConfig?.overlayLayers || [])];
-  const wmtsRequests = {};
   const providerMap = {};
   (runtimeConfig?.providers || []).forEach(p => providerMap[p.name] = p);
-  items.forEach(item => {
-    if (item.source === 'wmts' && item.wmtsLayer && item.provider) {
-      const provider = providerMap[item.provider];
-      if (!provider) return;
-      const url = provider.wmtsUrl;
-      if (!wmtsRequests[url]) wmtsRequests[url] = [];
-      wmtsRequests[url].push(item);
-    }
-  });
+  const groupByUrl = (list) => {
+    const byUrl = {};
+    list.forEach(item => {
+      if (item.source === 'wmts' && item.wmtsLayer && item.provider) {
+        const provider = providerMap[item.provider];
+        if (!provider) return;
+        const url = provider.wmtsUrl;
+        if (!byUrl[url]) byUrl[url] = [];
+        byUrl[url].push(item);
+      }
+    });
+    return byUrl;
+  };
+  const wmtsRequests = groupByUrl(items);
+  const configured = groupByUrl([...(runtimeConfig?.baseLayers || []), ...(runtimeConfig?.overlayLayers || []), ...items]);
 
   const wmtsOptionsCache = {};
   await Promise.all(Object.entries(wmtsRequests).map(async ([url, urlItems]) => {
     try {
-      const caps = await fetchWmtsCapabilities(url);
+      const caps = await capabilitiesFor(url, [...new Set(configured[url].map(item => item.wmtsLayer))]);
       urlItems.forEach(item => {
         let opts = null;
         const preferredStyle = preferStyleForItem ? preferStyleForItem(item) : item.style;
@@ -128,11 +210,11 @@ export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, option
           } catch { /* capabilities may not include layer */
           }
         }
-        if (opts) wmtsOptionsCache[item.wmtsLayer] = opts; else if (enqueueWarning) enqueueWarning(`Failed to load layer ${item.title}: layer not found in capabilities`);
+        if (opts) wmtsOptionsCache[item.wmtsLayer] = opts; else if (onLayerError) onLayerError(item.title, 'layer not found in capabilities');
       });
     } catch (error) {
       urlItems.forEach(item => {
-        if (enqueueWarning) enqueueWarning(`Failed to load layer ${item.title}: ${error.message}`);
+        if (onLayerError) onLayerError(item.title, error.message);
       });
     }
   }));

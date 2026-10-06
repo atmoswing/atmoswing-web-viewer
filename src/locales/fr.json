@@ -62,6 +62,7 @@
       "title": "Valeurs normalisées"
     },
     "layerSwitcherTip": "Couches",
+    "layerLoadFailed": "Impossible de charger la couche « {{title}} » ({{reason}})",
     "loading": {
       "noForecastAvailable": "Aucune prévision disponible pour la méthode et l'échéance sélectionnées",
       "noForecastFoundSearch": "Aucune prévision trouvée dans l'intervalle de recherche"

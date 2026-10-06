@@ -106,10 +106,10 @@ describe('useMapInit (smoke)', () => {
 
   it('does nothing when container is not set or runtimeConfig not loaded', () => {
     const t = (k) => k;
-    const enqueueSnackbar = vi.fn();
+    const reportLayerError = vi.fn();
 
     const {result, rerender} = renderHook((props) => useMapInit(props), {
-      initialProps: {t, runtimeConfig: {}, enqueueSnackbar}
+      initialProps: {t, runtimeConfig: {}, reportLayerError}
     });
 
     // containerRef is null by default, effect should early-return
@@ -119,7 +119,7 @@ describe('useMapInit (smoke)', () => {
     // Now set a container but keep runtimeConfig not loaded
     const div = document.createElement('div');
     result.current.containerRef.current = div;
-    rerender({t, runtimeConfig: {}, enqueueSnackbar});
+    rerender({t, runtimeConfig: {}, reportLayerError});
 
     // Still should not initialize because __workspacesLoaded is required
     expect(result.current.mapRef.current).toBeNull();
@@ -128,14 +128,14 @@ describe('useMapInit (smoke)', () => {
 
   it('initializes map when container is present and runtimeConfig.__workspacesLoaded is true', async () => {
     const t = (k) => k;
-    const enqueueSnackbar = vi.fn();
+    const reportLayerError = vi.fn();
 
     // import mocked constructors so we can assert they were called
     const MapMock = (await import('ol/Map')).default;
     const LayerSwitcherMock = (await import('ol-layerswitcher')).default;
 
     const {result, rerender, unmount} = renderHook((props) => useMapInit(props), {
-      initialProps: {t, runtimeConfig: {}, enqueueSnackbar}
+      initialProps: {t, runtimeConfig: {}, reportLayerError}
     });
 
     // Set a container
@@ -147,7 +147,7 @@ describe('useMapInit (smoke)', () => {
     result.current.containerRef.current = div;
 
     // Trigger initialization by providing runtimeConfig with __workspacesLoaded
-    act(() => rerender({t, runtimeConfig: {__workspacesLoaded: true, baseLayers: []}, enqueueSnackbar}));
+    act(() => rerender({t, runtimeConfig: {__workspacesLoaded: true, baseLayers: []}, reportLayerError}));
 
     // Wait for async initialization to complete and mapReady to become true
     await waitFor(() => expect(result.current.mapReady).toBe(true));
@@ -180,10 +180,10 @@ describe('useMapInit WMTS base layers', () => {
 
   const init = (runtimeConfig) => {
     const hook = renderHook((props) => useMapInit(props), {
-      initialProps: {t: (k) => k, runtimeConfig: {}, enqueueSnackbar: vi.fn()}
+      initialProps: {t: (k) => k, runtimeConfig: {}, reportLayerError: vi.fn()}
     });
     hook.result.current.containerRef.current = document.createElement('div');
-    act(() => hook.rerender({t: (k) => k, runtimeConfig, enqueueSnackbar: vi.fn()}));
+    act(() => hook.rerender({t: (k) => k, runtimeConfig, reportLayerError: vi.fn()}));
     return hook;
   };
   const baseGroup = async () => (await import('ol/layer/Group')).default.mock.results[0].value;

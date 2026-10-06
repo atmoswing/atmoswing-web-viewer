@@ -5,9 +5,10 @@ import {
   createWmtsTileLayer,
   fetchWmtsCapabilities,
   loadWmtsCapabilities,
-  makeRetryingTileLoadFunction
+  makeRetryingTileLoadFunction,
+  trimWmtsCapabilities
 } from '@/components/map/utils/loadWmtsCapabilities.js';
-import WMTS from 'ol/source/WMTS';
+import WMTS, {optionsFromCapabilities} from 'ol/source/WMTS';
 import TileState from 'ol/TileState';
 
 // Mock ol modules used internally
@@ -16,7 +17,8 @@ import TileState from 'ol/TileState';
 vi.mock('ol/format/WMTSCapabilities', () => ({
   default: vi.fn().mockImplementation(function () {
     return {
-      read: vi.fn().mockImplementation((txt) => ({contents: txt, Capability: {Layers: []}}))
+      // JSON fixtures stand for parsed documents; anything else parses to a contents-less stub.
+      read: vi.fn().mockImplementation((txt) => (txt.startsWith('{') ? JSON.parse(txt) : {contents: txt, Capability: {Layers: []}}))
     };
   })
 }));
@@ -44,6 +46,7 @@ const okResponse = (text = '<Capabilities />') => ({ok: true, status: 200, text:
 
 beforeEach(() => {
   clearWmtsCapabilitiesCache();
+  localStorage.clear();
 });
 
 afterEach(() => {
@@ -53,31 +56,30 @@ afterEach(() => {
 describe('loadWmtsCapabilities', () => {
   it('loads capabilities and populates cache with styled layer then fallback', async () => {
     global.fetch = vi.fn().mockResolvedValue(okResponse());
-    const warnings = [];
-    const cache = await loadWmtsCapabilities(runtimeConfig, (msg) => warnings.push(msg));
+    const errors = [];
+    const cache = await loadWmtsCapabilities(runtimeConfig, (title, reason) => errors.push([title, reason]));
     expect(Object.keys(cache)).toContain('LayerA');
     expect(Object.keys(cache)).toContain('LayerB');
     expect(cache.LayerA.style).toBe('default');
     // LayerB had no style -> style undefined in options
     expect(cache.LayerB.style).toBeUndefined();
-    expect(warnings.length).toBe(0);
+    expect(errors).toEqual([]);
   });
 
-  it('enqueueWarning called on fetch error', async () => {
+  it('reports each layer of a provider whose request fails', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network down'));
-    const warnings = [];
-    const cache = await loadWmtsCapabilities(runtimeConfig, (msg) => warnings.push(msg));
+    const errors = [];
+    const cache = await loadWmtsCapabilities(runtimeConfig, (title, reason) => errors.push([title, reason]));
     expect(cache).toEqual({});
-    expect(warnings.length).toBe(2); // one per layer
-    expect(warnings[0]).toMatch(/Failed to load layer/);
+    expect(errors).toEqual([['Layer A', 'Network down'], ['Layer B', 'Network down']]);
   });
 
   it('reports an HTTP error status instead of parsing the error page', async () => {
     global.fetch = vi.fn().mockResolvedValue({ok: false, status: 503, text: () => Promise.resolve('down')});
-    const warnings = [];
-    const cache = await loadWmtsCapabilities(runtimeConfig, (msg) => warnings.push(msg));
+    const errors = [];
+    const cache = await loadWmtsCapabilities(runtimeConfig, (title, reason) => errors.push([title, reason]));
     expect(cache).toEqual({});
-    expect(warnings).toEqual(['Failed to load layer Layer A: HTTP 503', 'Failed to load layer Layer B: HTTP 503']);
+    expect(errors).toEqual([['Layer A', 'HTTP 503'], ['Layer B', 'HTTP 503']]);
   });
 
   it('gives up on a provider that does not answer within the timeout', async () => {
@@ -85,11 +87,11 @@ describe('loadWmtsCapabilities', () => {
     global.fetch = vi.fn((url, {signal}) => new Promise((resolve, reject) => {
       signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
     }));
-    const warnings = [];
-    const pending = loadWmtsCapabilities(runtimeConfig, (msg) => warnings.push(msg));
+    const errors = [];
+    const pending = loadWmtsCapabilities(runtimeConfig, (title, reason) => errors.push([title, reason]));
     await vi.advanceTimersByTimeAsync(15000);
     expect(await pending).toEqual({});
-    expect(warnings[0]).toBe('Failed to load layer Layer A: no response after 15 s');
+    expect(errors[0]).toEqual(['Layer A', 'no response after 15 s']);
   });
 
   it('only resolves the requested items', async () => {
@@ -113,6 +115,104 @@ describe('loadWmtsCapabilities', () => {
     await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
     resolvers.forEach(resolve => resolve(okResponse()));
     expect(Object.keys(await pending).sort()).toEqual(['A1', 'B1']);
+  });
+});
+
+const capsDoc = {
+  OperationsMetadata: {GetTile: {}},
+  Contents: {
+    Layer: [
+      {Identifier: 'LayerA', TileMatrixSetLink: [{TileMatrixSet: 'PM_0_19'}]},
+      {Identifier: 'LayerB', TileMatrixSetLink: [{TileMatrixSet: 'PM_6_18'}]},
+      {Identifier: 'Other', TileMatrixSetLink: [{TileMatrixSet: 'LAMB93'}]}
+    ],
+    TileMatrixSet: [{Identifier: 'PM_0_19'}, {Identifier: 'PM_6_18'}, {Identifier: 'LAMB93'}]
+  }
+};
+const STORAGE_KEY = 'atmoswing.wmtsCapabilities:https://example.com/wmtsA';
+const HOUR = 60 * 60 * 1000;
+const stored = () => JSON.parse(localStorage.getItem(STORAGE_KEY));
+const capsArgs = () => optionsFromCapabilities.mock.calls.map(([caps]) => caps);
+
+describe('trimWmtsCapabilities', () => {
+  it('keeps the given layers and only the tile matrix sets they use', () => {
+    const trimmed = trimWmtsCapabilities(capsDoc, ['LayerA', 'LayerB']);
+    expect(trimmed.Contents.Layer.map(l => l.Identifier)).toEqual(['LayerA', 'LayerB']);
+    expect(trimmed.Contents.TileMatrixSet.map(s => s.Identifier)).toEqual(['PM_0_19', 'PM_6_18']);
+    expect(trimmed.OperationsMetadata).toBe(capsDoc.OperationsMetadata);
+  });
+
+  it('returns null for a document without contents', () => {
+    expect(trimWmtsCapabilities({}, ['LayerA'])).toBeNull();
+  });
+});
+
+describe('stored WMTS layer settings', () => {
+  const load = (options) => loadWmtsCapabilities(runtimeConfig, undefined, options);
+  const storeAt = (savedAt, caps = trimWmtsCapabilities(capsDoc, ['LayerA', 'LayerB'])) =>
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({savedAt, caps}));
+
+  beforeEach(() => {
+    optionsFromCapabilities.mockClear();
+    global.fetch = vi.fn().mockResolvedValue(okResponse(JSON.stringify(capsDoc)));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('stores every configured layer of the provider, even when asked for only some', async () => {
+    await load({items: runtimeConfig.baseLayers});
+    expect(stored().caps.Contents.Layer.map(l => l.Identifier)).toEqual(['LayerA', 'LayerB']);
+    expect(stored().caps.Contents.TileMatrixSet.map(s => s.Identifier)).toEqual(['PM_0_19', 'PM_6_18']);
+  });
+
+  it('uses a recent stored copy without fetching anything', async () => {
+    storeAt(Date.now() - HOUR);
+    const cache = await load();
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(Object.keys(cache)).toEqual(['LayerA', 'LayerB']);
+    expect(capsArgs()[0].Contents.Layer).toHaveLength(2);
+  });
+
+  it('uses a day-old copy at once and refreshes it in the background, once', async () => {
+    const savedAt = Date.now() - 25 * HOUR;
+    storeAt(savedAt);
+    const cache = await load();
+    expect(Object.keys(cache)).toEqual(['LayerA', 'LayerB']);
+    expect(capsArgs()[0].Contents.Layer).toHaveLength(2); // the stored copy, not the fetched one
+    await load();
+    await vi.waitFor(() => expect(stored().savedAt).toBeGreaterThan(savedAt));
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetches first when the stored copy is more than a week old', async () => {
+    storeAt(Date.now() - 8 * 24 * HOUR);
+    await load();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(capsArgs()[0].Contents.Layer).toHaveLength(3); // the full fetched document
+  });
+
+  it('fetches when a configured layer is missing from the stored copy', async () => {
+    storeAt(Date.now(), trimWmtsCapabilities(capsDoc, ['LayerA']));
+    await load();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(stored().caps.Contents.Layer.map(l => l.Identifier)).toEqual(['LayerA', 'LayerB']);
+  });
+
+  it('ignores an unreadable stored value', async () => {
+    localStorage.setItem(STORAGE_KEY, '{not json');
+    const cache = await load();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(Object.keys(cache)).toEqual(['LayerA', 'LayerB']);
+  });
+
+  it('still loads the layers when storage cannot be written', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    const cache = await load();
+    expect(Object.keys(cache)).toEqual(['LayerA', 'LayerB']);
   });
 });
 

@@ -39,14 +39,15 @@ function makeCategoricalLineStyle(valueAttr, colors = {}, width = 2) {
  * @param {Object} params.runtimeConfig - Runtime configuration object
  * @param {React.RefObject} params.overlayGroupRef - Ref to overlay layer group
  * @param {React.RefObject} params.layerSwitcherRef - Ref to layer switcher control
- * @param {Function} [params.enqueueSnackbar] - Optional notification callback
+ * @param {Function} [params.reportLayerError] - Called as `(title, reason)` when a layer cannot be
+ *   loaded; for a refreshed GeoJSON layer, once per run of failures
  * @example
  * useOverlayGlobalLayers({
  *   mapReady: true,
  *   runtimeConfig,
  *   overlayGroupRef,
  *   layerSwitcherRef,
- *   enqueueSnackbar: (msg) => console.warn(msg)
+ *   reportLayerError: (title, reason) => console.warn(title, reason)
  * });
  */
 export default function useOverlayGlobalLayers(
@@ -55,7 +56,7 @@ export default function useOverlayGlobalLayers(
     runtimeConfig,
     overlayGroupRef,
     layerSwitcherRef,
-    enqueueSnackbar
+    reportLayerError
   }
 ) {
   useEffect(() => {
@@ -115,6 +116,9 @@ export default function useOverlayGlobalLayers(
           createdLayers.push(layer);
           layersCollection.push(layer);
 
+          // Reported once per run of failures: a layer refreshed every hour that stays down
+          // warns once, and again only after it has loaded in between.
+          let failing = false;
           const loadOnce = async (signal) => {
             try {
               const res = await fetch(item.url, {cache: 'no-store', signal});
@@ -124,9 +128,12 @@ export default function useOverlayGlobalLayers(
               const feats = fmt.readFeatures(json, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
               src.clear();
               src.addFeatures(feats);
+              failing = false;
             } catch (e) {
-              if (e && e.name === 'AbortError') return;
+              if ((e && e.name === 'AbortError') || cancelled) return;
               if (config.API_DEBUG) console.warn('Failed to load GeoJSON overlay', title, e);
+              if (!failing && reportLayerError) reportLayerError(title, e?.message || String(e));
+              failing = true;
             }
           };
 
@@ -171,7 +178,7 @@ export default function useOverlayGlobalLayers(
     if (pendingWmtsLayers.length) {
       loadWmtsCapabilities(
         runtimeConfig,
-        (msg) => enqueueSnackbar && enqueueSnackbar(msg, {variant: 'warning'}),
+        reportLayerError,
         {items: pendingWmtsLayers.map(({item}) => item)}
       ).then(wmtsOptionsCache => {
         if (cancelled) return;
@@ -203,5 +210,5 @@ export default function useOverlayGlobalLayers(
       } catch { /* ignore */
       }
     };
-  }, [mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar]);
+  }, [mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, reportLayerError]);
 }
