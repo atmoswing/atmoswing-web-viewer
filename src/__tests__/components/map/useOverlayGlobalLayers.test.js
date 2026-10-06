@@ -50,6 +50,7 @@ vi.mock('ol/format/GeoJSON', () => ({
 vi.mock('@/components/map/utils/loadWmtsCapabilities.js', () => ({
   loadWmtsCapabilities: vi.fn(async () => ({})),
   createWmtsTileLayer: vi.fn(() => ({url: 'test'})),
+  applyWmtsSource: vi.fn((layer, source) => layer.setSource(source)),
 }));
 vi.mock('@/config.js', () => ({
   default: {API_DEBUG: false},

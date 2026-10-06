@@ -13,7 +13,7 @@ import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import LayerSwitcher from 'ol-layerswitcher';
-import {createWmtsTileLayer, loadWmtsCapabilities} from '@/components/map/utils/loadWmtsCapabilities.js';
+import {applyWmtsSource, createWmtsTileLayer, loadWmtsCapabilities} from '@/components/map/utils/loadWmtsCapabilities.js';
 import {DEFAULT_PROJECTION} from '@/components/map/mapConstants.js';
 
 /**
@@ -100,7 +100,7 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
         if (cancelled) return;
         pendingWmtsLayers.forEach(({item, layer}) => {
           const source = createWmtsTileLayer(item, wmtsOptionsCache);
-          if (source) layer.setSource(source);
+          if (source) applyWmtsSource(layer, source);
           else baseLayers.getLayers().remove(layer);
         });
         // A visible base layer that could not be built would leave the map without a background.

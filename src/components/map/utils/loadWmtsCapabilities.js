@@ -20,8 +20,13 @@ import {
 const capabilitiesCache = new Map();
 
 // Statuses worth another try. 404 is included because the IGN Géoplateforme answers it
-// intermittently for tiles it serves fine a moment later.
+// intermittently for tiles it serves fine a moment later; a 404 carrying an OWS exception report
+// ("No data found") is the server saying the tile is empty, and is not retried.
 const RETRY_STATUSES = new Set([404, 408, 429, 500, 502, 503, 504]);
+const isNoDataReport = (body) => /ExceptionReport/.test(body || '');
+
+// How many zoom levels coarser than its grid's first level a WMTS layer stays visible.
+const WMTS_OVERZOOM_OUT_LEVELS = 1;
 
 /**
  * Fetches and parses a WMTS capabilities document, once per URL.
@@ -139,22 +144,26 @@ export async function loadWmtsCapabilities(runtimeConfig, enqueueWarning, option
  * The tile is fetched as a blob; a network error or a status in `RETRY_STATUSES` marks the tile
  * as failed and reloads it after a growing delay, up to `maxRetries` times. Without this, a tile
  * whose single request failed stays blank until the view moves far enough to request it again.
+ * A 404 with an OWS exception report means the server has no data there: the tile is marked
+ * empty, silently. A tile still failing after its retries is reported with `console.warn`.
  *
  * @param {Object} [options] - Retry settings
  * @param {number} [options.maxRetries] - Extra attempts per tile
  * @param {number} [options.delayMs] - Delay before the first retry; later ones wait longer
+ * @param {string} [options.label] - Layer name used in the failure warning
  * @returns {Function} `(tile, src) => void`, for a tile source's `tileLoadFunction`
  */
 export function makeRetryingTileLoadFunction(
-  {maxRetries = WMTS_TILE_MAX_RETRIES, delayMs = WMTS_TILE_RETRY_DELAY_MS} = {}
+  {maxRetries = WMTS_TILE_MAX_RETRIES, delayMs = WMTS_TILE_RETRY_DELAY_MS, label = 'WMTS layer'} = {}
 ) {
   const attempts = new WeakMap();
   return (tile, src) => {
     fetch(src)
-      .then(res => {
+      .then(async res => {
         if (res.ok) return res.blob();
         const error = new Error(`HTTP ${res.status}`);
-        error.retryable = RETRY_STATUSES.has(res.status);
+        if (res.status === 404) error.noData = isNoDataReport(await res.text().catch(() => ''));
+        error.retryable = !error.noData && RETRY_STATUSES.has(res.status);
         throw error;
       })
       .then(blob => {
@@ -169,6 +178,11 @@ export function makeRetryingTileLoadFunction(
       .catch(error => {
         // A tile dropped meanwhile (view moved on) must not be pushed back to an error state.
         if (tile.getState() !== TileState.LOADING) return;
+        if (error.noData) {
+          attempts.delete(tile);
+          tile.setState(TileState.EMPTY);
+          return;
+        }
         tile.setState(TileState.ERROR);
         const done = attempts.get(tile) || 0;
         // fetch rejects with a TypeError on network failure: retryable too.
@@ -177,9 +191,25 @@ export function makeRetryingTileLoadFunction(
           setTimeout(() => tile.load(), delayMs * (done + 1));
         } else {
           attempts.delete(tile);
+          console.warn(`${label}: tile failed after ${done + 1} attempt(s) (${error.message})`, src);
         }
       });
   };
+}
+
+/**
+ * Gives a tile layer its WMTS source, and hides the layer at zoom levels coarser than the
+ * source's tile grid allows (one level of zooming out past it is kept). Without that limit, a
+ * view zoomed out further than the grid's first level still requests that level's tiles,
+ * across the whole view: hundreds of requests, mostly for areas the layer does not cover.
+ *
+ * @param {Object} layer - OpenLayers tile layer
+ * @param {WMTS} source - Source built by {@link createWmtsTileLayer}
+ */
+export function applyWmtsSource(layer, source) {
+  layer.setSource(source);
+  const coarsest = source.getTileGrid?.()?.getResolution(0);
+  if (coarsest) layer.setMaxResolution(coarsest * 2 ** WMTS_OVERZOOM_OUT_LEVELS);
 }
 
 /**
@@ -198,7 +228,7 @@ export function makeRetryingTileLoadFunction(
 export function createWmtsTileLayer(item, wmtsOptionsCache) {
   const opts = wmtsOptionsCache[item.wmtsLayer];
   if (!opts) return null;
-  return new WMTS({...opts, tileLoadFunction: makeRetryingTileLoadFunction()});
+  return new WMTS({...opts, tileLoadFunction: makeRetryingTileLoadFunction({label: item.title})});
 }
 
 export default loadWmtsCapabilities;
