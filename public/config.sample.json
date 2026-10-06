@@ -50,6 +50,7 @@
     {
       "key": "demo",
       "name": "Demo Workspace",
+      "extent": [-5.5, 41.2, 10.0, 51.3],
       "shapefiles": [
         {
           "name": "Bassins",

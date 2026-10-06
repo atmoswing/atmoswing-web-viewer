@@ -165,6 +165,7 @@ The `workspaces` array defines different geographic areas or projects, each with
 {
   "key": "zap_v13",
   "name": "ZAP (v13)",
+  "extent": [-5.5, 41.2, 10.0, 51.3],
   "shapefiles": [...]
 }
 ```
@@ -172,6 +173,11 @@ The `workspaces` array defines different geographic areas or projects, each with
 #### Fields
 - **key** (string, required): Unique identifier used in URLs (`?workspace=<key>`)
 - **name** (string, required): Display name shown in the workspace selector
+- **extent** (array, optional): Area the map opens on, as `[minLon, minLat, maxLon, maxLat]` in
+  WGS84 (EPSG:4326) degrees, whatever `ENTITIES_SOURCE_EPSG` is. The map shows it as soon as the
+  workspace is selected, then zooms to the workspace's entities once they load. Without it, the
+  map starts on a world view and the zoom to the entities crosses the globe, requesting tiles
+  along the way. A malformed value is ignored with a console warning.
 - **shapefiles** (array, required): Array of shapefile/GeoJSON layer definitions
 
 ### Workspace Layers (Shapefiles)
@@ -322,6 +328,7 @@ The `style` object defines how features are rendered. Styles can be defined for 
   "workspaces": [
     {
       "key": "demo",
+      "extent": [-5.5, 41.2, 10.0, 51.3],
       "name": "Demo Workspace",
       "shapefiles": [
         {

@@ -81,7 +81,9 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
     mapRef.current = new Map({
       target: containerRef.current,
       layers: [baseLayers, overlayLayers, forecastLayerRef.current],
-      view: new View({center: [0, 0], zoom: 2, projection: DEFAULT_PROJECTION}),
+      // No center yet: an undefined view draws nothing and requests no tiles until
+      // useWorkspaceView points it at the workspace.
+      view: new View({projection: DEFAULT_PROJECTION}),
       controls: []
     });
 
