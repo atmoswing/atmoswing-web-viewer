@@ -10,6 +10,15 @@ export const DEFAULT_PROJECTION = 'EPSG:3857';
 /** Default WMTS matrix set identifier. @constant {string} */
 export const WMTS_MATRIX_SET_DEFAULT = 'PM';
 
+/** Time allowed for a WMTS GetCapabilities request before its layers are given up (ms). @constant {number} */
+export const WMTS_CAPABILITIES_TIMEOUT_MS = 15000;
+
+/** Extra attempts for a WMTS tile whose request failed transiently. @constant {number} */
+export const WMTS_TILE_MAX_RETRIES = 2;
+
+/** Delay before the first tile retry; each further retry waits this much longer (ms). @constant {number} */
+export const WMTS_TILE_RETRY_DELAY_MS = 1000;
+
 /** Padding for map extent fitting [top, right, bottom, left] in pixels. @constant {Array<number>} */
 export const FIT_PADDING = [60, 60, 60, 60];
 
