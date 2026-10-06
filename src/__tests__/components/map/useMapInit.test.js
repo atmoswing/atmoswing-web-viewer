@@ -93,6 +93,7 @@ vi.mock('ol-layerswitcher', () => ({
 vi.mock('@/components/map/utils/loadWmtsCapabilities.js', () => ({
   loadWmtsCapabilities: vi.fn(async () => ({})),
   createWmtsTileLayer: vi.fn(() => ({url: 'test'})),
+  applyWmtsSource: vi.fn((layer, source) => layer.setSource(source)),
 }));
 
 vi.mock('@/components/map/mapConstants.js', () => ({DEFAULT_PROJECTION: 'EPSG:3857'}));

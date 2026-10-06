@@ -1,5 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
+  applyWmtsSource,
   clearWmtsCapabilitiesCache,
   createWmtsTileLayer,
   fetchWmtsCapabilities,
@@ -168,8 +169,9 @@ describe('makeRetryingTileLoadFunction', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:tile');
   });
 
-  it('retries a transient failure after a growing delay, then stops', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ok: false, status: 404});
+  it('retries a transient failure after a growing delay, then stops with a warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    global.fetch = vi.fn().mockResolvedValue({ok: false, status: 404, text: () => Promise.resolve('<html>Not Found</html>')});
     const tile = makeTile();
     const load = makeRetryingTileLoadFunction({maxRetries: 2, delayMs: 1000});
     // What ImageTile.load() does after an error: back to loading, through the load function again.
@@ -191,6 +193,23 @@ describe('makeRetryingTileLoadFunction', () => {
     expect(tile.load).toHaveBeenCalledTimes(2);
     expect(global.fetch).toHaveBeenCalledTimes(3);
     expect(tile.state).toBe(TileState.ERROR);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/tile failed after 3 attempt\(s\) \(HTTP 404\)/);
+    warn.mockRestore();
+  });
+
+  it('marks a tile the server has no data for as empty, without retrying or warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const report = '<ExceptionReport xmlns="http://www.opengis.net/ows/1.1">'
+      + '<Exception exceptionCode="Not Found">No data found</Exception></ExceptionReport>';
+    global.fetch = vi.fn().mockResolvedValue({ok: false, status: 404, text: () => Promise.resolve(report)});
+    const tile = makeTile();
+    makeRetryingTileLoadFunction({delayMs: 10, label: 'Hydro'})(tile, 'https://x/tile');
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(tile.setState).toHaveBeenCalledExactlyOnceWith(TileState.EMPTY);
+    expect(tile.load).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('retries network errors', async () => {
@@ -201,13 +220,16 @@ describe('makeRetryingTileLoadFunction', () => {
     expect(tile.load).toHaveBeenCalledTimes(1);
   });
 
-  it('does not retry a permanent error', async () => {
+  it('does not retry a permanent error, but reports it under the layer name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     global.fetch = vi.fn().mockResolvedValue({ok: false, status: 403});
     const tile = makeTile();
-    makeRetryingTileLoadFunction({delayMs: 10})(tile, 'https://x/tile');
+    makeRetryingTileLoadFunction({delayMs: 10, label: 'Hydro'})(tile, 'https://x/tile');
     await vi.advanceTimersByTimeAsync(1000);
     expect(tile.setState).toHaveBeenCalledWith(TileState.ERROR);
     expect(tile.load).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith('Hydro: tile failed after 1 attempt(s) (HTTP 403)', 'https://x/tile');
+    warn.mockRestore();
   });
 
   it('leaves a tile alone once it is no longer loading', async () => {
@@ -218,6 +240,23 @@ describe('makeRetryingTileLoadFunction', () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(tile.setState).not.toHaveBeenCalled();
     expect(tile.load).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyWmtsSource', () => {
+  it('hides the layer beyond one zoom level coarser than the tile grid', () => {
+    const layer = {setSource: vi.fn(), setMaxResolution: vi.fn()};
+    const source = {getTileGrid: () => ({getResolution: (z) => [2445.98, 1222.99][z]})};
+    applyWmtsSource(layer, source);
+    expect(layer.setSource).toHaveBeenCalledWith(source);
+    expect(layer.setMaxResolution).toHaveBeenCalledWith(4891.96);
+  });
+
+  it('leaves the resolution range alone when the grid is unknown', () => {
+    const layer = {setSource: vi.fn(), setMaxResolution: vi.fn()};
+    applyWmtsSource(layer, {});
+    expect(layer.setSource).toHaveBeenCalled();
+    expect(layer.setMaxResolution).not.toHaveBeenCalled();
   });
 });
 

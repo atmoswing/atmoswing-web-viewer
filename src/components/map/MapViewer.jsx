@@ -31,6 +31,7 @@ import useOverlayGlobalLayers from './hooks/useOverlayGlobalLayers.js';
 import useForecastPoints from './hooks/useForecastPoints.js';
 import useMapInteractions from './hooks/useMapInteractions.js';
 import useProjectionRegistration from './hooks/useProjectionRegistration.js';
+import useWorkspaceView from './hooks/useWorkspaceView.js';
 
 export default function MapViewer() {
   const {t} = useTranslation();
@@ -50,6 +51,9 @@ export default function MapViewer() {
     runtimeConfig,
     enqueueSnackbar
   });
+
+  // Initial view on the workspace's area
+  useWorkspaceView({mapRef, mapReady, workspace, workspaces: runtimeConfig?.workspaces});
 
   // Projection registration & clearing when changed
   const lastRegisteredProjRef = useProjectionRegistration(ENTITIES_SOURCE_EPSG);
