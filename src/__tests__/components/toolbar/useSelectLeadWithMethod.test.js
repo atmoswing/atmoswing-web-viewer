@@ -98,6 +98,12 @@ describe('useSelectLeadWithMethod', () => {
     expect(setSelectedMethodConfig).toHaveBeenCalledWith({method: GFS, config: null});
   });
 
+  it('only changes the lead while the method list is not loaded', () => {
+    setup({tree: null})(new Date(2026, 9, 9), false);
+    expect(selectTargetDate).toHaveBeenCalled();
+    expect(setSelectedMethodConfig).not.toHaveBeenCalled();
+  });
+
   it('ignores a click without a date', () => {
     setup()(null, false);
     expect(selectTargetDate).not.toHaveBeenCalled();

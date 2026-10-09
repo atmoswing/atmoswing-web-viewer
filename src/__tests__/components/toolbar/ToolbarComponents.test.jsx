@@ -108,12 +108,71 @@ describe('ToolbarSquares clicks', () => {
     dominantMethodAt.mockReturnValue(null);
   });
 
+  it('falls back to the method id in the tooltip when a method has no name', async () => {
+    dominantMethodAt.mockImplementation(() => ({id: '06h-ARP'}));
+    const {container} = render(<ToolbarSquares/>);
+    fireEvent.mouseOver(container.querySelector('.toolbar-square'));
+    // Rendered from the id: the lines are there, with nothing undefined in them.
+    expect(await screen.findByText('toolbar.dominantMethod')).toBeInTheDocument();
+    expect(screen.getAllByText('toolbar.dominantMethodAtHour')).toHaveLength(1);
+    dominantMethodAt.mockReset();
+    dominantMethodAt.mockReturnValue(null);
+  });
+
   it('leaves the method lines out when no method is known', async () => {
     const {container} = render(<ToolbarSquares/>);
     fireEvent.mouseOver(container.querySelector('.toolbar-square'));
     expect(await screen.findByText('toolbar.colorSynthesis')).toBeInTheDocument();
     expect(screen.queryByText('toolbar.dominantMethod')).toBeNull();
     expect(screen.queryByText('toolbar.dominantMethodAtHour')).toBeNull();
+  });
+});
+
+describe('ToolbarSquares selection highlight', () => {
+  const day9 = new Date(2026, 9, 9);
+  const day9at6 = new Date(2026, 9, 9, 6);
+  const day10 = new Date(2026, 9, 10);
+
+  const renderWith = async (selectedTargetDate) => {
+    const {useSynthesis} = await import('@/contexts/forecast/ForecastsContext.jsx');
+    useSynthesis.mockReturnValue({
+      dailyLeads: [{date: day9, valueNorm: 0.3}, {date: day10, valueNorm: 0.1}],
+      subDailyLeads: [{date: day9, valueNorm: 0.2}, {date: day9at6, valueNorm: 0.4}],
+      selectedTargetDate,
+      selectTargetDate: vi.fn()
+    });
+    const {container} = render(<ToolbarSquares/>);
+    const squares = [...container.querySelectorAll('.toolbar-square')];
+    return {
+      squares,
+      selectedSquares: squares.map(sq => sq.classList.contains('selected')),
+      selectedSegments: [...squares[0].querySelectorAll('.square-subdaily-seg')].map(seg => seg.classList.contains('selected'))
+    };
+  };
+
+  it('marks the day square for a daily selection', async () => {
+    const {selectedSquares, selectedSegments} = await renderWith(day10);
+    expect(selectedSquares).toEqual([false, true]);
+    expect(selectedSegments).toEqual([false, false, false, false]);
+  });
+
+  it('marks the segment, not its day square, for a sub-daily selection', async () => {
+    const {selectedSquares, selectedSegments} = await renderWith(day9at6);
+    expect(selectedSquares).toEqual([false, false]);
+    expect(selectedSegments).toEqual([false, true, false, false]);
+  });
+
+  it('marks the 00h segment and its day square together, as both stand for midnight', async () => {
+    const {selectedSquares, selectedSegments} = await renderWith(day9);
+    expect(selectedSquares).toEqual([true, false]);
+    expect(selectedSegments).toEqual([true, false, false, false]);
+  });
+
+  it('hides the sub-daily strip of a day without sub-daily leads, and shows placeholders for missing hours', async () => {
+    const {squares} = await renderWith(null);
+    expect(squares[0].querySelector('.square-subdaily').classList.contains('has-subs')).toBe(true);
+    expect(squares[0].querySelectorAll('.square-subdaily-seg.placeholder')).toHaveLength(2); // 12h and 18h
+    expect(squares[1].querySelector('.square-subdaily').style.display).toBe('none');
   });
 });
 

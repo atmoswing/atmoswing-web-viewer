@@ -32,6 +32,21 @@ describe('i18n', () => {
     expect(Object.keys(i18n.options.resources).sort()).toEqual(['en', 'fr']);
   });
 
+  it('interpolates the layer failure warning without escaping the layer name', () => {
+    const params = {title: "Cours d'eau principaux", reason: 'HTTP 404'};
+    expect(i18n.t('map.layerLoadFailed', {...params, lng: 'fr'}))
+      .toBe("Impossible de charger la couche « Cours d'eau principaux » (HTTP 404)");
+    expect(i18n.t('map.layerLoadFailed', {...params, lng: 'en'}))
+      .toBe(`Could not load layer "Cours d'eau principaux" (HTTP 404)`);
+  });
+
+  it('interpolates the dominant method lines of the toolbar tooltip', () => {
+    expect(i18n.t('toolbar.dominantMethod', {method: 'Analogie humidité (2Z-2MI) 6h GFS', lng: 'fr'}))
+      .toBe('Méthode la plus défavorable (sélectionnée au clic) : Analogie humidité (2Z-2MI) 6h GFS');
+    expect(i18n.t('toolbar.dominantMethodAtHour', {hour: '06', method: 'ARPEGE 6h', lng: 'fr'}))
+      .toBe('06 h : ARPEGE 6h');
+  });
+
   it('translates a known key in both languages', () => {
     expect(i18n.t('panel.display', {lng: 'en'})).toBe('Display');
     expect(i18n.t('panel.display', {lng: 'fr'})).toBe('Affichage');

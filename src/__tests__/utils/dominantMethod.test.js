@@ -77,6 +77,18 @@ describe('findDominantMethod', () => {
     expect(findDominantMethod([{target_dates: ['2026-10-09T00:00:00'], values_normalized: [1]}], day(9))).toBeNull();
   });
 
+  it('ignores malformed entries and unreadable dates', () => {
+    const data = [
+      {method_id: 'NoArrays', target_dates: 'x', values_normalized: 'y'},
+      {method_id: 'NoValues', target_dates: ['2026-10-09T00:00:00']},
+      {method_id: 'BadDate', target_dates: ['not a date', '2026-10-09T00:00:00'], values_normalized: [0.9, 0.1]},
+      daily('Good', [0.2])
+    ];
+    // BadDate's readable date still counts; its unreadable one is skipped, not matched.
+    expect(findDominantMethod(data, day(9))).toEqual({methodId: 'Good', value: 0.2});
+    expect(findDominantMethod(data, 'not a date')).toBeNull();
+  });
+
   describe('ties', () => {
     const tiedAt = day(9, 6); // 06h-ARP and 06h-GFS both 0.30
 

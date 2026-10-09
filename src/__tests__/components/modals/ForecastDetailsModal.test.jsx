@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
 
-const {details, selectorOptions, exportAnalogsCSV, app, selectorValue, chartProps, TREE} = vi.hoisted(() => ({
+const {details, selectorOptions, exportAnalogsCSV, exportChartSVG, app, selectorValue, chartProps, TREE} = vi.hoisted(() => ({
   TREE: [
     {id: 'm1', children: [{id: 'c1'}, {id: 'c2'}]},
     {id: 'm2', children: [{id: 'c3'}]}
@@ -17,6 +17,7 @@ const {details, selectorOptions, exportAnalogsCSV, app, selectorValue, chartProp
   details: {current: null},
   selectorOptions: {current: null},
   exportAnalogsCSV: vi.fn(),
+  exportChartSVG: vi.fn(),
   app: {methodConfig: null, entityId: null, setMethodConfig: null, setEntityId: null},
   chartProps: {current: null},
   selectorValue: {current: null}
@@ -41,6 +42,11 @@ vi.mock('@/components/modals/hooks/useForecastDetailsData.js', () => ({
 vi.mock('@/components/modals/hooks/useMethodConfigOptions.js', () => ({
   useMethodConfigOptions: vi.fn(() => selectorOptions.current)
 }));
+// The chart exporters, to see which chart and file name each tab hands them.
+vi.mock('@/components/modals/common/chartExport.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  exportChartSVG
+}));
 vi.mock('@/components/modals/common/analogRows.js', async (importOriginal) => ({
   ...(await importOriginal()),
   exportAnalogsCSV
@@ -64,13 +70,15 @@ vi.mock('@/components/modals/common/ExportMenu.jsx', () => ({
   )
 }));
 vi.mock('@/components/modals/charts/PrecipitationDistributionChart.jsx', () => ({
-  default: (props) => {
+  // Like the real charts, they attach the ref they are given to their container (React 19 passes
+  // it as a prop): the window looks for the SVG to export under it.
+  default: ({ref, ...props}) => {
     chartProps.current = props;
-    return <div data-testid="precip-chart"/>;
+    return <div ref={ref} data-testid="precip-chart"><svg data-chart="distribution"/></div>;
   }
 }));
 vi.mock('@/components/modals/charts/CriteriaDistributionChart.jsx', () => ({
-  default: () => <div data-testid="criteria-chart"/>
+  default: ({ref}) => <div ref={ref} data-testid="criteria-chart"><svg data-chart="criteria"/></div>
 }));
 
 import ForecastDetailsModal from '@/components/modals/ForecastDetailsModal.jsx';
@@ -153,6 +161,22 @@ describe('ForecastDetailsModal', () => {
     expect(screen.queryByTestId('precip-chart')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
     expect(exportLabels()).toEqual(['export PNG', 'export SVG', 'export PDF']);
+  });
+
+  it('exports the chart of the tab shown, named after the tab', async () => {
+    const user = userEvent.setup();
+    render(<ForecastDetailsModal open={true} onClose={onClose}/>);
+
+    await user.click(screen.getByRole('button', {name: 'export SVG'}));
+    let [svg, baseName] = exportChartSVG.mock.lastCall;
+    expect(svg.dataset.chart).toBe('distribution');
+    expect(baseName).toMatch(/Station_A.*_distribution$/);
+
+    await user.click(screen.getByRole('tab', {name: 'forecastDetails.tab.criteria'}));
+    await user.click(screen.getByRole('button', {name: 'export SVG'}));
+    [svg, baseName] = exportChartSVG.mock.lastCall;
+    expect(svg.dataset.chart).toBe('criteria');
+    expect(baseName).toMatch(/Station_A.*_criteria$/);
   });
 
   it('lists the analogs on the analogs tab and exports them as CSV', async () => {
