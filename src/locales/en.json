@@ -36,6 +36,8 @@
     "restoreLastForecast": "Restore last forecast",
     "selectLeadTime": "Select lead time",
     "colorSynthesis": "Color: synthesis of all methods",
+    "dominantMethod": "Most severe method (selected on click): {{method}}",
+    "dominantMethodAtHour": "{{hour}}h: {{method}}",
     "openForecastDetails": "Open forecast details"
   },
   "forecasts": {

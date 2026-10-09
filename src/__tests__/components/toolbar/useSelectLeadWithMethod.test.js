@@ -5,7 +5,7 @@
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import useSelectLeadWithMethod from '@/components/toolbar/hooks/useSelectLeadWithMethod.js';
+import useSelectLeadWithMethod, {useDominantMethodLookup} from '@/components/toolbar/hooks/useSelectLeadWithMethod.js';
 import {useMethods, useSynthesis} from '@/contexts/forecast/ForecastsContext.jsx';
 
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
@@ -102,5 +102,33 @@ describe('useSelectLeadWithMethod', () => {
     setup()(null, false);
     expect(selectTargetDate).not.toHaveBeenCalled();
     expect(setSelectedMethodConfig).not.toHaveBeenCalled();
+  });
+});
+
+describe('useDominantMethodLookup', () => {
+  const lookup = ({selected = ARP, tree = [ARP, GFS, SUB]} = {}) => {
+    useSynthesis.mockReturnValue({perMethodSynthesis, selectTargetDate: vi.fn()});
+    useMethods.mockReturnValue({
+      methodConfigTree: tree,
+      selectedMethodConfig: selected ? {method: selected, config: null} : null,
+      setSelectedMethodConfig: vi.fn()
+    });
+    return renderHook(() => useDominantMethodLookup()).result.current;
+  };
+
+  it('returns the method entry behind a daily square and a sub-daily segment', () => {
+    const at = lookup();
+    expect(at(new Date(2026, 9, 9), false)).toBe(GFS);
+    expect(at(new Date(2026, 9, 9, 6), true)).toBe(SUB);
+  });
+
+  it('applies the same tie rule as the click: the selected method first', () => {
+    expect(lookup({selected: GFS})(new Date(2026, 9, 10), false)).toBe(GFS);
+    expect(lookup({selected: ARP})(new Date(2026, 9, 10), false)).toBe(ARP);
+  });
+
+  it('returns null without data, or for a method missing from the list', () => {
+    expect(lookup()(new Date(2026, 9, 20), false)).toBeNull();
+    expect(lookup({tree: [ARP, SUB]})(new Date(2026, 9, 9), false)).toBeNull();
   });
 });

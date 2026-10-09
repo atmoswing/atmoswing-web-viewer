@@ -11,6 +11,15 @@ A French version for forecasters and for the DREAL is kept alongside, in
 
 ### Added
 
+- **Clicking a lead square selects the method behind its colour** (*Évolution ①*). A square's
+  colour is the most severe forecast among all methods at that lead; clicking it, or one of its
+  sub-daily segments, now also selects the method giving that value, so the map, the synthesis
+  panel and the method label switch to it. Daily squares compare daily methods, sub-daily segments
+  6-hourly ones. On a tie the current method is kept, otherwise the first in the synthesis panel's
+  order is taken. When the dominant method is already selected, its configuration is kept; when no
+  method has a value at the lead, only the lead changes. The square's tooltip names that method,
+  for the day and for each sub-daily segment. No API change: the per-method synthesis the panel
+  already loads carries the values.
 - **Forecast details window** (*Évolution ②*): one window with three tabs — Distribution, Criteria
   and Analogs — replacing the separate distribution and analog-details windows. It opens from the
   toolbar on the current selection, or from the time series on a given forecast.

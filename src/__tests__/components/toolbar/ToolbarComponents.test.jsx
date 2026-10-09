@@ -35,8 +35,11 @@ vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
 }));
 
 // The selection logic itself is tested with the hook; here only the wiring of the squares.
-const {selectLead} = vi.hoisted(() => ({selectLead: vi.fn()}));
-vi.mock('@/components/toolbar/hooks/useSelectLeadWithMethod.js', () => ({default: () => selectLead}));
+const {selectLead, dominantMethodAt} = vi.hoisted(() => ({selectLead: vi.fn(), dominantMethodAt: vi.fn(() => null)}));
+vi.mock('@/components/toolbar/hooks/useSelectLeadWithMethod.js', () => ({
+  default: () => selectLead,
+  useDominantMethodLookup: () => dominantMethodAt
+}));
 
 vi.mock('@/contexts/WorkspaceContext.jsx', () => ({
   useWorkspace: vi.fn(() => ({
@@ -89,6 +92,28 @@ describe('ToolbarSquares clicks', () => {
     fireEvent.click(container.querySelector('.square-subdaily-seg:not(.placeholder)'));
     expect(selectLead).toHaveBeenLastCalledWith(day9at6, true);
     expect(selectLead).toHaveBeenCalledTimes(2);
+  });
+
+  it('names in the tooltip the method a click selects, for the day and each sub-daily segment', async () => {
+    dominantMethodAt.mockImplementation((date, subDaily) => (subDaily ? {id: '06h', name: 'ARPEGE 6h'} : {id: '24h'}));
+    const {container} = render(<ToolbarSquares/>);
+    fireEvent.mouseOver(container.querySelector('.toolbar-square'));
+
+    // The i18n mock renders keys: one daily line, one line per sub-daily segment.
+    expect(await screen.findByText('toolbar.dominantMethod')).toBeInTheDocument();
+    expect(screen.getAllByText('toolbar.dominantMethodAtHour')).toHaveLength(1);
+    expect(dominantMethodAt).toHaveBeenCalledWith(day9, false);
+    expect(dominantMethodAt).toHaveBeenCalledWith(day9at6, true);
+    dominantMethodAt.mockReset();
+    dominantMethodAt.mockReturnValue(null);
+  });
+
+  it('leaves the method lines out when no method is known', async () => {
+    const {container} = render(<ToolbarSquares/>);
+    fireEvent.mouseOver(container.querySelector('.toolbar-square'));
+    expect(await screen.findByText('toolbar.colorSynthesis')).toBeInTheDocument();
+    expect(screen.queryByText('toolbar.dominantMethod')).toBeNull();
+    expect(screen.queryByText('toolbar.dominantMethodAtHour')).toBeNull();
   });
 });
 
