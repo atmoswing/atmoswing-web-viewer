@@ -10,13 +10,17 @@ import {useSynthesis} from '@/contexts/forecast/ForecastsContext.jsx';
 import {valueToColorCSS} from '@/utils/colorUtils.js';
 import {isSameDay, makeDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
+import useSelectLeadWithMethod from './hooks/useSelectLeadWithMethod.js';
 
 /**
  * ToolbarSquares component.
+ * A click on a square (or on one of its sub-daily segments) selects that lead and the method
+ * whose forecast gives it its colour.
  * @returns {React.ReactElement}
  */
 export default function ToolbarSquares() {
-  const {dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate} = useSynthesis();
+  const {dailyLeads, subDailyLeads, selectedTargetDate} = useSynthesis();
+  const selectLead = useSelectLeadWithMethod();
   const {t} = useTranslation();
   const maxVal = 1;
 
@@ -58,7 +62,7 @@ export default function ToolbarSquares() {
             <div
               className={`toolbar-square${isSelected ? ' selected' : ''}`}
               style={{background: color}}
-              onClick={() => selectTargetDate(d.date, false)}
+              onClick={() => selectLead(d.date, false)}
             >
               <span>{label}</span>
               {subHours.length > 0 && (
@@ -79,7 +83,7 @@ export default function ToolbarSquares() {
                         key={j}
                         className={`square-subdaily-seg${subSelected ? ' selected' : ''}`}
                         style={{background: subColor}}
-                        onClick={() => selectTargetDate(s.date, true)}
+                        onClick={() => selectLead(s.date, true)}
                       />
                     );
                   })}
