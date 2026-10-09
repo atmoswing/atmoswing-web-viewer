@@ -36,6 +36,13 @@ A French version for forecasters and for the DREAL is kept alongside, in
 - **CSV export of the analogs table**, written to be opened by double-clicking it in a spreadsheet
   set to French: semicolons, comma decimals, a UTF-8 byte-order mark, translated column headers, and
   dates a spreadsheet reads as dates (`2007-08-04`, or `2006-11-10 18:00:00` for sub-daily methods).
+- **The map opens on the workspace's area.** Each workspace in `config.json` can declare an optional
+  `extent` (`[minLon, minLat, maxLon, maxLat]`, WGS84), shown as soon as the workspace is selected,
+  before its stations load. Without it, the map starts on a world view as before. See
+  `CONFIGURATION.md`.
+- **A layer that fails to load is reported** with a warning, translated, naming the layer and the
+  reason: IGN layers, overlays such as Vigicrues, and workspace layers. An overlay refreshed
+  periodically warns once per outage, not at every refresh.
 
 ### Changed
 
@@ -46,6 +53,18 @@ A French version for forecasters and for the DREAL is kept alongside, in
 - A lead that a station does not offer falls back to the nearest one it does.
 - The window needs one `/analogs` request per selection instead of three, and both windows share one
   request for which entities each configuration covers, instead of probing configurations one by one.
+- **The map no longer waits for the IGN layers.** It used to stay blank until IGN's capabilities
+  document (2.9 MB) was downloaded and parsed, holding back the stations and every overlay. The map
+  now shows at once, and the IGN layers appear when ready. The document is fetched once per page
+  instead of twice, providers are fetched in parallel, and a provider that does not answer within
+  15 s loses only its own layers, with a warning.
+- **IGN layers appear at once on later visits.** The part of the capabilities document the
+  configured layers need (about 16 KB) is kept in the browser and refreshed in the background once
+  older than a day. A first visit, or a browser blocking storage, behaves as before.
+- **Fewer failed tile requests.** A tile that fails transiently is retried twice; a tile IGN reports
+  as having no data is shown empty without retrying; and a WMTS layer is hidden when zoomed out
+  beyond its tile grid (Hydrographie starts at zoom 6), which removes the bursts of requests for
+  areas it does not cover. Tiles still failing after their retries are logged with the layer name.
 
 ### Fixed
 
@@ -56,6 +75,9 @@ A French version for forecasters and for the DREAL is kept alongside, in
   hovered for its tooltip.
 - `useCachedRequest` never returns the previous key's data on the render where the key changes, so a
   value is never validated against another selection's list.
+- Showing a warning no longer rebuilds the map. Every snackbar used to reset the view and reload
+  the overlays, and a failing IGN layer could loop: its warning rebuilt the map, which failed and
+  warned again.
 
 ### Removed
 
