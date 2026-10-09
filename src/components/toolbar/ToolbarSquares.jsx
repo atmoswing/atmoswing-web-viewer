@@ -10,13 +10,18 @@ import {useSynthesis} from '@/contexts/forecast/ForecastsContext.jsx';
 import {valueToColorCSS} from '@/utils/colorUtils.js';
 import {isSameDay, makeDayKey, SUB_HOURS} from '@/utils/targetDateUtils.js';
 import {formatDateDDMMYYYY} from '@/utils/formattingUtils.js';
+import useSelectLeadWithMethod, {useDominantMethodLookup} from './hooks/useSelectLeadWithMethod.js';
 
 /**
  * ToolbarSquares component.
+ * A click on a square (or on one of its sub-daily segments) selects that lead and the method
+ * whose forecast gives it its colour.
  * @returns {React.ReactElement}
  */
 export default function ToolbarSquares() {
-  const {dailyLeads, subDailyLeads, selectedTargetDate, selectTargetDate} = useSynthesis();
+  const {dailyLeads, subDailyLeads, selectedTargetDate} = useSynthesis();
+  const selectLead = useSelectLeadWithMethod();
+  const dominantMethodAt = useDominantMethodLookup();
   const {t} = useTranslation();
   const maxVal = 1;
 
@@ -43,6 +48,11 @@ export default function ToolbarSquares() {
         const subsByHour = new Map(subs.map(s => [s.date.getHours(), s]));
         const hasAnySub = subHours.some(hr => subsByHour.has(hr));
         const isSelected = selectedTargetDate && isSameDay(d.date, selectedTargetDate) && (!selectedTargetDate.getHours() || subs.length === 0);
+        // The method a click selects: named in the tooltip, for the day and each sub-daily segment.
+        const dailyMethod = dominantMethodAt(d.date, false);
+        const subMethods = subs
+          .map(s => ({hour: s.date.getHours(), method: dominantMethodAt(s.date, true)}))
+          .filter(s => s.method);
         return (
           <Tooltip
             key={i}
@@ -50,6 +60,15 @@ export default function ToolbarSquares() {
               <>
                 <div>{t('toolbar.selectLeadTime', {defaultValue: 'Select lead time'})} {label}</div>
                 <div>{t('toolbar.colorSynthesis', {defaultValue: 'Color: synthesis of all methods'})}</div>
+                {dailyMethod && (
+                  <div>{t('toolbar.dominantMethod', {method: dailyMethod.name || dailyMethod.id})}</div>
+                )}
+                {subMethods.map(({hour, method}) => (
+                  <div key={hour}>{t('toolbar.dominantMethodAtHour', {
+                    hour: String(hour).padStart(2, '0'),
+                    method: method.name || method.id
+                  })}</div>
+                ))}
                 <div>{t('synthesis.normalizedValues', {defaultValue: 'Valeurs normalisées'})} (P/P10, q90)</div>
               </>
             }
@@ -58,7 +77,7 @@ export default function ToolbarSquares() {
             <div
               className={`toolbar-square${isSelected ? ' selected' : ''}`}
               style={{background: color}}
-              onClick={() => selectTargetDate(d.date, false)}
+              onClick={() => selectLead(d.date, false)}
             >
               <span>{label}</span>
               {subHours.length > 0 && (
@@ -79,7 +98,7 @@ export default function ToolbarSquares() {
                         key={j}
                         className={`square-subdaily-seg${subSelected ? ' selected' : ''}`}
                         style={{background: subColor}}
-                        onClick={() => selectTargetDate(s.date, true)}
+                        onClick={() => selectLead(s.date, true)}
                       />
                     );
                   })}

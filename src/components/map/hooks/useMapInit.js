@@ -24,12 +24,12 @@ import {DEFAULT_PROJECTION} from '@/components/map/mapConstants.js';
  * @param {Object} params - Hook parameters
  * @param {Function} params.t - Translation function
  * @param {Object} params.runtimeConfig - Runtime config with layer definitions
- * @param {Function} params.enqueueSnackbar - Notification function
+ * @param {Function} params.reportLayerError - Called as `(title, reason)` for a layer that cannot be loaded
  * @returns {Object} Map refs and ready state
  * @example
- * const { containerRef, mapRef, mapReady } = useMapInit({ t, runtimeConfig, enqueueSnackbar });
+ * const { containerRef, mapRef, mapReady } = useMapInit({ t, runtimeConfig, reportLayerError });
  */
-export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
+export default function useMapInit({t, runtimeConfig, reportLayerError}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const forecastLayerRef = useRef(null);
@@ -97,8 +97,7 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
     setMapReady(true);
 
     if (pendingWmtsLayers.length) {
-      const warn = (msg) => enqueueSnackbar(msg, {variant: 'warning'});
-      loadWmtsCapabilities(runtimeConfig, warn, {items: wmtsBaseItems}).then(wmtsOptionsCache => {
+      loadWmtsCapabilities(runtimeConfig, reportLayerError, {items: wmtsBaseItems}).then(wmtsOptionsCache => {
         if (cancelled) return;
         pendingWmtsLayers.forEach(({item, layer}) => {
           const source = createWmtsTileLayer(item, wmtsOptionsCache);
@@ -134,7 +133,7 @@ export default function useMapInit({t, runtimeConfig, enqueueSnackbar}) {
         mapRef.current = null;
       }
     };
-  }, [runtimeConfig, t, enqueueSnackbar]);
+  }, [runtimeConfig, t, reportLayerError]);
 
   return {containerRef, mapRef, forecastLayerRef, overlayGroupRef, layerSwitcherRef, mapReady};
 }

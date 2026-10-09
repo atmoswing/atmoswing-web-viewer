@@ -148,3 +148,21 @@ describe('useSnackbar hook', () => {
   });
 });
 
+
+describe('useSnackbar identities', () => {
+  // The map is built in an effect that depends on enqueueSnackbar: a new function per render
+  // tore the map down and rebuilt it whenever a snackbar opened.
+  it('keeps the same functions when snackbars are added and closed', () => {
+    const wrapper = ({children}) => <SnackbarProvider>{children}</SnackbarProvider>;
+    const {result} = renderHook(() => useSnackbar(), {wrapper});
+    const {enqueueSnackbar, closeSnackbar, removeSnackbar} = result.current;
+
+    act(() => enqueueSnackbar('Hello', {variant: 'warning'}));
+    expect(result.current.snackbars).toHaveLength(1);
+    act(() => closeSnackbar(result.current.snackbars[0].id));
+
+    expect(result.current.enqueueSnackbar).toBe(enqueueSnackbar);
+    expect(result.current.closeSnackbar).toBe(closeSnackbar);
+    expect(result.current.removeSnackbar).toBe(removeSnackbar);
+  });
+});

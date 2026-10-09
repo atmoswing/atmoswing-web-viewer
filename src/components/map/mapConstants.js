@@ -13,6 +13,12 @@ export const WMTS_MATRIX_SET_DEFAULT = 'PM';
 /** Time allowed for a WMTS GetCapabilities request before its layers are given up (ms). @constant {number} */
 export const WMTS_CAPABILITIES_TIMEOUT_MS = 15000;
 
+/** Age after which stored WMTS layer settings are used once more but refreshed in the background (ms). @constant {number} */
+export const WMTS_STORED_CAPABILITIES_FRESH_MS = 24 * 60 * 60 * 1000;
+
+/** Age after which stored WMTS layer settings are ignored and fetched again first (ms). @constant {number} */
+export const WMTS_STORED_CAPABILITIES_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 /** Extra attempts for a WMTS tile whose request failed transiently. @constant {number} */
 export const WMTS_TILE_MAX_RETRIES = 2;
 

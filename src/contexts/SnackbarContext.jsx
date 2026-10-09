@@ -4,7 +4,7 @@
  * Provides a queue-based system for displaying temporary messages to users.
  */
 
-import React, {createContext, useContext, useState} from 'react';
+import React, {createContext, useCallback, useContext, useMemo, useState} from 'react';
 
 const SnackbarContext = createContext();
 
@@ -50,29 +50,36 @@ export const SnackbarProvider = ({children}) => {
    * @param {string} message - Message to display
    * @param {Object} options - Snackbar options (variant, autoHideDuration, etc.)
    */
-  const enqueueSnackbar = (message, options = {}) => {
+  // Stable identities: consumers list these in effect dependencies (the map is built in one),
+  // and a new function per render would re-run those effects every time a snackbar opens.
+  const enqueueSnackbar = useCallback((message, options = {}) => {
     const id = Date.now() + Math.random();
     setSnackbars(prev => [...prev, {id, message, ...options, open: true}]);
-  };
+  }, []);
 
   /**
    * Closes a snackbar by ID (triggers exit animation).
    * @param {number} id - Snackbar ID
    */
-  const closeSnackbar = (id) => {
+  const closeSnackbar = useCallback((id) => {
     setSnackbars(prev => prev.map(sb => sb.id === id ? {...sb, open: false} : sb));
-  };
+  }, []);
 
   /**
    * Removes a snackbar from the queue completely.
    * @param {number} id - Snackbar ID
    */
-  const removeSnackbar = (id) => {
+  const removeSnackbar = useCallback((id) => {
     setSnackbars(prev => prev.filter(sb => sb.id !== id));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({enqueueSnackbar, closeSnackbar, removeSnackbar, snackbars}),
+    [enqueueSnackbar, closeSnackbar, removeSnackbar, snackbars]
+  );
 
   return (
-    <SnackbarContext.Provider value={{enqueueSnackbar, closeSnackbar, removeSnackbar, snackbars}}>
+    <SnackbarContext.Provider value={value}>
       {children}
     </SnackbarContext.Provider>
   );

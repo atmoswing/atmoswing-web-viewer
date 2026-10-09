@@ -36,6 +36,8 @@
     "restoreLastForecast": "Restore last forecast",
     "selectLeadTime": "Select lead time",
     "colorSynthesis": "Color: synthesis of all methods",
+    "dominantMethod": "Most severe method (selected on click): {{method}}",
+    "dominantMethodAtHour": "{{hour}}h: {{method}}",
     "openForecastDetails": "Open forecast details"
   },
   "forecasts": {
@@ -62,6 +64,7 @@
       "title": "Normalized values"
     },
     "layerSwitcherTip": "Layers",
+    "layerLoadFailed": "Could not load layer \"{{title}}\" ({{reason}})",
     "loading": {
       "noForecastAvailable": "No forecast available for the selected method and lead time",
       "noForecastFoundSearch": "No forecast found within the searched time range"

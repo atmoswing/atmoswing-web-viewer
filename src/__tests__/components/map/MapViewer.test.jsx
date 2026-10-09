@@ -4,7 +4,13 @@ import React from 'react';
 
 import MapViewer from '@/components/map/MapViewer.jsx';
 
-vi.mock('react-i18next', async () => (await import('@/__tests__/testUtils.js')).i18nMockModule());
+// Like the shared i18n mock, but with one `t` for all renders, as react-i18next gives: MapViewer
+// builds its layer error reporter from `t`, and the test checks that reporter stays the same.
+vi.mock('react-i18next', async () => {
+  const {useTranslation} = (await import('@/__tests__/testUtils.js')).i18nMockModule();
+  const stable = useTranslation();
+  return {useTranslation: () => stable};
+});
 
 // Provide mutable state holders so tests can change hook return values per-case
 let ENTITIES = {
@@ -33,7 +39,8 @@ let SNACK = {
   }
 };
 
-// vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'en' } }) }));
+// Arguments the map hooks last received from MapViewer, by hook name.
+let HOOK_ARGS = {};
 
 vi.mock('@/contexts/forecast/ForecastsContext.jsx', () => ({
   useEntities: () => ENTITIES,
@@ -50,7 +57,7 @@ vi.mock('@/contexts/SnackbarContext.jsx', () => ({useSnackbar: () => SNACK}));
 
 // Mock map-related hooks to no-op or return simple refs
 vi.mock('@/components/map/hooks/useMapInit.js', () => ({
-  default: () => ({
+  default: (args) => (HOOK_ARGS.useMapInit = args, {
     containerRef: {current: null},
     mapRef: {current: null},
     forecastLayerRef: {
@@ -67,11 +74,13 @@ vi.mock('@/components/map/hooks/useMapInit.js', () => ({
   })
 }));
 vi.mock('@/components/map/hooks/useWorkspaceLayers.js', () => ({
-  default: () => {
+  default: (args) => {
+    HOOK_ARGS.useWorkspaceLayers = args;
   }
 }));
 vi.mock('@/components/map/hooks/useOverlayGlobalLayers.js', () => ({
-  default: () => {
+  default: (args) => {
+    HOOK_ARGS.useOverlayGlobalLayers = args;
   }
 }));
 vi.mock('@/components/map/hooks/useForecastPoints.js', () => ({
@@ -107,6 +116,7 @@ describe('MapViewer smoke', () => {
       enqueueSnackbar: () => {
       }
     };
+    HOOK_ARGS = {};
     vi.clearAllMocks();
   });
 
@@ -138,5 +148,31 @@ describe('MapViewer smoke', () => {
 
     render(<MapViewer/>);
     expect(screen.getByText('map.loading.noForecastFoundSearch')).toBeInTheDocument();
+  });
+
+  describe('layer failures', () => {
+    it('reports a layer failure from any map hook as a translated warning', () => {
+      const enqueueSnackbar = vi.fn();
+      SNACK = {enqueueSnackbar};
+      render(<MapViewer/>);
+
+      const report = HOOK_ARGS.useMapInit.reportLayerError;
+      // One reporter shared by the three hooks that load layers.
+      expect(HOOK_ARGS.useOverlayGlobalLayers.reportLayerError).toBe(report);
+      expect(HOOK_ARGS.useWorkspaceLayers.reportLayerError).toBe(report);
+
+      report('Vigilance Vigicrues', 'HTTP 502');
+      // The i18n mock returns the key; the French text itself is checked in i18n.test.js.
+      expect(enqueueSnackbar).toHaveBeenCalledExactlyOnceWith('map.layerLoadFailed', {variant: 'warning'});
+    });
+
+    it('keeps the same reporter across renders, so the map is not rebuilt', () => {
+      // useMapInit lists it in its effect dependencies: a new function per render would tear the
+      // map down and rebuild it, as every snackbar used to.
+      const {rerender} = render(<MapViewer/>);
+      const first = HOOK_ARGS.useMapInit.reportLayerError;
+      rerender(<MapViewer/>);
+      expect(HOOK_ARGS.useMapInit.reportLayerError).toBe(first);
+    });
   });
 });

@@ -8,7 +8,7 @@ import 'ol/ol.css';
 import 'ol-layerswitcher/dist/ol-layerswitcher.css';
 import '@/styles/map.css';
 
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   useEntities,
@@ -44,12 +44,17 @@ export default function MapViewer() {
   const {baseDateSearchFailed, clearBaseDateSearchFailed, workspace: sessionWorkspace} = useForecastSession();
   const runtimeConfig = useConfig();
   const {enqueueSnackbar} = useSnackbar();
+  // Stable, as the map hooks list it in their effect dependencies.
+  const reportLayerError = useCallback(
+    (title, reason) => enqueueSnackbar(t('map.layerLoadFailed', {title, reason}), {variant: 'warning'}),
+    [t, enqueueSnackbar]
+  );
   const ENTITIES_SOURCE_EPSG = runtimeConfig?.ENTITIES_SOURCE_EPSG || 'EPSG:4326';
 
   const {containerRef, mapRef, forecastLayerRef, overlayGroupRef, layerSwitcherRef, mapReady} = useMapInit({
     t,
     runtimeConfig,
-    enqueueSnackbar
+    reportLayerError
   });
 
   // Initial view on the workspace's area
@@ -66,9 +71,9 @@ export default function MapViewer() {
   }, [ENTITIES_SOURCE_EPSG, mapReady, forecastLayerRef, lastRegisteredProjRef]);
 
   // Overlay layers from workspace config
-  useWorkspaceLayers({mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef});
+  useWorkspaceLayers({mapReady, runtimeConfig, workspace, overlayGroupRef, layerSwitcherRef, reportLayerError});
   // Global overlay layers (non-workspace specific)
-  useOverlayGlobalLayers({mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, enqueueSnackbar});
+  useOverlayGlobalLayers({mapReady, runtimeConfig, overlayGroupRef, layerSwitcherRef, reportLayerError});
 
   const [legendStops, setLegendStops] = useState([]);
   const [legendMax, setLegendMax] = useState(1);

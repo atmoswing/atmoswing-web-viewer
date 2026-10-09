@@ -36,6 +36,8 @@
     "restoreLastForecast": "Restaurer la dernière prévision",
     "selectLeadTime": "Sélectionner l'échéance",
     "colorSynthesis": "Couleur : synthèse de toutes les méthodes",
+    "dominantMethod": "Méthode la plus défavorable (sélectionnée au clic) : {{method}}",
+    "dominantMethodAtHour": "{{hour}} h : {{method}}",
     "openForecastDetails": "Ouvrir les détails de la prévision"
   },
   "forecasts": {
@@ -62,6 +64,7 @@
       "title": "Valeurs normalisées"
     },
     "layerSwitcherTip": "Couches",
+    "layerLoadFailed": "Impossible de charger la couche « {{title}} » ({{reason}})",
     "loading": {
       "noForecastAvailable": "Aucune prévision disponible pour la méthode et l'échéance sélectionnées",
       "noForecastFoundSearch": "Aucune prévision trouvée dans l'intervalle de recherche"
