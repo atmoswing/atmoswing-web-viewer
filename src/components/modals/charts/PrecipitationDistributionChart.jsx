@@ -5,7 +5,7 @@
 
 import React, {forwardRef, useEffect} from 'react';
 import * as d3 from 'd3';
-import {buildDistributionTitle, drawChartTitle} from './draw/chartChrome.js';
+import {buildDistributionTitle, drawChartBackground, drawChartTitle} from './draw/chartChrome.js';
 import {
   collectOverlayValues,
   computeDistributionGeometry,
@@ -76,6 +76,7 @@ const PrecipitationDistributionChart = forwardRef(function PrecipitationDistribu
     const {width, height, innerW, innerH, margin} = geometry;
 
     const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
+    drawChartBackground(svg, {width, height});
     drawChartTitle(svg, {
       text: buildDistributionTitle({
         stationName, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, t

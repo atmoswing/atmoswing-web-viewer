@@ -78,6 +78,15 @@ A French version for forecasters and for the DREAL is kept alongside, in
 - Showing a warning no longer rebuilds the map. Every snackbar used to reset the view and reload
   the overlays, and a failing IGN layer could loop: its warning rebuilt the map, which failed and
   warned again.
+- **Chart exports keep their axes on computers in dark mode.** PNG, PDF and SVG exports lost the
+  axis lines, ticks and tick labels when the operating system was set to dark mode. D3 draws them in
+  `currentColor`, and the export copy, measured off-screen under `<body>`, inherited the page's
+  dark-mode root colour (near-white) instead of the modal's. The copy is now pinned to the chart's
+  on-screen colour (`cloneForExport`), and `index.css` drops the Vite template's dark defaults, so
+  the page is light-only.
+- **Every chart has an opaque white background**, so an exported SVG no longer shows through as
+  black in a dark-mode viewer. Only the time series had one; the distribution charts were
+  transparent. Drawn by `drawChartBackground` in `chartChrome.js`.
 
 ### Removed
 

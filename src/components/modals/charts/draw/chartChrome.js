@@ -1,12 +1,18 @@
 /**
  * @module components/modals/charts/draw/chartChrome
- * @description Title and legend drawing shared by the chart modals' D3 charts.
+ * @description Background, title and legend drawing shared by the chart modals' D3 charts.
  */
 
 import * as d3 from 'd3';
 
 const TITLE_FONT_SIZE = 14;
 const TITLE_COLOR = '#222';
+
+/**
+ * Background colour painted behind every chart.
+ * @type {string}
+ */
+export const CHART_BACKGROUND = '#ffffff';
 
 /**
  * One entry of the chart legend.
@@ -76,6 +82,28 @@ export function buildTimeSeriesTitle({stationName, selectedMethodConfig, runDate
     : '';
   const runDateStr = (runDate instanceof Date && !isNaN(runDate)) ? d3.timeFormat('%Y-%m-%d')(runDate) : '';
   return [stationName, methodName, runDateStr].filter(Boolean).join(' — ');
+}
+
+/**
+ * Paints an opaque background over the whole SVG, as its first child.
+ *
+ * Without it the SVG is transparent, so an exported .svg opened in a dark-mode viewer shows
+ * dark axes and labels on a black background.
+ *
+ * @param {Object} svg - D3 selection of the SVG element
+ * @param {Object} params
+ * @param {number} params.width - SVG width
+ * @param {number} params.height - SVG height
+ * @returns {void}
+ * @example
+ * drawChartBackground(svg, {width: 600, height: 300});
+ */
+export function drawChartBackground(svg, {width, height}) {
+  svg.insert('rect', ':first-child')
+    .attr('class', 'chart-background')
+    .attr('x', 0).attr('y', 0)
+    .attr('width', width).attr('height', height)
+    .attr('fill', CHART_BACKGROUND);
 }
 
 /**

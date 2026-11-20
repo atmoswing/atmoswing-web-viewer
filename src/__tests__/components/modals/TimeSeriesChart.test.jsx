@@ -65,6 +65,10 @@ describe('TimeSeriesChart (smoke)', () => {
     const svg = ref.current.querySelector('svg');
     expect(svg).toBeTruthy();
 
+    // Opaque background, so an exported .svg does not turn black in dark-mode viewers.
+    expect(svg.firstElementChild.getAttribute('class')).toBe('chart-background');
+    expect(svg.firstElementChild.getAttribute('fill')).toBe('#ffffff');
+
     const txt = svg.textContent || '';
     expect(txt).toContain('Station Z');
     expect(txt).toContain('Method 1');

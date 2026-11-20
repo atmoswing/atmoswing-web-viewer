@@ -13,7 +13,7 @@ import {
   computeYMax,
   extractReferencePairs
 } from './draw/chartGeometry.js';
-import {buildTimeSeriesTitle, drawChartTitle, drawLegend} from './draw/chartChrome.js';
+import {buildTimeSeriesTitle, drawChartBackground, drawChartTitle, drawLegend} from './draw/chartChrome.js';
 import {
   buildLegendItems,
   drawAxes,
@@ -84,9 +84,7 @@ export default function TimeSeriesChart(
       .attr('height', svgHeight)
       .attr('role', 'img')
       .attr('aria-label', t('seriesModal.seriesAriaLabel'));
-    svg.append('rect')
-      .attr('x', 0).attr('y', 0).attr('width', svgWidth).attr('height', svgHeight)
-      .attr('fill', '#fff');
+    drawChartBackground(svg, {width: svgWidth, height: svgHeight});
 
     // --- domains and scales ---
     const parsedActive = activeForecastDate
