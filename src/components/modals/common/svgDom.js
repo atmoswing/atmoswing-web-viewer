@@ -102,12 +102,44 @@ export function withTemporaryContainer(node, cb) {
 }
 
 /**
+ * Text colour used for `currentColor` when the source chart's own colour cannot be read.
+ * Matches MUI's default `text.primary`, which is what the charts inherit on screen.
+ * @type {string}
+ */
+export const EXPORT_FALLBACK_COLOR = 'rgba(0, 0, 0, 0.87)';
+
+/**
+ * Reads the CSS `color` the chart inherits where it is displayed.
+ * @param {SVGElement} svg - Source SVG element
+ * @returns {string} A CSS colour, or {@link EXPORT_FALLBACK_COLOR} when it cannot be read
+ */
+function resolveDisplayedColor(svg) {
+  try {
+    if (svg.isConnected) {
+      const color = getComputedStyle(svg).getPropertyValue('color');
+      if (color) return color;
+    }
+  } catch { /* fall back below */
+  }
+  return EXPORT_FALLBACK_COLOR;
+}
+
+/**
  * Clones an SVG element and tags it with the SVG namespace, ready for serialization.
+ *
+ * The clone is also pinned to the text colour the chart has on screen. D3 axes draw their
+ * domain line, ticks and labels with `currentColor`, and the clone is measured in an
+ * off-screen container under `<body>`, where it would otherwise inherit the page's root
+ * colour instead of the modal's. That root colour is near-white when the OS is in dark mode
+ * (`index.css`), which made the frame, ticks and labels vanish against the white export
+ * background on those machines.
+ *
  * @param {SVGElement} svg - Source SVG element
  * @returns {SVGElement} Detached clone
  */
 export function cloneForExport(svg) {
   const clone = svg.cloneNode(true);
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.style.color = resolveDisplayedColor(svg);
   return clone;
 }

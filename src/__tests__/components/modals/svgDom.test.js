@@ -4,6 +4,8 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
+  cloneForExport,
+  EXPORT_FALLBACK_COLOR,
   downloadBlob,
   getSVGSize,
   inlineAllStyles,
@@ -193,6 +195,49 @@ describe('svgDom', () => {
       const result = withTemporaryContainer(node, () => 42);
 
       expect(result).toBe(42);
+    });
+  });
+
+  describe('cloneForExport', () => {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    let host;
+
+    beforeEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    afterEach(() => {
+      host?.remove();
+      host = null;
+    });
+
+    it('pins the clone to the colour the chart has on screen, not the page root colour', () => {
+      // Dark-mode root colour (index.css) would make currentColor axes white on the white export.
+      document.documentElement.style.color = 'rgb(255, 255, 255)';
+      host = document.createElement('div');
+      host.style.color = 'rgb(10, 20, 30)';
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      const domain = document.createElementNS(SVG_NS, 'path');
+      domain.setAttribute('stroke', 'currentColor');
+      svg.appendChild(domain);
+      host.appendChild(svg);
+      document.body.appendChild(host);
+
+      const clone = cloneForExport(svg);
+      expect(clone.style.color).toBe('rgb(10, 20, 30)');
+
+      // Measured off-screen under <body>, the clone keeps the on-screen colour.
+      withTemporaryContainer(clone, () => {
+        expect(getComputedStyle(clone).color).toBe('rgb(10, 20, 30)');
+      });
+      document.documentElement.style.color = '';
+    });
+
+    it('falls back to a dark colour when the source is not in the document', () => {
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      const clone = cloneForExport(svg);
+      expect(clone.getAttribute('xmlns')).toBe(SVG_NS);
+      expect(clone.style.color).toBe(EXPORT_FALLBACK_COLOR);
     });
   });
 });
