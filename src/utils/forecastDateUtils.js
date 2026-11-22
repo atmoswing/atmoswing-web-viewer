@@ -96,6 +96,20 @@ export function leadHours(baseDate, targetDate) {
 }
 
 /**
+ * Formats a lead time for display and for export filenames, as hours after the base date.
+ *
+ * @param {number|null} lead - Lead time in hours
+ * @returns {string} e.g. "+48h" (or "-6h" before the base date), or an empty string when there is no lead
+ * @example
+ * formatLeadTime(48) // "+48h"
+ */
+export function formatLeadTime(lead) {
+  if (lead == null || !Number.isFinite(Number(lead))) return '';
+  const n = Number(lead);
+  return `${n < 0 ? '-' : '+'}${Math.abs(n)}h`;
+}
+
+/**
  * Index of the date closest in time to a target; the earlier one on a tie.
  *
  * @param {Array<Date>} dates - Candidate dates

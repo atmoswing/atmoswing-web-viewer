@@ -26,6 +26,7 @@ import CriteriaDistributionChart from './charts/CriteriaDistributionChart.jsx';
 import MethodConfigSelector from './common/MethodConfigSelector.jsx';
 import {useMethodConfigOptions} from './hooks/useMethodConfigOptions.js';
 import {useSelectionDefaults} from './hooks/useSelectionDefaults.js';
+import {formatLeadTime} from '@/utils/forecastDateUtils.js';
 
 /** Display options offered on the distribution tab, in the order they are listed. */
 const DISTRIBUTION_OPTION_KEYS = ['bestAnalogs', 'tenYearReturn', 'allReturnPeriods'];
@@ -37,10 +38,6 @@ const CRITERIA_TAB = 1;
 const ANALOGS_TAB = 2;
 
 const EMPTY_SELECTION = {methodId: null, configId: null, configPinned: false, entityId: null, lead: null};
-
-/** The distribution charts take a lead list only to title themselves; this window has none.
- *  Shared so the charts are not handed a new array, and redrawn, on every render. */
-const NO_LEADS = [];
 
 /** Stands for "no opening request" when the window is used without one. */
 const NO_REQUEST = {selection: null};
@@ -198,7 +195,7 @@ export default function ForecastDetailsModal({open, onClose, request}) {
     const datePart = formatExportDatePart(activeForecastDate);
     const entityPart = safeForFilename(stationName || 'entity');
     const safeMethod = safeForFilename(selection.methodId || 'method');
-    const leadPart = (selection.lead != null) ? `L${selection.lead}` : '';
+    const leadPart = formatLeadTime(selection.lead);
     const tabPart = TABS[tabIndex];
     return [datePart, entityPart, safeMethod, leadPart, tabPart].filter(Boolean).join('_') || tabPart;
   };
@@ -298,7 +295,7 @@ export default function ForecastDetailsModal({open, onClose, request}) {
                 selectedMethodId={selection.methodId}
                 selectedConfigId={selection.configId}
                 selectedLead={selection.lead}
-                leads={NO_LEADS}
+                leads={selectorOptions.leads}
                 activeForecastDate={activeForecastDate}
                 stationName={stationName}
                 t={t}
@@ -314,7 +311,7 @@ export default function ForecastDetailsModal({open, onClose, request}) {
                 selectedMethodId={selection.methodId}
                 selectedConfigId={selection.configId}
                 selectedLead={selection.lead}
-                leads={NO_LEADS}
+                leads={selectorOptions.leads}
                 activeForecastDate={activeForecastDate}
                 stationName={stationName}
                 t={t}

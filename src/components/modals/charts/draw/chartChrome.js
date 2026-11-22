@@ -4,6 +4,7 @@
  */
 
 import * as d3 from 'd3';
+import {formatLeadTime} from '@/utils/forecastDateUtils.js';
 
 const TITLE_FONT_SIZE = 14;
 const TITLE_COLOR = '#222';
@@ -28,6 +29,8 @@ export const CHART_BACKGROUND = '#ffffff';
 /**
  * Composes the title line used by the distribution charts.
  *
+ * The lead time is always shown, after the target date when the lead list provides it.
+ *
  * @param {Object} params
  * @param {string} params.stationName - Entity display name
  * @param {string|number|null} params.selectedMethodId - Method identifier
@@ -39,6 +42,7 @@ export const CHART_BACKGROUND = '#ffffff';
  * @returns {string} Title text, possibly empty
  * @example
  * buildDistributionTitle({stationName: 'Sion', selectedMethodId: 'm1', ...})
+ * // "Sion — m1 — c1 — 2025-11-07, +48h (Forecast of 2025-11-05)"
  */
 export function buildDistributionTitle({stationName, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, t}) {
   const fmt = d3.timeFormat('%Y-%m-%d');
@@ -47,7 +51,9 @@ export function buildDistributionTitle({stationName, selectedMethodId, selectedC
 
   const leadMatch = Array.isArray(leads) ? leads.find(l => l.lead === selectedLead) : null;
   const tgt = leadMatch?.date && !isNaN(leadMatch.date) ? leadMatch.date : null;
-  const tgtStr = tgt ? fmt(tgt) : (selectedLead != null ? `L${selectedLead}` : '');
+  // Sub-daily leads share a day, so their hour is part of the target.
+  const tgtStr = tgt ? (tgt.getHours() || tgt.getMinutes() ? d3.timeFormat('%Y-%m-%d %H:%M')(tgt) : fmt(tgt)) : '';
+  const leadStr = formatLeadTime(selectedLead);
 
   let fcDate = null;
   try {
@@ -60,7 +66,8 @@ export function buildDistributionTitle({stationName, selectedMethodId, selectedC
   const foText = fcStr ? t('toolbar.forecastOf', {date: fcStr}) : '';
 
   const parts = [stationName || '', methodIdStr, cfgStr].filter(Boolean);
-  const rightPart = [tgtStr, foText ? `(${foText})` : ''].filter(Boolean).join(' ');
+  const rightPart = [[tgtStr, leadStr].filter(Boolean).join(', '), foText ? `(${foText})` : '']
+    .filter(Boolean).join(' ');
   if (rightPart) parts.push(rightPart);
   return parts.join(' — ');
 }

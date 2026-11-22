@@ -393,6 +393,26 @@ describe('ForecastDetailsModal', () => {
     });
   });
 
+  it('names the export after the lead time in hours, and hands the chart the leads for its title', async () => {
+    const user = userEvent.setup();
+    const leads = [{lead: 24, date: new Date(2024, 0, 2)}, {lead: 48, date: new Date(2024, 0, 3)}];
+    selectorOptions.current = settledOptions({leads});
+    render(
+      <ForecastDetailsModal
+        open={true}
+        onClose={onClose}
+        request={{selection: {methodId: 'm1', configId: 'c1', entityId: 9, lead: 48}}}
+      />
+    );
+
+    expect(chartProps.current.leads).toBe(leads);
+    expect(chartProps.current.selectedLead).toBe(48);
+
+    await user.click(screen.getByRole('button', {name: 'export SVG'}));
+    const [, baseName] = exportChartSVG.mock.lastCall;
+    expect(baseName).toBe('2024-01-01_Station_A_m1_+48h_distribution');
+  });
+
   it('hands the chart the same lead list on every render, so it is not redrawn for nothing', async () => {
     const user = userEvent.setup();
     render(<ForecastDetailsModal open={true} onClose={onClose}/>);
