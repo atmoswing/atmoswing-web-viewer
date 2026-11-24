@@ -33,6 +33,11 @@ A French version for forecasters and for the DREAL is kept alongside, in
   that covers the selected station, rather than the first in the list, and follows the station when
   it changes. A configuration picked by hand is kept. With a configuration already chosen, the
   default station is one that configuration covers.
+- **The details window's station list puts relevant stations first.** The stations the selected
+  configuration covers are listed under a "Relevant entities" heading, and the others below under
+  "Other entities", dimmed but still selectable. Until a configuration is chosen, the list stays
+  flat. This mirrors the configuration list, which tags the configurations covering the selected
+  station. No extra request: it reads the per-configuration relevance the window already loads.
 - **CSV export of the analogs table**, written to be opened by double-clicking it in a spreadsheet
   set to French: semicolons, comma decimals, a UTF-8 byte-order mark, translated column headers, and
   dates a spreadsheet reads as dates (`2007-08-04`, or `2006-11-10 18:00:00` for sub-daily methods).
@@ -65,6 +70,11 @@ A French version for forecasters and for the DREAL is kept alongside, in
   as having no data is shown empty without retrying; and a WMTS layer is hidden when zoomed out
   beyond its tile grid (Hydrographie starts at zoom 6), which removes the bursts of requests for
   areas it does not cover. Tiles still failing after their retries are logged with the layer name.
+- **Lead times are written as hours after the forecast date**, e.g. `+48h` instead of `L48`, in the
+  details window's export filenames and in the distribution chart titles (`formatLeadTime` in
+  `forecastDateUtils.js`). The titles now always show both the target date and the lead, with the
+  hour added for sub-daily leads (`2026-11-07 06:00, +54h`). The window used to hand the charts an
+  empty lead list, so their titles never showed the target date; it now passes its own.
 
 ### Fixed
 

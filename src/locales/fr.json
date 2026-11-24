@@ -131,7 +131,9 @@
     "colDate": "Date",
     "colPrecipitation": "Précipitation",
     "colCriteria": "Critère",
-    "relevant": "Pertinent"
+    "relevant": "Pertinent",
+    "relevantEntities": "Entités pertinentes",
+    "otherEntities": "Autres entités"
   },
   "errors": {
     "modalFailed": "Cette fenêtre n'a pas pu être affichée.",

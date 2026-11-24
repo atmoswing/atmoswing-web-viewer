@@ -108,6 +108,16 @@ describe('useMethodConfigOptions', () => {
     expect([...result.current.relevance.get('c2')]).toEqual([2]);
   });
 
+  it('exposes which entities the selected configuration is relevant to', async () => {
+    const {result, rerender} = render({methodId: 'm1', configId: 'c2', entityId: 1});
+
+    await waitFor(() => expect(result.current.relevantEntityIds.size).toBe(1), {timeout: 3000});
+    expect(result.current.relevantEntityIds.has(2)).toBe(true);
+
+    rerender({v: {methodId: 'm1', configId: null, entityId: 1}});
+    expect(result.current.relevantEntityIds.size).toBe(0);
+  });
+
   it('loads relevance once per method, whichever entity is selected', async () => {
     const {result, rerender} = render({methodId: 'm1', configId: null, entityId: null});
 
