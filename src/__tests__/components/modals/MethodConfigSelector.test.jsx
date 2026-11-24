@@ -29,6 +29,10 @@ function options(overrides = {}) {
   };
 }
 
+/** MUI's `text.disabled`, the colour of the greyed options. */
+const GREYED = 'rgba(0, 0, 0, 0.38)';
+const colorOf = (listbox, text) => getComputedStyle(listbox.getByText(text).closest('li')).color;
+
 const SELECTION = {methodId: 'm1', configId: 'c1', configPinned: false, entityId: 1, lead: 0};
 const renderSelector = (props = {}) => render(
   <MethodConfigSelector value={SELECTION} onChange={vi.fn()} options={options()} {...props}/>
@@ -71,7 +75,8 @@ describe('MethodConfigSelector', () => {
     expect(rows).toEqual(['Bravo', 'Alpha']);
     const headers = [...screen.getByRole('listbox').querySelectorAll('.MuiListSubheader-root')].map(h => h.textContent);
     expect(headers).toEqual(['detailsAnalogsModal.relevantEntities', 'detailsAnalogsModal.otherEntities']);
-    expect(listbox.getByText('Alpha').closest('li').className).not.toBe(listbox.getByText('Bravo').closest('li').className);
+    expect(colorOf(listbox, 'Alpha')).toBe(GREYED);
+    expect(colorOf(listbox, 'Bravo')).not.toBe(GREYED);
   });
 
   it('ignores a click on a group heading', async () => {
@@ -99,6 +104,18 @@ describe('MethodConfigSelector', () => {
   it('shows only the entity name as the selected value', () => {
     renderSelector({value: {...SELECTION, entityId: 2}});
     expect(screen.getAllByRole('combobox')[2].textContent).toBe('Bravo');
+  });
+
+  it('greys the configurations the entity is not relevant to, once relevance is known', async () => {
+    renderSelector();
+    let listbox = await openSelect(1);
+    expect(colorOf(listbox, 'Config 2')).toBe(GREYED);
+    expect(colorOf(listbox, 'Config 1')).not.toBe(GREYED);
+    cleanup();
+
+    renderSelector({options: options({relevantConfigIds: new Map()})});
+    listbox = await openSelect(1);
+    expect(colorOf(listbox, 'Config 2')).not.toBe(GREYED);
   });
 
   it('pins a configuration the user picks, so it no longer follows the entity', async () => {

@@ -1,8 +1,9 @@
 /**
  * @module components/modals/common/MethodConfigSelector
  * @description Dropdowns to pick the method, configuration, entity and lead time of a modal's
- * selection. The configurations the entity is relevant to are tagged; the entities the
- * configuration is relevant to are listed first, with the others grouped below them and dimmed. The option lists are
+ * selection. The configurations the entity is relevant to are tagged and the others greyed; the
+ * entities the configuration is relevant to are listed first, with the others grouped below them
+ * and greyed. The option lists are
  * loaded by the owning modal (`useMethodConfigOptions`) and handed in.
  */
 
@@ -34,7 +35,10 @@ const GROUP_HEADER_SX = {
 /** The heading of a group that follows another carries the rule separating them. */
 const SECOND_GROUP_HEADER_SX = {...GROUP_HEADER_SX, borderTop: 1, borderColor: 'grey.400'};
 
-/** Entities outside the configuration: clearly greyed, yet still selectable. */
+/**
+ * Options the other side of the selection does not cover (entities outside the configuration,
+ * configurations not covering the entity): clearly greyed, yet still selectable.
+ */
 const DIMMED_ITEM_SX = {color: 'text.disabled'};
 
 /**
@@ -217,8 +221,9 @@ export default function MethodConfigSelector(
               <em>{t('detailsAnalogsModal.noConfigs')}</em>
             </MenuItem>
           )}
+          {/* Greyed only once known not to cover the entity: no entry yet means still loading. */}
           {configsForSelectedMethod.map(cfg => (
-            <MenuItem key={cfg.id} value={cfg.id}>
+            <MenuItem key={cfg.id} value={cfg.id} sx={relevantConfigIds?.get(cfg.id) === false ? DIMMED_ITEM_SX : undefined}>
               {renderOptionLabel(cfg.name || cfg.id, !!relevantConfigIds?.get(cfg.id))}
             </MenuItem>
           ))}

@@ -36,8 +36,8 @@ A French version for forecasters and for the DREAL is kept alongside, in
 - **The details window's station list puts relevant stations first.** The stations the selected
   configuration covers are listed under a "Relevant entities" heading, and the others below under
   "Other entities", dimmed but still selectable. Until a configuration is chosen, the list stays
-  flat. This mirrors the configuration list, which tags the configurations covering the selected
-  station. No extra request: it reads the per-configuration relevance the window already loads.
+  flat. The configuration list likewise tags the configuration covering the selected station and
+  greys the others. No extra request: it reads the per-configuration relevance the window already loads.
 - **CSV export of the analogs table**, written to be opened by double-clicking it in a spreadsheet
   set to French: semicolons, comma decimals, a UTF-8 byte-order mark, translated column headers, and
   dates a spreadsheet reads as dates (`2007-08-04`, or `2006-11-10 18:00:00` for sub-daily methods).
