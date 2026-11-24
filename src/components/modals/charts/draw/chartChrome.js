@@ -1,12 +1,19 @@
 /**
  * @module components/modals/charts/draw/chartChrome
- * @description Title and legend drawing shared by the chart modals' D3 charts.
+ * @description Background, title and legend drawing shared by the chart modals' D3 charts.
  */
 
 import * as d3 from 'd3';
+import {formatLeadTime} from '@/utils/forecastDateUtils.js';
 
 const TITLE_FONT_SIZE = 14;
 const TITLE_COLOR = '#222';
+
+/**
+ * Background colour painted behind every chart.
+ * @type {string}
+ */
+export const CHART_BACKGROUND = '#ffffff';
 
 /**
  * One entry of the chart legend.
@@ -22,6 +29,8 @@ const TITLE_COLOR = '#222';
 /**
  * Composes the title line used by the distribution charts.
  *
+ * The lead time is always shown, after the target date when the lead list provides it.
+ *
  * @param {Object} params
  * @param {string} params.stationName - Entity display name
  * @param {string|number|null} params.selectedMethodId - Method identifier
@@ -33,6 +42,7 @@ const TITLE_COLOR = '#222';
  * @returns {string} Title text, possibly empty
  * @example
  * buildDistributionTitle({stationName: 'Sion', selectedMethodId: 'm1', ...})
+ * // "Sion — m1 — c1 — 2025-11-07, +48h (Forecast of 2025-11-05)"
  */
 export function buildDistributionTitle({stationName, selectedMethodId, selectedConfigId, selectedLead, leads, activeForecastDate, t}) {
   const fmt = d3.timeFormat('%Y-%m-%d');
@@ -41,7 +51,9 @@ export function buildDistributionTitle({stationName, selectedMethodId, selectedC
 
   const leadMatch = Array.isArray(leads) ? leads.find(l => l.lead === selectedLead) : null;
   const tgt = leadMatch?.date && !isNaN(leadMatch.date) ? leadMatch.date : null;
-  const tgtStr = tgt ? fmt(tgt) : (selectedLead != null ? `L${selectedLead}` : '');
+  // Sub-daily leads share a day, so their hour is part of the target.
+  const tgtStr = tgt ? (tgt.getHours() || tgt.getMinutes() ? d3.timeFormat('%Y-%m-%d %H:%M')(tgt) : fmt(tgt)) : '';
+  const leadStr = formatLeadTime(selectedLead);
 
   let fcDate = null;
   try {
@@ -54,7 +66,8 @@ export function buildDistributionTitle({stationName, selectedMethodId, selectedC
   const foText = fcStr ? t('toolbar.forecastOf', {date: fcStr}) : '';
 
   const parts = [stationName || '', methodIdStr, cfgStr].filter(Boolean);
-  const rightPart = [tgtStr, foText ? `(${foText})` : ''].filter(Boolean).join(' ');
+  const rightPart = [[tgtStr, leadStr].filter(Boolean).join(', '), foText ? `(${foText})` : '']
+    .filter(Boolean).join(' ');
   if (rightPart) parts.push(rightPart);
   return parts.join(' — ');
 }
@@ -76,6 +89,28 @@ export function buildTimeSeriesTitle({stationName, selectedMethodConfig, runDate
     : '';
   const runDateStr = (runDate instanceof Date && !isNaN(runDate)) ? d3.timeFormat('%Y-%m-%d')(runDate) : '';
   return [stationName, methodName, runDateStr].filter(Boolean).join(' — ');
+}
+
+/**
+ * Paints an opaque background over the whole SVG, as its first child.
+ *
+ * Without it the SVG is transparent, so an exported .svg opened in a dark-mode viewer shows
+ * dark axes and labels on a black background.
+ *
+ * @param {Object} svg - D3 selection of the SVG element
+ * @param {Object} params
+ * @param {number} params.width - SVG width
+ * @param {number} params.height - SVG height
+ * @returns {void}
+ * @example
+ * drawChartBackground(svg, {width: 600, height: 300});
+ */
+export function drawChartBackground(svg, {width, height}) {
+  svg.insert('rect', ':first-child')
+    .attr('class', 'chart-background')
+    .attr('x', 0).attr('y', 0)
+    .attr('width', width).attr('height', height)
+    .attr('fill', CHART_BACKGROUND);
 }
 
 /**

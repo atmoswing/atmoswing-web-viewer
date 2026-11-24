@@ -5,14 +5,14 @@ on:
     branches:
       - main
       - dev
-      - test
+      - staging
     tags:
       - v*
   pull_request:
     branches:
       - main
       - dev
-      - test
+      - staging
   release:
     types: [published]
 

@@ -1,7 +1,9 @@
 /**
  * @module components/modals/common/MethodConfigSelector
  * @description Dropdowns to pick the method, configuration, entity and lead time of a modal's
- * selection, with the configurations the entity is relevant to marked. The option lists are
+ * selection. The configurations the entity is relevant to are tagged and the others greyed; the
+ * entities the configuration is relevant to are listed first, with the others grouped below them
+ * and greyed. The option lists are
  * loaded by the owning modal (`useMethodConfigOptions`) and handed in.
  */
 
@@ -12,11 +14,32 @@ import {
   FormControl,
   InputLabel,
   ListItemText,
+  ListSubheader,
   MenuItem,
   Select,
   Typography
 } from '@mui/material';
 import {useTranslation} from 'react-i18next';
+
+/** Entity-list group heading: a grey band in small capitals, distinct from the entries. */
+const GROUP_HEADER_SX = {
+  bgcolor: 'grey.200',
+  color: 'text.secondary',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  lineHeight: '28px'
+};
+
+/** The heading of a group that follows another carries the rule separating them. */
+const SECOND_GROUP_HEADER_SX = {...GROUP_HEADER_SX, borderTop: 1, borderColor: 'grey.400'};
+
+/**
+ * Options the other side of the selection does not cover (entities outside the configuration,
+ * configurations not covering the entity): clearly greyed, yet still selectable.
+ */
+const DIMMED_ITEM_SX = {color: 'text.disabled'};
 
 /**
  * MethodConfigSelector component.
@@ -56,6 +79,7 @@ export default function MethodConfigSelector(
     leadsLoading,
     leadsError,
     relevantConfigIds,
+    relevantEntityIds,
   } = options;
 
   // Ensure selected values exist in available options, otherwise use empty string
@@ -79,20 +103,48 @@ export default function MethodConfigSelector(
     return leads.find(l => l.lead === selectedLead) ? selectedLead : '';
   }, [selectedLead, leads]);
 
-  // Render helpers
-  const renderConfigLabel = (cfg) => {
-    const relevant = !!relevantConfigIds.get(cfg.id);
-    return (
-      <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-        <ListItemText primary={cfg.name || cfg.id}/>
-        {relevant && (
-          <Typography variant="caption" sx={{color: 'primary.main', fontWeight: 600}}>
-            ({t('detailsAnalogsModal.relevant')})
-          </Typography>
-        )}
-      </Box>
+  // Relevant entities first, then the others. Without relevance (no configuration chosen yet, or
+  // still loading) the list stays flat, as a split would only say that nothing is relevant.
+  const entityGroups = useMemo(() => {
+    if (!relevantEntityIds?.size) return null;
+    const relevant = stations.filter(s => relevantEntityIds.has(s.id));
+    const others = stations.filter(s => !relevantEntityIds.has(s.id));
+    return {relevant, others};
+  }, [stations, relevantEntityIds]);
+
+  // Select needs its items as direct children, so the groups are flattened into one array. The
+  // rule between the groups is the second heading's top border: a Divider child would be handed
+  // the option role by Select, like the headings are.
+  const renderEntityItems = () => {
+    const item = (s, dim) => (
+      <MenuItem key={s.id} value={s.id} sx={dim ? DIMMED_ITEM_SX : undefined}>
+        {s.name || s.id}
+      </MenuItem>
     );
+    if (!entityGroups) return stations.map(s => item(s, false));
+    const items = [];
+    if (entityGroups.relevant.length) {
+      items.push(<ListSubheader key="hdr-relevant" sx={GROUP_HEADER_SX}>{t('detailsAnalogsModal.relevantEntities')}</ListSubheader>);
+      entityGroups.relevant.forEach(s => items.push(item(s, false)));
+    }
+    if (entityGroups.others.length) {
+      items.push(<ListSubheader key="hdr-others" sx={items.length ? SECOND_GROUP_HEADER_SX : GROUP_HEADER_SX}>{t('detailsAnalogsModal.otherEntities')}</ListSubheader>);
+      entityGroups.others.forEach(s => items.push(item(s, true)));
+    }
+    return items;
   };
+
+  // Render helpers
+  const renderOptionLabel = (name, relevant) => (
+    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+      <ListItemText primary={name}/>
+      {relevant && (
+        <Typography variant="caption" sx={{color: 'primary.main', fontWeight: 600}}>
+          ({t('detailsAnalogsModal.relevant')})
+        </Typography>
+      )}
+    </Box>
+  );
 
   const handleMethodChange = (e) => {
     const newMethodId = e.target.value;
@@ -169,9 +221,10 @@ export default function MethodConfigSelector(
               <em>{t('detailsAnalogsModal.noConfigs')}</em>
             </MenuItem>
           )}
+          {/* Greyed only once known not to cover the entity: no entry yet means still loading. */}
           {configsForSelectedMethod.map(cfg => (
-            <MenuItem key={cfg.id} value={cfg.id}>
-              {renderConfigLabel(cfg)}
+            <MenuItem key={cfg.id} value={cfg.id} sx={relevantConfigIds?.get(cfg.id) === false ? DIMMED_ITEM_SX : undefined}>
+              {renderOptionLabel(cfg.name || cfg.id, !!relevantConfigIds?.get(cfg.id))}
             </MenuItem>
           ))}
         </Select>
@@ -185,6 +238,10 @@ export default function MethodConfigSelector(
           value={safeStationId}
           label={t('detailsAnalogsModal.entity')}
           onChange={handleEntityChange}
+          renderValue={(v) => {
+            const s = stations.find(st => st.id === v);
+            return s ? s.name || s.id : '';
+          }}
           MenuProps={{PaperProps: {style: {maxHeight: 320}}}}
         >
           {stationsLoading && (
@@ -197,11 +254,7 @@ export default function MethodConfigSelector(
               <em>{t('detailsAnalogsModal.noEntities')}</em>
             </MenuItem>
           )}
-          {stations.map(s => (
-            <MenuItem key={s.id} value={s.id}>
-              {s.name || s.id}
-            </MenuItem>
-          ))}
+          {renderEntityItems()}
         </Select>
       </FormControl>
 

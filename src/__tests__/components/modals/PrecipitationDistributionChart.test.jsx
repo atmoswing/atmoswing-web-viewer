@@ -43,6 +43,10 @@ describe('PrecipitationDistributionChart (smoke)', () => {
 
     expect(ref.current.querySelector('svg')).toBeTruthy();
 
+    // Opaque background, so an exported .svg does not turn black in dark-mode viewers.
+    expect(ref.current.querySelector('svg').firstElementChild.getAttribute('class')).toBe('chart-background');
+    expect(ref.current.querySelector('svg').firstElementChild.getAttribute('fill')).toBe('#ffffff');
+
     // rely on testing-library cleanup to remove appended container
   });
 

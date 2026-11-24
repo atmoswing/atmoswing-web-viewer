@@ -1,7 +1,8 @@
 /**
  * @module components/modals/hooks/useMethodConfigOptions
  * @description Loads the chained option lists behind the modal selector — methods and their
- * configurations, then entities, then lead times — plus the per-configuration relevance map.
+ * configurations, then entities, then lead times — plus the relevance of configurations to the
+ * selected entity and of entities to the selected configuration.
  */
 
 import {useMemo} from 'react';
@@ -16,6 +17,7 @@ import {leadHours, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
 const EMPTY_LIST = [];
 const EMPTY_RELEVANCE = new Map();
+const EMPTY_SET = new Set();
 
 /**
  * Turns a series-percentiles response into selectable lead times.
@@ -61,6 +63,7 @@ function toLeadOptions(resp, forecastBaseDate) {
  * @returns {Error|null} returns.leadsError - Error from the leads request
  * @returns {Map|null} returns.relevance - configId -> Set of the entity ids relevant to it, or null while loading
  * @returns {Map} returns.relevantConfigIds - configId -> whether the selected entity is relevant to it
+ * @returns {Set} returns.relevantEntityIds - Ids of the entities the selected configuration is relevant to
  * @example
  * const { methodOptions, stations, leads } = useMethodConfigOptions({open, value});
  */
@@ -141,6 +144,13 @@ export function useMethodConfigOptions({open, value}) {
     return new Map([...relevance].map(([cfgId, ids]) => [cfgId, ids.has(selectedStationId)]));
   }, [relevance, selectedStationId]);
 
+  // The reverse lookup: which entities the selected configuration covers. Only an explicit
+  // configuration counts, as the config dropdown shows nothing for the provisional first one.
+  const relevantEntityIds = useMemo(() => {
+    if (!relevance || selectedConfigId == null) return EMPTY_SET;
+    return relevance.get(selectedConfigId) || EMPTY_SET;
+  }, [relevance, selectedConfigId]);
+
   return {
     methodOptions,
     methodsLoading,
@@ -154,6 +164,7 @@ export function useMethodConfigOptions({open, value}) {
     leadsLoading,
     leadsError,
     relevance,
-    relevantConfigIds
+    relevantConfigIds,
+    relevantEntityIds
   };
 }

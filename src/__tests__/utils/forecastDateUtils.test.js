@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {formatForecastDateForApi, leadHours, nearestDateIndex, parseForecastDate} from '@/utils/forecastDateUtils.js';
+import {formatForecastDateForApi, formatLeadTime, leadHours, nearestDateIndex, parseForecastDate} from '@/utils/forecastDateUtils.js';
 
 describe('forecastDateUtils', () => {
   describe('parseForecastDate', () => {
@@ -154,5 +154,19 @@ describe('nearestDateIndex', () => {
     expect(nearestDateIndex([], new Date())).toBe(-1);
     expect(nearestDateIndex(dates, null)).toBe(-1);
     expect(nearestDateIndex(null, new Date())).toBe(-1);
+  });
+});
+
+describe('formatLeadTime', () => {
+  it('writes the lead as signed hours', () => {
+    expect(formatLeadTime(48)).toBe('+48h');
+    expect(formatLeadTime(0)).toBe('+0h');
+    expect(formatLeadTime(-6)).toBe('-6h');
+  });
+
+  it('returns an empty string when there is no lead', () => {
+    expect(formatLeadTime(null)).toBe('');
+    expect(formatLeadTime(undefined)).toBe('');
+    expect(formatLeadTime(Number.NaN)).toBe('');
   });
 });

@@ -24,9 +24,14 @@ function options(overrides = {}) {
     methodsLoading: false, stationsLoading: false, leadsLoading: false,
     methodsError: null, stationsError: null, leadsError: null,
     relevantConfigIds: new Map([['c1', true], ['c2', false]]),
+    relevantEntityIds: new Set([2]),
     ...overrides
   };
 }
+
+/** MUI's `text.disabled`, the colour of the greyed options. */
+const GREYED = 'rgba(0, 0, 0, 0.38)';
+const colorOf = (listbox, text) => getComputedStyle(listbox.getByText(text).closest('li')).color;
 
 const SELECTION = {methodId: 'm1', configId: 'c1', configPinned: false, entityId: 1, lead: 0};
 const renderSelector = (props = {}) => render(
@@ -60,6 +65,57 @@ describe('MethodConfigSelector', () => {
     const listbox = await openSelect(1);
     expect(listbox.getByText('Config 1').closest('li')).toHaveTextContent('detailsAnalogsModal.relevant');
     expect(listbox.getByText('Config 2').closest('li')).not.toHaveTextContent('detailsAnalogsModal.relevant');
+  });
+
+  it('lists the entities the configuration is relevant to first, and dims the others', async () => {
+    renderSelector();
+    const listbox = await openSelect(2);
+    // MUI's Select gives its headings the option role too; the entities are the MenuItems.
+    const rows = [...screen.getByRole('listbox').querySelectorAll('.MuiMenuItem-root')].map(o => o.textContent);
+    expect(rows).toEqual(['Bravo', 'Alpha']);
+    const headers = [...screen.getByRole('listbox').querySelectorAll('.MuiListSubheader-root')].map(h => h.textContent);
+    expect(headers).toEqual(['detailsAnalogsModal.relevantEntities', 'detailsAnalogsModal.otherEntities']);
+    expect(colorOf(listbox, 'Alpha')).toBe(GREYED);
+    expect(colorOf(listbox, 'Bravo')).not.toBe(GREYED);
+  });
+
+  it('ignores a click on a group heading', async () => {
+    const onChange = vi.fn();
+    renderSelector({onChange});
+    const listbox = await openSelect(2);
+    await userEvent.setup().click(listbox.getByText('detailsAnalogsModal.otherEntities'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the entity list flat while no relevance is known', async () => {
+    renderSelector({options: options({relevantEntityIds: new Set()})});
+    await openSelect(2);
+    expect([...screen.getByRole('listbox').querySelectorAll('.MuiMenuItem-root')].map(o => o.textContent)).toEqual(['Alpha', 'Bravo']);
+    expect(screen.getByRole('listbox').querySelector('.MuiListSubheader-root')).toBeNull();
+  });
+
+  it('omits the second group when every entity is relevant', async () => {
+    renderSelector({options: options({relevantEntityIds: new Set([1, 2])})});
+    await openSelect(2);
+    const headers = [...screen.getByRole('listbox').querySelectorAll('.MuiListSubheader-root')].map(h => h.textContent);
+    expect(headers).toEqual(['detailsAnalogsModal.relevantEntities']);
+  });
+
+  it('shows only the entity name as the selected value', () => {
+    renderSelector({value: {...SELECTION, entityId: 2}});
+    expect(screen.getAllByRole('combobox')[2].textContent).toBe('Bravo');
+  });
+
+  it('greys the configurations the entity is not relevant to, once relevance is known', async () => {
+    renderSelector();
+    let listbox = await openSelect(1);
+    expect(colorOf(listbox, 'Config 2')).toBe(GREYED);
+    expect(colorOf(listbox, 'Config 1')).not.toBe(GREYED);
+    cleanup();
+
+    renderSelector({options: options({relevantConfigIds: new Map()})});
+    listbox = await openSelect(1);
+    expect(colorOf(listbox, 'Config 2')).not.toBe(GREYED);
   });
 
   it('pins a configuration the user picks, so it no longer follows the entity', async () => {

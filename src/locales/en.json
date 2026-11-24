@@ -131,7 +131,9 @@
     "colDate": "Date",
     "colPrecipitation": "Precipitation",
     "colCriteria": "Criteria",
-    "relevant": "Relevant"
+    "relevant": "Relevant",
+    "relevantEntities": "Relevant entities",
+    "otherEntities": "Other entities"
   },
   "errors": {
     "modalFailed": "This window could not be displayed.",
